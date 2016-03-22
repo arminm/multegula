@@ -1,11 +1,14 @@
-# daniel santoro. ddsantor.
+# EXAMPLE UI CODE FROM BLOCKBUSTER
+# For porting to Multegula
+# Adapted for Python 3 by Garrett Miller and 2to3 utility
+#
+# by daniel santoro. ddsantor.
 
 ##### IMPORT MODULES #####
-from Tkinter import *
+from tkinter import *
 import random
-import urllib2
+import urlopen
 ##### END IMPORT MODULES ######
-###############################
 
 """
 This next large section of code is responsible for everything that has to
@@ -56,11 +59,11 @@ def splashScreen(canvas):
     difficulty = canvas.data["difficulty"]
 
     # COMPUTE/INITIALIZE important variables
-    marginX = canvasWidth / 20
-    marginY = canvasHeight / 20
-    centerX = canvasWidth / 2
-    centerY = canvasHeight / 2
-    oneQuarterX = canvasWidth / 4
+    marginX = canvasWidth // 20
+    marginY = canvasHeight // 20
+    centerX = canvasWidth // 2
+    centerY = canvasHeight // 2
+    oneQuarterX = canvasWidth // 4
     threeQuartersX = canvasWidth * .75
     
     ## DRAW button: takes the vertical placement of the button, and the lines
@@ -312,7 +315,7 @@ def splashScreen(canvas):
         if highScoreList != "High Scores Not Found":
 
             # subheader
-            canvas.create_text(centerX / 5, marginY * 5,
+            canvas.create_text(centerX // 5, marginY * 5,
                                text = "Place ---- Date ---- Name ---- Score",
                                font = ("Courier", mediumSmallTextSize, "bold"),
                                anchor = "sw")
@@ -325,7 +328,7 @@ def splashScreen(canvas):
                 # # drawn on the screen
                 message = scoreDisplayString(score,  count - 5)
 
-                canvas.create_text(centerX / 5, marginY * count, text = message,
+                canvas.create_text(centerX // 5, marginY * count, text = message,
                                    font = ("Courier", mediumSmallTextSize),
                                    anchor = "sw")
                 count += 1
@@ -455,12 +458,12 @@ def splashScreen(canvas):
 
         # this makes the cursor at the end of the name blink
         if canvas.data["delayCounter"] % 36 < 18:
-            canvas.create_text(centerX - (oneQuarterX / 5), marginY * 11,
+            canvas.create_text(centerX - (oneQuarterX // 5), marginY * 11,
                                text = name + "|",
                                font = ("Helvetica", mediumSmallTextSize),
                                anchor = "sw")
         else:
-            canvas.create_text(centerX - (oneQuarterX / 5), marginY * 11,
+            canvas.create_text(centerX - (oneQuarterX // 5), marginY * 11,
                                text = name,
                                font = ("Helvetica", mediumSmallTextSize),
                                anchor = "sw")
@@ -754,14 +757,14 @@ def drawGameBackgound(canvas):
     
     # # canvas
     outsideMargin = outsideMargin * .75
-    oneQuarterX = canvasWidth / 4
+    oneQuarterX = canvasWidth // 4
     threeQuartersX = canvasWidth * .75
-    centerX = canvasWidth / 2
-    centerY = canvasHeight / 2
+    centerX = canvasWidth // 2
+    centerY = canvasHeight // 2
     centerTopMargin = (outsideMargin / 1.5)
-    centerBottomMargin = canvasHeight - (outsideMargin / 3)
-    centerLeftMargin = outsideMargin / 2
-    centerRightMargin = canvasWidth - (outsideMargin / 3)
+    centerBottomMargin = canvasHeight - (outsideMargin // 3)
+    centerLeftMargin = outsideMargin // 2
+    centerRightMargin = canvasWidth - (outsideMargin // 3)
 
     # draw background
     canvas.create_rectangle(0, 0, canvasWidth, canvasHeight, fill = "black")
@@ -805,22 +808,22 @@ def drawGameBackgound(canvas):
     # # create a string to put on the sides
     # # # NOT hobo
     if message != "Hobo":
-        for newLine in xrange(10):
+        for newLine in range(10):
             sideString += "\n"
         for char in message:
 
             sideString += char
             
-            for newLine in xrange(10):
+            for newLine in range(10):
                 sideString += "\n"
     # # # hobo
     else:
-        for newLine in xrange(7):
+        for newLine in range(7):
             sideString += "\n"
         for char in message:
             sideString += char
 
-            for newLine in xrange(7):
+            for newLine in range(7):
                 sideString += "\n"
 
     # # draw the strings on the sides
@@ -852,9 +855,9 @@ def drawPausedScreen(canvas):
 
     # compute / initialize variables
     canvas.data["pausedCounter"] += 1
-    centerY = canvasHeight / 2
-    centerX = canvas.data["canvasWidth"] / 2
-    marginY = canvas.data["canvasHeight"] / 20
+    centerY = canvasHeight // 2
+    centerX = canvas.data["canvasWidth"] // 2
+    marginY = canvas.data["canvasHeight"] // 20
 
     # print the level
     canvas.create_text(centerX, centerY, text = message,
@@ -976,18 +979,18 @@ def movePaddles(canvas):
     def moveHorizontalPaddles():
 
         # if the pad isn't all the way to the left or right, let it move
-        if (horizontalCenterPaddle + paddleWidth + outsideMargin + (paddleHeight / 2) <= canvasWidth) and \
-           (horizontalCenterPaddle - paddleWidth - outsideMargin - (paddleHeight / 2) >= 0):
+        if (horizontalCenterPaddle + paddleWidth + outsideMargin + (paddleHeight // 2) <= canvasWidth) and \
+           (horizontalCenterPaddle - paddleWidth - outsideMargin - (paddleHeight // 2) >= 0):
            
             canvas.data["horizontalCenterPaddle"] += canvas.data["horizontalPaddleVelocity"]    
 
         # don't let the pad move if it's all the way to the right 
-        elif horizontalCenterPaddle + paddleWidth + outsideMargin + (paddleHeight / 2) > canvasWidth:
+        elif horizontalCenterPaddle + paddleWidth + outsideMargin + (paddleHeight // 2) > canvasWidth:
             canvas.data["horizontalCenterPaddle"] = canvasWidth - paddleWidth - outsideMargin - paddleHeight
             canvas.data["horizontalPaddleVelocity"] = 0
 
         # don't let the pad move if it's all the way to the left
-        elif horizontalCenterPaddle - paddleWidth - outsideMargin - (paddleHeight / 2) < 0:
+        elif horizontalCenterPaddle - paddleWidth - outsideMargin - (paddleHeight // 2) < 0:
             canvas.data["horizontalCenterPaddle"] = paddleWidth + outsideMargin + paddleHeight
             canvas.data["horizontalPaddleVelocity"] = 0
 
@@ -995,18 +998,18 @@ def movePaddles(canvas):
     def moveVerticalPaddles():
 
         # if the pad isn't all the way to the top or the bottom, let it move
-        if (verticalCenterPaddle - paddleWidth - outsideMargin - (paddleHeight / 2) >= 0) and \
-           (verticalCenterPaddle + paddleWidth + outsideMargin + (paddleHeight / 2) <= canvasHeight):
+        if (verticalCenterPaddle - paddleWidth - outsideMargin - (paddleHeight // 2) >= 0) and \
+           (verticalCenterPaddle + paddleWidth + outsideMargin + (paddleHeight // 2) <= canvasHeight):
 
             canvas.data["verticalCenterPaddle"] += canvas.data["verticalPaddleVelocity"]
 
         # if the pad is at the top, don't let it move
-        elif verticalCenterPaddle - paddleWidth - outsideMargin - (paddleHeight / 2) < 0:
+        elif verticalCenterPaddle - paddleWidth - outsideMargin - (paddleHeight // 2) < 0:
             canvas.data["verticalCenterPaddle"] = paddleWidth + outsideMargin + paddleHeight
             canvas.data["verticalPaddleVelocity"] = 0
 
         # if the pad is at the bottom, don't let it move
-        elif verticalCenterPaddle + paddleWidth + outsideMargin + (paddleHeight / 2) > canvasHeight:
+        elif verticalCenterPaddle + paddleWidth + outsideMargin + (paddleHeight // 2) > canvasHeight:
             canvas.data["verticalCenterPaddle"] = canvasHeight - paddleWidth - outsideMargin - paddleHeight
             canvas.data["verticalPaddleVelocity"] = 0
 
@@ -1077,7 +1080,7 @@ def ballPositiveYVelocity(canvas):
     outsideMargin = canvas.data["outsideMargin"]
     horizontalCenterPaddle = canvas.data["horizontalCenterPaddle"]
     paddleWidth = canvas.data["paddleWidth"]
-    minPaddleWidth = canvas.data["canvasWidth"] / 7
+    minPaddleWidth = canvas.data["canvasWidth"] // 7
 
     # # canvas
     canvasHeight = canvas.data["canvasHeight"]
@@ -1132,7 +1135,7 @@ def ballNegativeYVelocity(canvas):
     horizontalCenterPaddle = canvas.data["horizontalCenterPaddle"]
     paddleWidth = canvas.data["paddleWidth"]
     paddleHeight = canvas.data["paddleHeight"]
-    minPaddleWidth = canvas.data["canvasWidth"] / 7
+    minPaddleWidth = canvas.data["canvasWidth"] // 7
     
     # # canvas
     canvasHeight = canvas.data["canvasHeight"]
@@ -1182,7 +1185,7 @@ def ballPositiveXVelocity(canvas):
     outsideMargin = canvas.data["outsideMargin"]
     verticalCenterPaddle = canvas.data["verticalCenterPaddle"]
     paddleWidth = canvas.data["paddleWidth"]
-    minPaddleWidth = canvas.data["canvasWidth"] / 7
+    minPaddleWidth = canvas.data["canvasWidth"] // 7
     # # canvas
     canvasWidth = canvas.data["canvasWidth"]    
 
@@ -1231,7 +1234,7 @@ def ballNegativeXVelocity(canvas):
     outsideMargin = canvas.data["outsideMargin"]
     verticalCenterPaddle = canvas.data["verticalCenterPaddle"]
     paddleWidth = canvas.data["paddleWidth"]
-    minPaddleWidth = canvas.data["canvasWidth"] / 7
+    minPaddleWidth = canvas.data["canvasWidth"] // 7
     
     # # canvas
     canvasWidth = canvas.data["canvasWidth"]    
@@ -1276,7 +1279,7 @@ def ballXDirectionDeterminate(canvas):
     ballCenterX = canvas.data["ballCenterX"]
     
     # # paddle
-    paddleFactor = canvas.data["paddleWidth"] / 6.0
+    paddleFactor = canvas.data["paddleWidth"] // 6.0
     horizontalCenterPaddle = canvas.data["horizontalCenterPaddle"]
 
     # ball at the middle of the paddles
@@ -1293,7 +1296,7 @@ def ballXDirectionDeterminate(canvas):
     elif ballCenterX < horizontalCenterPaddle:
 
         # compute the velocity factor
-        velocityFactor = (horizontalCenterPaddle - ballCenterX) / 100.0
+        velocityFactor = (horizontalCenterPaddle - ballCenterX) // 100.0
 
         # set color correctly
         if ballCenterX < (horizontalCenterPaddle): canvas.data["paddleColor"] = "black"
@@ -1310,7 +1313,7 @@ def ballXDirectionDeterminate(canvas):
     elif ballCenterX > horizontalCenterPaddle:
 
         # compute a velocity factor
-        velocityFactor = (ballCenterX - horizontalCenterPaddle) / 100.0
+        velocityFactor = (ballCenterX - horizontalCenterPaddle) // 100.0
 
         # set colors correctly
         if ballCenterX > horizontalCenterPaddle: canvas.data["paddleColor"] = "black"
@@ -1351,8 +1354,8 @@ def drawBlocks(canvas):
 
 
     # iterate over all of the rows/columns to draw all of the blocks
-    for column in xrange(blockColumns):
-        for row in xrange(blockRows):
+    for column in range(blockColumns):
+        for row in range(blockRows):
             if blockGrid[row][column]:
 
                 color = colorGrid[row][column]
@@ -1398,8 +1401,8 @@ def ballContactsBlock(canvas):
     paddlWidth = canvas.data["paddleWidth"]
 
     # compute variabels
-    maxPaddleWidth = canvasWidth / 4
-    minPaddleWidth = canvasWidth / 7
+    maxPaddleWidth = canvasWidth // 4
+    minPaddleWidth = canvasWidth // 7
 
 
     ## POWERUPS/BREAK blocks: takes row and column, returns None
@@ -1429,8 +1432,8 @@ def ballContactsBlock(canvas):
     if ballVelocityY < 0:
 
         # determine row and column the ball is in
-        row = int(((ballCenterY) - radius) / rowStep)
-        column = int(ballCenterX / columnStep)
+        row = int(((ballCenterY) - radius) // rowStep)
+        column = int(ballCenterX // columnStep)
 
         # test for a block, and readjust variables
         if blockGrid[row][column]:
@@ -1447,8 +1450,8 @@ def ballContactsBlock(canvas):
     elif ballVelocityY > 0:
         
         # determine row and column the ball is in
-        row = int(((ballCenterY) + radius) / rowStep)
-        column = int(ballCenterX / columnStep)
+        row = int(((ballCenterY) + radius) // rowStep)
+        column = int(ballCenterX // columnStep)
 
         # test for a block, and readjust vaiables
         if blockGrid[row][column]:
@@ -1465,8 +1468,8 @@ def ballContactsBlock(canvas):
     if ballVelocityX < 0 or ballVelocityX == 0:
         
         # determine row and column the ball is in
-        row = int(ballCenterY / rowStep)
-        column = int(((ballCenterX) - radius) / columnStep)
+        row = int(ballCenterY // rowStep)
+        column = int(((ballCenterX) - radius) // columnStep)
 
         # test for a block, and readjust vaiables
         if blockGrid[row][column]:
@@ -1481,7 +1484,7 @@ def ballContactsBlock(canvas):
 
         # reset the column. this will only trip used in very specific cases when
         # # when half or less of the ball is in a given column
-        column = int(((ballCenterX) + radius) / columnStep)
+        column = int(((ballCenterX) + radius) // columnStep)
 
         # test for a block, and readjust variables
         if blockGrid[row][column]:
@@ -1497,8 +1500,8 @@ def ballContactsBlock(canvas):
     # ball moving right or straight up and down
     elif ballVelocityX > 0 or ballVelocityX == 0:
         # determine row and column the ball is in
-        row = (ballCenterY / rowStep)
-        column = int(((ballCenterX) + radius) / columnStep)
+        row = (ballCenterY // rowStep)
+        column = int(((ballCenterX) + radius) // columnStep)
 
         # test for a block, and readjust vaiables
         if blockGrid[row][column]:
@@ -1558,7 +1561,7 @@ def getDate(url):
         rightBound = ", "
 
         # open the webpage, put all the lines in a list, and close the webpage
-        webPage = urllib2.urlopen(url)
+        webPage = urllib.request.urlopen(url)
         webLines = webPage.readlines()
         webPage.close()
 
@@ -1642,7 +1645,7 @@ def resetHighScores(canvas):
     if name == "Type name please." or name == "":
         name = "Unknown"
 
-    for count in xrange(9):       
+    for count in range(9):       
         if (" " * count) == name:
 
             name = "Unknown"
@@ -1679,7 +1682,7 @@ def saveHighScores(canvas):
     # loop through the list of high score tuples, and format them
     # # such that they each date, name and score is in a string
     # # # and only one score per line
-    for index in xrange(len(highScoreList)):
+    for index in range(len(highScoreList)):
         highScoreString += highScoreList[index][0] + " " + \
                            str(highScoreList[index][1]) + "\n"
 
@@ -1819,8 +1822,8 @@ def aiMovePaddles(canvas):
     canvasWidth = canvas.data["canvasWidth"]
 
     # # compute variables
-    marginOfError = canvasWidth / 23
-    paddleVelocity = canvasWidth / 70
+    marginOfError = canvasWidth // 23
+    paddleVelocity = canvasWidth // 70
 
     # if the game is not paused, not over, and there is no winner, move the paddles
     if not paused and not gameOverScreen and not winner:
@@ -1900,8 +1903,8 @@ def winner(canvas):
     largeTextSize = canvas.data["largeTextSize"]
 
     # compute/initialize variables
-    centerX = canvas.data["canvasWidth"] / 2
-    centerY = canvas.data["canvasHeight"] / 2
+    centerX = canvas.data["canvasWidth"] // 2
+    centerY = canvas.data["canvasHeight"] // 2
 
     # blinks "WINNER" a few times while the score is increased 1000 points
     # # for winning
@@ -1940,7 +1943,7 @@ def advanceLevel(canvas):
 
     # initialize variabes
     blankLevel = canvas.data["blankLevel"]
-    maxPaddleWidth = canvas.data["canvasWidth"] / 4
+    maxPaddleWidth = canvas.data["canvasWidth"] // 4
 
     # if the level is blank, readjust variables as needed to go to the next level
     if blankLevel == canvas.data["currentBlockGrid"] and len(canvas.data["keyLevelList"]) > 0:
@@ -2005,8 +2008,8 @@ def getGameReady(canvas):
     canvas.data["splashDelay"] = 0
     canvas.data["delayCounter"] = 0
     canvas.data["pausedCounter"] = 0
-    canvas.data["ballCenterX"] = canvas.data["canvasWidth"] / 2
-    canvas.data["ballCenterY"] = canvas.data["canvasHeight"] / 2
+    canvas.data["ballCenterX"] = canvas.data["canvasWidth"] // 2
+    canvas.data["ballCenterY"] = canvas.data["canvasHeight"] // 2
     canvas.data["splashScreen"] = False
     canvas.data["winner"] = False
     canvas.data["paused"] = True
@@ -2040,9 +2043,9 @@ def splashScreenClick(canvas, event):
 
     # compute and initialize variables
     clickButtonSize = buttonSize - buttonMargin
-    marginX = canvasWidth / 20
-    marginY = canvasHeight / 20
-    centerX = canvasWidth / 2
+    marginX = canvasWidth // 20
+    marginY = canvasHeight // 20
+    centerX = canvasWidth // 2
 
         
     # this is only triggered if the "hard" button is pressed on the play game screen
@@ -2053,7 +2056,7 @@ def splashScreenClick(canvas, event):
             getGameReady(canvas)
             canvas.data["difficulty"] = "hard"
             canvas.data["pointsPerHit"] = 3
-            canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] / 55
+            canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] // 55
             timerFired(canvas)
 
         elif highScoreScreen:
@@ -2072,7 +2075,7 @@ def splashScreenClick(canvas, event):
             getGameReady(canvas)
             canvas.data["difficulty"] = "normal"
             canvas.data["pointsPerHit"] = 2
-            canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] / 70
+            canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] // 70
 
             timerFired(canvas)
             
@@ -2101,7 +2104,7 @@ def splashScreenClick(canvas, event):
             getGameReady(canvas)
             canvas.data["difficulty"] = "easy"
             canvas.data["pointsPerHit"] = 1
-            canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] / 85
+            canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] // 85
 
             timerFired(canvas)
             
@@ -2244,22 +2247,22 @@ def keyPressed(event):
         else: 
             # moves top and bottom paddles to the left
             if event.keysym == "Left" and not turnOver:
-                canvas.data["horizontalPaddleVelocity"] = canvasWidth / 70
+                canvas.data["horizontalPaddleVelocity"] = canvasWidth // 70
                 canvas.data["horizontalPaddleVelocity"] -= (canvas.data["horizontalPaddleVelocity"] * 2)
 
             # moves top and bottom paddles to the right
             elif event.keysym == "Right" and not turnOver:
-                canvas.data["horizontalPaddleVelocity"] = canvasWidth / 70
+                canvas.data["horizontalPaddleVelocity"] = canvasWidth // 70
                 canvas.data["horizontalPaddleVelocity"] = abs(canvas.data["horizontalPaddleVelocity"])
 
             # moves left and rights paddles down
             elif event.keysym == "Down" and not turnOver:
-                canvas.data["verticalPaddleVelocity"] = canvasWidth / 70
+                canvas.data["verticalPaddleVelocity"] = canvasWidth // 70
                 canvas.data["verticalPaddleVelocity"] = abs(canvas.data["verticalPaddleVelocity"])
 
             # moves left and right paddles up
             elif event.keysym == "Up" and not turnOver:
-                canvas.data["verticalPaddleVelocity"] = canvasWidth / 70
+                canvas.data["verticalPaddleVelocity"] = canvasWidth // 70
                 canvas.data["verticalPaddleVelocity"] -= (canvas.data["verticalPaddleVelocity"] * 2)
 
             # stops the paddle from moving
@@ -2299,14 +2302,14 @@ def init(canvas):
         canvas.data["buttonColor1"] = "white"
         canvas.data["buttonColor2"] = "white"
         canvas.data["buttonColor3"] = "white"
-        canvas.data["buttonSize"] = canvas.data["canvasWidth"] / 10
+        canvas.data["buttonSize"] = canvas.data["canvasWidth"] // 10
         canvas.data["buttonMargin"] = canvas.data["buttonSize"] - (canvas.data["canvasWidth"] / 11)
 
         # ball
         canvas.data["splashColorOfBall"] = "white"
-        canvas.data["splashRadius"] = canvas.data["canvasWidth"] / 20
+        canvas.data["splashRadius"] = canvas.data["canvasWidth"] // 20
         canvas.data["splashBallVX"] = 0
-        canvas.data["splashBallVY"] = canvas.data["canvasWidth"] / 50
+        canvas.data["splashBallVY"] = canvas.data["canvasWidth"] // 50
 
         # current screen
         canvas.data["splashScreen"] = True
@@ -2327,17 +2330,17 @@ def init(canvas):
     ## # but saves the information in the dictionary
     def universalInit():
         # ball
-        canvas.data["ballCenterX"] = canvas.data["canvasWidth"] / 2
-        canvas.data["ballCenterY"] = canvas.data["canvasHeight"] / 2
+        canvas.data["ballCenterX"] = canvas.data["canvasWidth"] // 2
+        canvas.data["ballCenterY"] = canvas.data["canvasHeight"] // 2
 
         # all moving objects
-        canvas.data["borderWidth"] = canvas.data["canvasWidth"] / 350
+        canvas.data["borderWidth"] = canvas.data["canvasWidth"] // 350
 
         # text
-        canvas.data["smallTextSize"] = canvas.data["canvasWidth"] / 35
-        canvas.data["mediumSmallTextSize"] = canvas.data["canvasWidth"] / 28
-        canvas.data["mediumLargeTextSize"] = canvas.data["canvasWidth"] / 20
-        canvas.data["largeTextSize"] = canvas.data["canvasWidth"] / 10
+        canvas.data["smallTextSize"] = canvas.data["canvasWidth"] // 35
+        canvas.data["mediumSmallTextSize"] = canvas.data["canvasWidth"] // 28
+        canvas.data["mediumLargeTextSize"] = canvas.data["canvasWidth"] // 20
+        canvas.data["largeTextSize"] = canvas.data["canvasWidth"] // 10
 
         # url / filename
         canvas.data["dateUrl"] = "http://tycho.usno.navy.mil/cgi-bin/timer.pl"
@@ -2408,7 +2411,7 @@ def init(canvas):
             colorGrid = []
 
             # set all values to False
-            for row in xrange(rows):
+            for row in range(rows):
                 blockGrid += [[False] * columns]
                 colorGrid += [[None] * columns]
 
@@ -2419,8 +2422,8 @@ def init(canvas):
                        color != colorGrid[row][column - 1]:
                         return color
             # randomize the colors for all of the cells
-            for row in xrange(1, rows - 1):
-                for column in xrange(1, columns - 1):
+            for row in range(1, rows - 1):
+                for column in range(1, columns - 1):
                     colorGrid[row][column] = getColor(row, column)
                     
                     
@@ -2434,8 +2437,8 @@ def init(canvas):
             (blockGrid,colorGrid) = makeBlankLevel()
 
             # set certain blocks to True
-            for row in xrange(5, 10):
-                for column in xrange(1,4):
+            for row in range(5, 10):
+                for column in range(1,4):
                     blockGrid[row][column] = True
 
             return (blockGrid, colorGrid)
@@ -2448,10 +2451,10 @@ def init(canvas):
             (blockGrid,colorGrid) = makeBlankLevel()
 
             # set certain blocks to True
-            for row in xrange(3, 15):
+            for row in range(3, 15):
                 blockGrid[row][1] = True
                     
-            for row in xrange(3, 15):
+            for row in range(3, 15):
                 blockGrid[row][3] = True
                     
             return (blockGrid, colorGrid)
@@ -2464,16 +2467,16 @@ def init(canvas):
             (blockGrid,colorGrid) = makeBlankLevel()
 
             # set certain blocks to True
-            for row in xrange(3, 9):
+            for row in range(3, 9):
                 blockGrid[row][1] = True
 
-            for row in xrange(3, 9):
+            for row in range(3, 9):
                 blockGrid[row][3] = True
                     
-            for row in xrange(13, 19):
+            for row in range(13, 19):
                 blockGrid[row][1] = True
                 
-            for row in xrange(13, 19):
+            for row in range(13, 19):
                 blockGrid[row][3] = True
 
             return (blockGrid, colorGrid)
@@ -2486,12 +2489,12 @@ def init(canvas):
             (blockGrid,colorGrid) = makeBlankLevel()
 
             # set certain blocks to True
-            for row in xrange(3, 17, 2):
-                for column in xrange(1, 4, 2):
+            for row in range(3, 17, 2):
+                for column in range(1, 4, 2):
                     blockGrid[row][column] = True
                     
-            for row in xrange(4, 16, 2):
-                for column in xrange(2, 4, 2):
+            for row in range(4, 16, 2):
+                for column in range(2, 4, 2):
                     blockGrid[row][column] = True
 
             return (blockGrid, colorGrid)
@@ -2504,16 +2507,16 @@ def init(canvas):
             (blockGrid,colorGrid) = makeBlankLevel()
 
             # set certain blocks to True
-            for row in xrange(3, 15):
+            for row in range(3, 15):
                 blockGrid[row][1] = True
                     
-            for row in xrange(3, 15):
+            for row in range(3, 15):
                 blockGrid[row][3] = True
                     
-            for row in xrange(3, 7):
+            for row in range(3, 7):
                 blockGrid[row][2] = True
                     
-            for row in xrange(11, 15):
+            for row in range(11, 15):
                 blockGrid[row][2] = True
 
             return (blockGrid, colorGrid)
@@ -2527,8 +2530,8 @@ def init(canvas):
             trueFalse = [True, False]
 
             # set certain blocks to True, randomly
-            for row in xrange(3, 15):
-                for column in xrange(1, 4):
+            for row in range(3, 15):
+                for column in range(1, 4):
                     blockGrid[row][column] = random.choice(trueFalse)
 
             return (blockGrid, colorGrid)
@@ -2541,19 +2544,19 @@ def init(canvas):
             (blockGrid,colorGrid) = makeBlankLevel()
 
             # set certain blocks to True
-            for row in xrange(3, 15):
+            for row in range(3, 15):
                 blockGrid[row][1] = True
                 
-            for row in xrange(3, 15):
+            for row in range(3, 15):
                 blockGrid[row][3] = True
 
-            for row in xrange(3, 5):
+            for row in range(3, 5):
                 blockGrid[row][2] = True
                     
-            for row in xrange(8, 10):
+            for row in range(8, 10):
                 blockGrid[row][2] = True
                 
-            for row in xrange(13, 15):
+            for row in range(13, 15):
 
                 blockGrid[row][2] = True
 
@@ -2567,7 +2570,7 @@ def init(canvas):
             (blockGrid,colorGrid) = makeBlankLevel()
 
             # set certain blocks to True
-            for row in xrange(3, 18):
+            for row in range(3, 18):
                 blockGrid[row][(row % 3) + 1] = True
                 
             blockGrid[16][2] = False
@@ -2588,11 +2591,11 @@ def init(canvas):
             (blockGrid,colorGrid) = makeBlankLevel()
 
             # set certain blocks to True
-            for row in xrange(3, 20):
-                for column in xrange(1, 4):
+            for row in range(3, 20):
+                for column in range(1, 4):
                     blockGrid[row][column] = True
 
-            for row in xrange(16, 20):
+            for row in range(16, 20):
                 blockGrid[row][2] = False
 
             return (blockGrid, colorGrid)
@@ -2655,7 +2658,7 @@ def init(canvas):
             blockGrid = []
 
             # set all values to False
-            for row in xrange(rows):
+            for row in range(rows):
                 blockGrid += [[False] * columns]
 
             return blockGrid
@@ -2663,8 +2666,8 @@ def init(canvas):
         # blocks
         canvas.data["rows"] = 35
         canvas.data["columns"] = 5
-        canvas.data["rowStep"] = canvas.data["canvasWidth"] / 30
-        canvas.data["columnStep"] = canvas.data["canvasWidth"] / 5
+        canvas.data["rowStep"] = canvas.data["canvasWidth"] // 30
+        canvas.data["columnStep"] = canvas.data["canvasWidth"] // 5
         canvas.data["blankLevel"] = makeBlankLevel()
 
         # make lists of the keys for the levels and text displayed on the screen
@@ -2710,8 +2713,8 @@ def turnOver(canvas):
     lives = canvas.data["lives"]
 
     # compute / intitialize variables
-    centerX = canvas.data["canvasWidth"] / 2
-    centerY = canvas.data["canvasHeight"] /2
+    centerX = canvas.data["canvasWidth"] // 2
+    centerY = canvas.data["canvasHeight"] //2
 
     # set variables to values needed to stop motion on the screen
     canvas.data["ballVelocityX"] = 0
@@ -2773,25 +2776,25 @@ def turnOver(canvas):
 def reset(canvas):
     difficulty = canvas.data["difficulty"]
     # Paddles
-    canvas.data["horizontalCenterPaddle"] = canvas.data["canvasWidth"] / 2
-    canvas.data["verticalCenterPaddle"] = canvas.data ["canvasWidth"] / 2
+    canvas.data["horizontalCenterPaddle"] = canvas.data["canvasWidth"] // 2
+    canvas.data["verticalCenterPaddle"] = canvas.data ["canvasWidth"] // 2
     canvas.data["horizontalPaddleVelocity"] = 0
     canvas.data["verticalPaddleVelocity"] = 0
     canvas.data["paddleColor"] = "black"
 
     # ball
-    canvas.data["ballCenterX"] = canvas.data["canvasWidth"] / 2
-    canvas.data["ballCenterY"] = canvas.data["canvasHeight"] / 2
-    canvas.data["ballVelocityX"] = canvas.data["canvasWidth"] / 400
+    canvas.data["ballCenterX"] = canvas.data["canvasWidth"] // 2
+    canvas.data["ballCenterY"] = canvas.data["canvasHeight"] // 2
+    canvas.data["ballVelocityX"] = canvas.data["canvasWidth"] // 400
     canvas.data["ballColorCounter"] = 0
 
     # set the speed of the ball according to the difficulty level
     if difficulty == "hard":
-        canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] / 55
+        canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] // 55
     elif difficulty == "normal":
-         canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] / 70
+         canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] // 70
     elif difficulty == "easy":
-          canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] / 85    
+          canvas.data["ballVelocityY"] = canvas.data["canvasWidth"] // 85    
 
     # general gameplay
     canvas.data["turnOver"] = False
