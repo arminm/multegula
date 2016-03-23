@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////
 //Multegula - MessagePasser.go 
-//Main Driver/Startup Script for Multegula
+//Multicasting Message Passer for Multegula
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
