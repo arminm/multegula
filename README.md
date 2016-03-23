@@ -11,10 +11,10 @@ Dependencies Required:
 * Python 3.5.1 (or greater)
 * python3-tk
 
-OS X:
+#### OS X:  
 brew install python3 golang
 
-Ubuntu Linux 16.04:
+#### Ubuntu Linux 16.04:  
 sudo apt-get install python3-tk golang   
 
 Running:
