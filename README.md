@@ -8,11 +8,19 @@ Installing:
 ---------------------------------------------------------
 Dependencies Required:  
 * Go 1.6 (or greater)  
-* Python 3.5.1 (or greater)  
+* Python 3.5.1 (or greater)
+* python3-tk
+
+OS X:
+brew install python3 golang
+
+Ubuntu Linux 16.04:
+sudo apt-get install python3-tk golang   
 
 Running:
 ---------------------------------------------------------
-1. Set configuration parameters in settings.cfg.
+1. Set configuration parametes in settings.cfg.
+2. python3 multegula.py
 
 
 Acknowledgements:
