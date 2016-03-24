@@ -6,13 +6,19 @@
 
 package main
 
-import "encoding/json"
-import "os"
-import "fmt"
+import (
+	"encoding/json"
+	"os"
+	"fmt"
+	"net"
+	"bufio"
+)
 
 //Config Reading Example
 type Configuration struct {
-    BootstrapServer    []string
+    BootstrapServer  []string
+    LocalName []string
+    Group []string
 }
 
 func main(){
@@ -24,4 +30,12 @@ func main(){
 	  fmt.Println("error:", err)
 	}
 	fmt.Println(configuration.BootstrapServer) // output: [BootstrapServer]
+	fmt.Println(configuration.LocalName)
+	fmt.Println(configuration.Group)
+
+	bootstrapServerDNS := configuration.BootstrapServer[0]
+	/* setup a connection to BootstrapServer and get the IPs of group */
+	conn, _ := net.Dial("tcp", bootstrapServerDNS);
+	
 }
+

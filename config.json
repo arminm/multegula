@@ -1,3 +1,7 @@
 {
-	"BootstrapServer": ["multegula.dyndns.org"]
+	"BootstrapServer": ["multegula.dyndns.org"],
+	"LocalName": ["local.dyndns.org"],
+	"Group":["local.dyndns.org",
+			 "node1.dyndns.org",
+			 "node2.dyndns.org"]
 }
