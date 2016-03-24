@@ -19,7 +19,7 @@ sudo apt-get install python3-tk golang
 
 Running:
 ---------------------------------------------------------
-1. Set configuration parametes in settings.cfg.
+1. Set configuration parameters in settings.cfg.
 2. python3 multegula.py
 
 
