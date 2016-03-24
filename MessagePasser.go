@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net"
 	"bufio"
-	"sort"
 )
 
 //Config Reading Example
@@ -31,34 +30,51 @@ var connections map[string]Conn = make(map[string]Conn)
 const port string = ":8081"
 
 /*
- * get the nodes in front of local node, return these nodes as a map
+ * separate nodes' DNS name into two parts based on lexicographical order
  * @param	group
  *			the DNS name of each node in the group
  *
  * @param	localName
  *			the DNS name of local node
  * 
- * @return	all nodes in front of local node
+ * @return	frontNodes
+ *			nodes smaller than localName
+ *			latterNodes
+ *			nodes greater than localName
  **/
-func getFrontNodes(group []string, localName string) map[string]bool {
+func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, map[string]bool) {
 	var frontNodes map[string]bool = make(map[string]bool)
-	fmt.Println(localName)
-	for i := 0; group[i] < localName; i++ {
-		fmt.Println(group[i])
-		frontNodes[group[i]] = true
+	var latterNodes map[string]bool = make(map[string]bool)
+	for _, dns := range group {
+		if(dns < localName) {
+			frontNodes[dns] = true
+		} else if(dns > localName) {
+			latterNodes[dns] = true
+		}
 	}
-	return frontNodes
+	return frontNodes, latterNodes
 }
+
 
 /* 
  * accepts connections from other nodes and stores 
- * connections into connections map
+ * connections into connections map, after accepting
+ * all connections from all other nodes in the group,
+ * this routine exits
  **/
-func acceptConnection() {
+func acceptConnection(frontNodes map[string]bool) {
 	fmt.Println("Accepting connections...")
 	ln, _ = net.Listen("tcp", port)
-	for {
-
+	for len(frontNodes) > 0 {
+		/* 
+		 * when a node first connects to other nodes, it will first 
+		 * send it's DNS name so that another node can know it
+		 **/
+		conn, _ := ln.Accept()
+		dns, _ := bufio.NewReader(conn).ReadString('\n')
+		fmt.Println("Received connection from " + dns)
+		delete(frontNodes, dns)
+		connections[dns] = conn
 	}
 }
 
@@ -88,10 +104,8 @@ func main(){
 	fmt.Println(configuration.LocalName) // output: [local.dyndns.org]
 	fmt.Println(configuration.Group) // output: [local.dyndns.org node1.dyndns.org node2.dyndns.org]
 
-	/* sort group's dns name, node only sends TCP connection to nodes
-	 * which are greater in the sorted order so that there is only one
-	 * TCP connection between each other
-	 **/
-	sort.Strings(configuration.Group)
+	frontNodes, latterNodes := getFrontAndLatterNodes(configuration.Group, configuration.LocalName[0])
+	fmt.Println(frontNodes)
+	fmt.Println(latterNodes)
 }
 
