@@ -16,9 +16,14 @@ import (
 
 //Config Reading Example
 type Configuration struct {
-    BootstrapServer  []string
-    LocalName []string
-    Group []string
+    bootstrapServer  []string
+    localName []string
+    group []string
+}
+
+/* message */
+type Message struct {
+
 }
 
 /* map stores connections to each node
@@ -40,7 +45,7 @@ const port string = ":8081"
  * @return	frontNodes
  *			nodes smaller than localName
  *			latterNodes
- *			nodes greater than localName
+ *			nodes greater or equal to localName
  **/
 func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, map[string]bool) {
 	var frontNodes map[string]bool = make(map[string]bool)
@@ -48,7 +53,7 @@ func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, 
 	for _, dns := range group {
 		if(dns < localName) {
 			frontNodes[dns] = true
-		} else if(dns > localName) {
+		} else {
 			latterNodes[dns] = true
 		}
 	}
@@ -61,6 +66,8 @@ func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, 
  * connections into connections map, after accepting
  * all connections from all other nodes in the group,
  * this routine exits
+ * @param	frontNodes
+ *			map that contains all nodes with smaller DNS names
  **/
 func acceptConnection(frontNodes map[string]bool) {
 	fmt.Println("Accepting connections...")
@@ -68,7 +75,7 @@ func acceptConnection(frontNodes map[string]bool) {
 	for len(frontNodes) > 0 {
 		/* 
 		 * when a node first connects to other nodes, it will first 
-		 * send it's DNS name so that another node can know it
+		 * send it's DNS name so that another node can know it's name
 		 **/
 		conn, _ := ln.Accept()
 		dns, _ := bufio.NewReader(conn).ReadString('\n')
@@ -81,14 +88,19 @@ func acceptConnection(frontNodes map[string]bool) {
 /*
  * send connections to nodes with greater DNS names
  * and stores connections into connections map
- * @param	group
- *			the DNS name of each node in the group
+ * @param	latterNodes
+ *			map that contains all nodes with greater or equal DNS names
  *
  * @param	localName
  *			the DNS name of local node
  **/
-func sendConnection(group []string, string localName) {
-	
+func sendConnection(latterNodes map[string]bool, string localName) {
+	for key, value := range latterNodes {
+		conn, _ := net.Dial("tcp", key + port)
+		/* send local DNS to other side of the connection */
+		conn.Write([]byte(key + "\n"))
+		connections[key] = conn
+	}
 }
 
 func main(){
@@ -100,12 +112,15 @@ func main(){
 	  fmt.Println("error:", err)
 	}
 
-	fmt.Println(configuration.BootstrapServer) // output: [BootstrapServer]
-	fmt.Println(configuration.LocalName) // output: [local.dyndns.org]
-	fmt.Println(configuration.Group) // output: [local.dyndns.org node1.dyndns.org node2.dyndns.org]
+	fmt.Println(configuration.bootstrapServer) // output: [BootstrapServer]
+	fmt.Println(configuration.localName) // output: [local.dyndns.org]
+	fmt.Println(configuration.group) // output: [local.dyndns.org node1.dyndns.org node2.dyndns.org]
 
-	frontNodes, latterNodes := getFrontAndLatterNodes(configuration.Group, configuration.LocalName[0])
+	frontNodes, latterNodes := getFrontAndLatterNodes(configuration.group, configuration.localName[0])
 	fmt.Println(frontNodes)
 	fmt.Println(latterNodes)
+
+	acceptConnection(frontNodes)
+	sendConnection(latterNodes, configuration.localName[0])
 }
 
