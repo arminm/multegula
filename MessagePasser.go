@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 	"os"
 	"fmt"
-//	"net"
-//	"bufio"
+	"net"
+	"bufio"
 	"sort"
 )
 
@@ -30,17 +30,36 @@ var connections map[string]Conn = make(map[string]Conn)
 /* port number for TCP connection */
 const port string = ":8081"
 
+/*
+ * get the nodes in front of local node, return these nodes as a map
+ * @param	group
+ *			the DNS name of each node in the group
+ *
+ * @param	localName
+ *			the DNS name of local node
+ * 
+ * @return	all nodes in front of local node
+ **/
+func getFrontNodes(group []string, localName string) map[string]bool {
+	var frontNodes map[string]bool = make(map[string]bool)
+	fmt.Println(localName)
+	for i := 0; group[i] < localName; i++ {
+		fmt.Println(group[i])
+		frontNodes[group[i]] = true
+	}
+	return frontNodes
+}
+
 /* 
  * accepts connections from other nodes and stores 
  * connections into connections map
- * @param	group
- *			the DNS name of each node in the group
- * 
- * @param	localName
- *			the DNS name of local node
  **/
-func acceptConnection(group []string, sring localName) {
-	
+func acceptConnection() {
+	fmt.Println("Accepting connections...")
+	ln, _ = net.Listen("tcp", port)
+	for {
+
+	}
 }
 
 /*
