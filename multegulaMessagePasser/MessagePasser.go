@@ -4,7 +4,7 @@
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-package main
+package messagePasser
 
 import (
 	"encoding/json"
@@ -219,7 +219,10 @@ func Receive() Message {
 	return message
 }
 
-func main() {
+/* 
+ * initialize MessagePasser, this is a public method
+ **/
+func InitMessagePasser() {
 	file, _ := os.Open("config.json")
 	decoder := json.NewDecoder(file)
 	configuration := Configuration{}
