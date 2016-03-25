@@ -57,24 +57,19 @@ func encodeMessage(message Message) string {
  **/
 func decodeMessage(messageString string) Message {
 	var elements []string = strings.Split(messageString, delimiter)
-	return Message{
-		source: elements[0],
-		destination: elements[1],
-		content: elements[2],
-		kind: elements[3]
-	}
+	return Message{source: elements[0], destination: elements[1], content: elements[2],	kind: elements[3]}
 }
 
 /* map stores connections to each node
  * <key, value> = <dns, connection>
  **/
-var connections map[string]Conn = make(map[string]Conn)
+var connections map[string]net.Conn = make(map[string]net.Conn)
 
 /* the queue for messages to be sent */
-var sendQueue chan = make(chan Message, 100)
+var sendQueue chan Message = make(chan Message, 100)
 
 /* the queue for received messages */
-var receivedQueue chan = make(chan Message, 100)
+var receivedQueue chan Message = make(chan Message, 100)
 
 /* port number for TCP connection */
 const port string = ":8081"
@@ -116,7 +111,7 @@ func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, 
  **/
 func acceptConnection(frontNodes map[string]bool) {
 	fmt.Println("Accepting connections...")
-	ln, _ = net.Listen("tcp", port)
+    ln, _ := net.Listen("tcp", port)
 	for len(frontNodes) > 0 {
 		/* 
 		 * when a node first connects to other nodes, it will first 
@@ -139,7 +134,7 @@ func acceptConnection(frontNodes map[string]bool) {
  * @param	localName
  *			the DNS name of local node
  **/
-func sendConnection(latterNodes map[string]bool, string localName) {
+func sendConnection(latterNodes map[string]bool, localName string) {
 	for key, value := range latterNodes {
 		conn, _ := net.Dial("tcp", key + port)
 		/* send local DNS to other side of the connection */
