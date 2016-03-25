@@ -5,23 +5,18 @@ import (
 	"fmt"
     "os"
     "sort"
+    "messagePasser"
 )
 
-//Config Reading Example
-type Configuration struct {
-    bootstrapServer  []string
-    localName []string
-    group []string
-}
 
 func main() {
-/*	fmt.Println("initialzing message passer...")
+	fmt.Println("initialzing message passer...")
 	messagePasser.InitMessagePasser()
-	fmt.Println("message passer initialzed")*/
+	fmt.Println("message passer initialzed")
 
 	file, _ := os.Open("config.json")
 	decoder := json.NewDecoder(file)
-	configuration := Configuration{}
+	configuration := messagePasser.Configuration{}
 	err := decoder.Decode(&configuration)
 	if err != nil {
 	  fmt.Println("error:", err)
@@ -29,9 +24,9 @@ func main() {
 
     fmt.Println(configuration)
 
-	sort.Strings(configuration.group)
-//	fmt.Println("local name: " + configuration.localName[0])
-	for i, dns := range configuration.group {
+	sort.Strings(configuration.Group)
+	fmt.Println("local name: " + configuration.LocalName[0])
+	for i, dns := range configuration.Group {
 		fmt.Printf("ID %d, DNS name %s\n", i, dns)
 	}
 }

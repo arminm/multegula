@@ -4,8 +4,7 @@
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-//package messagePasser
-package main
+package messagePasser
 
 import (
 	"encoding/json"
@@ -18,9 +17,9 @@ import (
 
 //Config Reading Example
 type Configuration struct {
-    bootstrapServer  []string
-    localName []string
-    group []string
+    BootstrapServer []string
+    LocalName []string
+    Group []string
 }
 
 /* delimiter for formatting message */
@@ -228,11 +227,11 @@ func InitMessagePasser() {
 	}
 
 	/* separate DNS names */
-	frontNodes, latterNodes := getFrontAndLatterNodes(configuration.group, configuration.localName[0])
+	frontNodes, latterNodes := getFrontAndLatterNodes(configuration.Group, configuration.LocalName[0])
 
 	/* setup TCP connections */
 	acceptConnection(frontNodes)
-	sendConnection(latterNodes, configuration.localName[0])
+	sendConnection(latterNodes, configuration.LocalName[0])
 
 	/* start routines listening on each connection to receive messages */
 	startReceiveRoutine()
