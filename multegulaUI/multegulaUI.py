@@ -9,9 +9,40 @@ from tkinter import *
 import random
 from components.Ball import *
 from components.Button import *
+from screens.SplashScreen import *
 from screens.MenuScreen import *
-from screens.PausedScreen import *
-from screens.Screens import *
+from screens.PauseScreen import *
+from screens.ScreenEnum import *
+def keyPressed(event):
+    # initialize variable
+    canvas = event.widget.canvas
+
+    if(canvas.data["currentScreen"] == Screens.SCRN_SPLASH):
+        tempName = canvas.data["playerName"];
+
+        # add new characters
+        if(("!" <= event.char <= "z") and (len(tempName) <= 16)):
+            # initial name - clear it
+            if(tempName == "Type name..."):
+                tempName = "";
+            tempName += event.char;
+        elif(event.keysym == "BackSpace"):
+            # initial name - clear it
+            if(tempName == "Type name..."):
+                tempName = "";
+            else:
+                tempName = tempName[:-1];
+        elif((event.keysym == "space") and (len(tempName) <= 16)):
+            # initial name - clear it
+            if(tempName == "Type name..."):
+                tempName = "";
+            else:
+                tempName += " ";
+        elif((event.keysym == "Return") and (tempName != "Type name...")):
+            canvas.data["currentScreen"] = Screens.SCRN_MAIN;
+
+        # set name
+        canvas.data["playerName"] = tempName;
 
 
 def mousePressed(event):
@@ -54,14 +85,30 @@ def redrawAll(canvas):
     canvas.data["soloButton"] = Button(CANVAS_WIDTH, CANVAS_HEIGHT, X_CENTER, Y_LOC_TOP_BUTTON, "Solo Game", True);
     canvas.data["joinButton"] = Button(CANVAS_WIDTH, CANVAS_HEIGHT, X_CENTER, Y_LOC_BOTTOM_BUTTON, "Join Game", False);
     canvas.data["ball"] = Ball(CANVAS_WIDTH, CANVAS_HEIGHT);
+    canvas.data["splashScreen"] = SplashScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.data["menuScreen"] = MenuScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
-    canvas.data["pausedScreen"] = PausedScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
+    canvas.data["pauseScreen"] = PauseScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
+    canvas.data["paddle_01"] = Paddle()
 
     def timerFired():
         canvas.delete(ALL);
 
         # if the splash screen is up, make sure tha splash screen is called
-        if(canvas.data["currentScreen"] == Screens.SCRN_MAIN):
+        if(canvas.data["currentScreen"] == Screens.SCRN_SPLASH):
+            canvas.data["splashScreen"].drawBackground(canvas);
+            canvas.data["ball"].moveAndDraw(canvas);
+            canvas.data["splashScreen"].drawText(canvas);
+            if(canvas.data["playerName"] == "Type name..."):
+                canvas.create_text(X_CENTER, Y_LOC_TOP_BUTTON, 
+                    text = canvas.data["playerName"], 
+                    font = ("Courier", L_TEXT_SIZE), fill = "grey"); 
+            else:
+                canvas.create_text(X_CENTER, Y_LOC_TOP_BUTTON, 
+                    text = canvas.data["playerName"], 
+                    font = ("Courier", L_TEXT_SIZE), fill = "black");             
+
+
+        elif(canvas.data["currentScreen"] == Screens.SCRN_MAIN):
             canvas.data["menuScreen"].drawBackground(canvas);
             canvas.data["ball"].moveAndDraw(canvas);
             canvas.data["menuScreen"].drawText(canvas);
@@ -69,7 +116,7 @@ def redrawAll(canvas):
             canvas.data["joinButton"].draw(canvas);
 
         elif(canvas.data["currentScreen"] == Screens.SCRN_PAUSE):
-            canvas.data["pausedScreen"].draw(canvas);
+            canvas.data["pauseScreen"].draw(canvas);
 
         canvas.after(canvas.data["delay"], timerFired);
 
@@ -81,7 +128,7 @@ def redrawAll(canvas):
 ## # # initialize all of thevalues in the dictionary
 def init(canvas):
     # current screen
-    canvas.data["currentScreen"] = Screens.SCRN_MAIN;
+    canvas.data["currentScreen"] = Screens.SCRN_SPLASH;
     canvas.data["nextScreen"] = Screens.SCRN_NONE;
 
     canvas.data["Y_LOC_TOP_BUTTON"]     = 0.70*canvas.data["CANVAS_HEIGHT"];
@@ -97,6 +144,8 @@ def init(canvas):
     canvas.data["XL_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 10
 
     canvas.data["currentTextLevel"] = "LEVEL ONE.";
+
+    canvas.data["playerName"] = "Type name...";
 
 ## RUN the program
 ## # this function starts the program running
@@ -131,6 +180,7 @@ def run():
     # sets up events
     #root.bind("<Key>", keyPressed)
     root.bind("<Button-1>", mousePressed)
+    root.bind("<Key>", keyPressed)
 
     # let the games begin
     init(canvas)

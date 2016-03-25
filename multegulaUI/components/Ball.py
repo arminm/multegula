@@ -1,11 +1,4 @@
-# EXAMPLE UI CODE FROM BLOCKBUSTER
-# For porting to Multegula
-# Adapted for Python 3 by Garrett Miller and 2to3 utility
-#
-# by daniel santoro. ddsantor.
-
 ##### IMPORT MODULES #####
-from tkinter import *
 import random
 
 class Ball:

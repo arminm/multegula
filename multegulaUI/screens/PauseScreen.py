@@ -1,6 +1,6 @@
-from screens.Screens import *
+from screens.ScreenEnum import *
 
-class PausedScreen:
+class PauseScreen:
     def __init__(self, canvas_width, canvas_height):
         self.CANVAS_WIDTH = canvas_width;
         self.CANVAS_HEIGHT = canvas_height;
