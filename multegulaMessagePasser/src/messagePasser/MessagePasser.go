@@ -4,7 +4,8 @@
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-package messagePasser
+//package messagePasser
+package main
 
 import (
 	"encoding/json"
@@ -135,7 +136,7 @@ func acceptConnection(frontNodes map[string]bool) {
  *			the DNS name of local node
  **/
 func sendConnection(latterNodes map[string]bool, localName string) {
-	for key, value := range latterNodes {
+	for key, _ := range latterNodes {
 		conn, _ := net.Dial("tcp", key + port)
 		/* send local DNS to other side of the connection */
 		conn.Write([]byte(key + "\n"))
@@ -165,7 +166,7 @@ func receiveMessageFromConn(conn net.Conn) {
  * //TODO find more efficient way in go for listening messages for net.Conn
  **/
 func startReceiveRoutine() {
-	for dns, conn := range connections {
+	for _, conn := range connections {
 		go receiveMessageFromConn(conn)
 	}
 }
@@ -206,10 +207,10 @@ func Send(message Message) {
  * @return	if there are receivable messages in receivedQueue, return the first
  *			in receivedQueue; otherwise, return nil
  **/
-func Receive() Message {
-	var message Message = nil
+func Receive() *Message {
+	var message *Message = nil
 	if(len(receivedQueue) > 0){
-		message = <- receivedQueue
+		*message = <- receivedQueue
 	}
 	return message
 }
