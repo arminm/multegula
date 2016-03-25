@@ -27,14 +27,14 @@ const delimiter string = "##"
 
 /* message structure
  * before message transported through TCP connection, it will
- * be converted to string in the format of: source##destination##content##kind
+ * be converted to string in the format of: Source##Destination##Content##Kind
  # when message is received, it will be reconstructed
  **/
 type Message struct {
-	source string // the DNS name of sending node
-	destination string // the DNS name of receiving node
-	content string // the content of message
-	kind string //s the kind of messages
+	Source string // the DNS name of sending node
+	Destination string // the DNS name of receiving node
+	Content string // the Content of message
+	Kind string // the Kind of messages
 }
 
 /* 
@@ -45,7 +45,7 @@ type Message struct {
  * @return	the string format of the message
  **/
 func encodeMessage(message Message) string {
-	return message.source + delimiter + message.destination + delimiter + message.content + delimiter + message.kind
+	return message.Source + delimiter + message.Destination + delimiter + message.Content + delimiter + message.Kind
 }
 
 /*
@@ -57,7 +57,7 @@ func encodeMessage(message Message) string {
  **/
 func decodeMessage(messageString string) Message {
 	var elements []string = strings.Split(messageString, delimiter)
-	return Message{source: elements[0], destination: elements[1], content: elements[2],	kind: elements[3]}
+	return Message{Source: elements[0], Destination: elements[1], Content: elements[2],	Kind: elements[3]}
 }
 
 /* map stores connections to each node
@@ -176,7 +176,7 @@ func startReceiveRoutine() {
 func sendMessageToConn() {
 	for {
 		message := <- sendQueue
-		conn := connections[message.destination]
+		conn := connections[message.Destination]
 		conn.Write([]byte(encodeMessage(message) + "\n"))
 	}
 }
