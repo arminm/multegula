@@ -1,0 +1,5 @@
+{
+	"BootstrapServer": ["multegula.dyndns.org"],
+	"LocalName": ["localhost"],
+	"Group": ["localhost"]
+}

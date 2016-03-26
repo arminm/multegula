@@ -17,11 +17,11 @@ import (
     "time"
 )
 
-//Config Reading Example
+/* DNS Configuration */
 type Configuration struct {
-    BootstrapServer []string
-    LocalName []string
-    Group []string
+    BootstrapServer []string //BootstrapServer DNS
+    LocalName []string // Local DNS
+    Group []string // Group DNS
 }
 
 /* delimiter for formatting message */
@@ -70,6 +70,12 @@ func decodeMessage(messageString string) Message {
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
 
+/* 
+ * connection for localhost, this is the receive side,
+ * the send side is stored in connections map
+ **/
+var localConn net.Conn
+
 /* the queue for messages to be sent */
 var sendQueue chan Message = make(chan Message, 100)
 
@@ -116,8 +122,11 @@ func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, 
  * this routine exits
  * @param	frontNodes
  *			map that contains all nodes with smaller DNS names
+ * 
+ * @param   localName
+ *          the DNS name of local node
  **/
-func acceptConnection(frontNodes map[string]bool) {
+func acceptConnection(frontNodes map[string]bool, localName string) {
     defer wg.Done()
     ln, _ := net.Listen("tcp", port)
 	for len(frontNodes) > 0 {
@@ -129,7 +138,11 @@ func acceptConnection(frontNodes map[string]bool) {
 		dns, _ := bufio.NewReader(conn).ReadString('\n')
         /* dns contains \n in it's end */
         delete(frontNodes, dns[0:len(dns) - 1])
-        connections[dns[0:len(dns) - 1]] = conn
+        if(dns[0:len(dns) - 1] == localName) {
+            localConn = conn
+        } else {
+            connections[dns[0:len(dns) - 1]] = conn
+        }
 	}
 }
 
@@ -183,6 +196,7 @@ func startReceiveRoutine() {
 	for _, conn := range connections {
 		go receiveMessageFromConn(conn)
 	}
+    go receiveMessageFromConn(localConn)
 }
 
 /*
@@ -246,7 +260,7 @@ func InitMessagePasser() {
     /* wait for connections setup before proceeding */
     wg.Add(2)
 	/* setup TCP connections */
-	go acceptConnection(frontNodes)
+	go acceptConnection(frontNodes, configuration.LocalName[0])
 	go sendConnection(latterNodes, configuration.LocalName[0])
     wg.Wait()
 

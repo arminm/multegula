@@ -109,7 +109,8 @@ func main() {
             if(message == messagePasser.Message{}) {
                 fmt.Println("There is no message received right now.")
             } else {
-                fmt.Println("Mesage comes from: " + message.Source)
+                fmt.Println("Message comes from: " + message.Source)
+                fmt.Println("Message goes to: " + message.Destination)
                 fmt.Println("Message content: " + message.Content)
                 fmt.Println("Message kind: " + message.Content)
             }
