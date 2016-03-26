@@ -13,7 +13,7 @@ import (
 	"net"
 	"bufio"
 	"strings"
-    "time"
+    "sync"
 )
 
 //Config Reading Example
@@ -37,6 +37,9 @@ type Message struct {
 	Content string // the Content of message
 	Kind string // the Kind of messages
 }
+
+/* InitMessagePasser has to wait all work done before exiting */
+var wg sync.WaitGroup
 
 /* 
  * convert message to string
@@ -111,6 +114,7 @@ func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, 
  *			map that contains all nodes with smaller DNS names
  **/
 func acceptConnection(frontNodes map[string]bool) {
+    defer wg.Done()
 	fmt.Println("Accepting connections...")
     ln, _ := net.Listen("tcp", port)
 	for len(frontNodes) > 0 {
@@ -136,6 +140,7 @@ func acceptConnection(frontNodes map[string]bool) {
  *			the DNS name of local node
  **/
 func sendConnection(latterNodes map[string]bool, localName string) {
+    defer wg.Done()
 	for key, _ := range latterNodes {
 		conn, _ := net.Dial("tcp", key + port)
 		/* send local DNS to other side of the connection */
@@ -172,7 +177,7 @@ func startReceiveRoutine() {
 }
 
 /*
- * whenever there are messages in sendQueue, send it out to TCP connection
+ * whnever there are messages in sendQueue, send it out to TCP connection
  **/
 func sendMessageToConn() {
 	for {
@@ -229,17 +234,18 @@ func InitMessagePasser() {
     /* separate DNS names */
 	frontNodes, latterNodes := getFrontAndLatterNodes(configuration.Group, configuration.LocalName[0])
 
+    /* wait for connections setup before proceeding */
+    wg.Add(2)
 	/* setup TCP connections */
 	go acceptConnection(frontNodes)
 	go sendConnection(latterNodes, configuration.LocalName[0])
+    wg.Wait()
 
 	/* start routines listening on each connection to receive messages */
 	startReceiveRoutine()
 
   	/* start routine to send message */
   	go sendMessageToConn()
-
-    time.Sleep(time.Second*30)
 
     for dns, conn := range connections {
         fmt.Println(dns)
