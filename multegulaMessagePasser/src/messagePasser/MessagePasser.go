@@ -129,7 +129,8 @@ func acceptConnection(frontNodes map[string]bool) {
 		conn, _ := ln.Accept()
 		dns, _ := bufio.NewReader(conn).ReadString('\n')
 		fmt.Println("Received connection from " + dns)
-		delete(frontNodes, dns)
+        /* dns contains \n in it's end */
+        delete(frontNodes, dns[0:len(dns) - 1])
         fmt.Printf("Number of frontNodes: %d\n", len(frontNodes))
         fmt.Println(frontNodes)
 		connections[dns] = conn
@@ -155,7 +156,6 @@ func sendConnection(latterNodes map[string]bool, localName string) {
             time.Sleep(time.Second * 1)
             conn, err = net.Dial("tcp", key + port)
         }
-        fmt.Println("Connection to " + key + " has setup")
 		/* send local DNS to other side of the connection */
 		conn.Write([]byte(localName + "\n"))
 		connections[key] = conn
