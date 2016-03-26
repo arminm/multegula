@@ -81,15 +81,13 @@ func main() {
 	messagePasser.InitMessagePasser()
 	fmt.Println("message passer initialzed")
 
-	file, _ := os.Open("config.json")
+	file, _ := os.Open("./messagePasser/config.json")
 	decoder := json.NewDecoder(file)
 	configuration := messagePasser.Configuration{}
 	err := decoder.Decode(&configuration)
 	if err != nil {
 	  fmt.Println("error:", err)
 	}
-
-    fmt.Println(configuration)
 
 	sort.Strings(configuration.Group)
 

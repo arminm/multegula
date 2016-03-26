@@ -218,7 +218,7 @@ func Receive() *Message {
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser() {
-	file, _ := os.Open("config.json")
+	file, _ := os.Open("./messagePasser/config.json")
 	decoder := json.NewDecoder(file)
 	configuration := Configuration{}
 	err := decoder.Decode(&configuration)
@@ -226,12 +226,12 @@ func InitMessagePasser() {
 	  fmt.Println("error:", err)
 	}
 
-	/* separate DNS names */
+    /* separate DNS names */
 	frontNodes, latterNodes := getFrontAndLatterNodes(configuration.Group, configuration.LocalName[0])
 
 	/* setup TCP connections */
-	acceptConnection(frontNodes)
-	sendConnection(latterNodes, configuration.LocalName[0])
+	go acceptConnection(frontNodes)
+	go sendConnection(latterNodes, configuration.LocalName[0])
 
 	/* start routines listening on each connection to receive messages */
 	startReceiveRoutine()
@@ -239,3 +239,4 @@ func InitMessagePasser() {
   	/* start routine to send message */
   	go sendMessageToConn()
 }
+
