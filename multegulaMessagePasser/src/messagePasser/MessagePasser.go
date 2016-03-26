@@ -98,9 +98,12 @@ func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, 
 	for _, dns := range group {
 		if(dns < localName) {
 			frontNodes[dns] = true
-		} else {
+		} else if (dns > localName) {
 			latterNodes[dns] = true
-		}
+        } else {
+            frontNodes[dns] = true
+            latterNodes[dns] = true
+        }
 	}
 	return frontNodes, latterNodes
 }
@@ -127,8 +130,11 @@ func acceptConnection(frontNodes map[string]bool) {
 		dns, _ := bufio.NewReader(conn).ReadString('\n')
 		fmt.Println("Received connection from " + dns)
 		delete(frontNodes, dns)
+        fmt.Printf("Number of frontNodes: %d\n", len(frontNodes))
+        fmt.Println(frontNodes)
 		connections[dns] = conn
 	}
+    fmt.Println("Accepted all connections")
 }
 
 /*
@@ -145,12 +151,13 @@ func sendConnection(latterNodes map[string]bool, localName string) {
 	for key, _ := range latterNodes {
 		conn, err := net.Dial("tcp", key + port)
         for err != nil {
-            fmt.Println("Server is not ready, retry after 1 second...")
+            fmt.Println(key + " is not ready, retry after 1 second...")
             time.Sleep(time.Second * 1)
             conn, err = net.Dial("tcp", key + port)
         }
+        fmt.Println("Connection to " + key + " has setup")
 		/* send local DNS to other side of the connection */
-		conn.Write([]byte(key + "\n"))
+		conn.Write([]byte(localName + "\n"))
 		connections[key] = conn
 	}
 }
