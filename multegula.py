@@ -5,9 +5,12 @@
 #Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He#
 ###########################################################
 
-#TODO: place multegula UI file in UI.py, add function "runUI" to run it.
+import sys
 
-from UI import * #Import our UI functions
+#Tells Python to search multegulaUI folder for functions as well.
+sys.path.append('multegulaUI/')
+
+from multegulaUI.multegulaUI import * #Import our UI functions
 import subprocess #Needed for system calls
 from multiprocessing import Process #Needed for function concurrency
 
