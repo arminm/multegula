@@ -13,6 +13,7 @@ import (
 	"net"
 	"bufio"
 	"strings"
+    "time"
 )
 
 //Config Reading Example
@@ -176,8 +177,7 @@ func startReceiveRoutine() {
 func sendMessageToConn() {
 	for {
 		message := <- sendQueue
-		conn := connections[message.Destination]
-		conn.Write([]byte(encodeMessage(message) + "\n"))
+		connections[message.Destination].Write([]byte(encodeMessage(message) + "\n"))
 	}
 }
 
@@ -238,5 +238,12 @@ func InitMessagePasser() {
 
   	/* start routine to send message */
   	go sendMessageToConn()
+
+    time.Sleep(time.Second*30)
+
+    for dns, conn := range connections {
+        fmt.Println(dns)
+        fmt.Println(conn)
+    }
 }
 
