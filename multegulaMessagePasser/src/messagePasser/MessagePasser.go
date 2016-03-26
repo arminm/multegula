@@ -119,7 +119,6 @@ func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, 
  **/
 func acceptConnection(frontNodes map[string]bool) {
     defer wg.Done()
-	fmt.Println("Accepting connections...")
     ln, _ := net.Listen("tcp", port)
 	for len(frontNodes) > 0 {
 		/* 
@@ -128,14 +127,10 @@ func acceptConnection(frontNodes map[string]bool) {
 		 **/
 		conn, _ := ln.Accept()
 		dns, _ := bufio.NewReader(conn).ReadString('\n')
-		fmt.Println("Received connection from " + dns)
         /* dns contains \n in it's end */
         delete(frontNodes, dns[0:len(dns) - 1])
-        fmt.Printf("Number of frontNodes: %d\n", len(frontNodes))
-        fmt.Println(frontNodes)
-		connections[dns] = conn
+        connections[dns[0:len(dns) - 1]] = conn
 	}
-    fmt.Println("Accepted all connections")
 }
 
 /*
@@ -152,7 +147,7 @@ func sendConnection(latterNodes map[string]bool, localName string) {
 	for key, _ := range latterNodes {
 		conn, err := net.Dial("tcp", key + port)
         for err != nil {
-            fmt.Println(key + " is not ready, retry after 1 second...")
+            fmt.Print(".")
             time.Sleep(time.Second * 1)
             conn, err = net.Dial("tcp", key + port)
         }
@@ -172,7 +167,8 @@ func receiveMessageFromConn(conn net.Conn) {
 	for {
 		messageString, _ := bufio.NewReader(conn).ReadString('\n')
 		if(len(messageString) > 0) {
-			receivedQueue <- decodeMessage(messageString)
+            fmt.Println("Received message: " + messageString[0:len(messageString) - 1])
+            receivedQueue <- decodeMessage(messageString[0:len(messageString) - 1])
 		}
 	}
 }
@@ -196,6 +192,7 @@ func sendMessageToConn() {
 	for {
 		message := <- sendQueue
 		connections[message.Destination].Write([]byte(encodeMessage(message) + "\n"))
+        fmt.Println("sent message " + encodeMessage(message))
 	}
 }
 
@@ -259,10 +256,5 @@ func InitMessagePasser() {
 
   	/* start routine to send message */
   	go sendMessageToConn()
-
-    for dns, conn := range connections {
-        fmt.Println(dns)
-        fmt.Println(conn)
-    }
 }
 
