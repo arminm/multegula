@@ -14,6 +14,7 @@ import (
 	"bufio"
 	"strings"
     "sync"
+    "time"
 )
 
 //Config Reading Example
@@ -142,7 +143,12 @@ func acceptConnection(frontNodes map[string]bool) {
 func sendConnection(latterNodes map[string]bool, localName string) {
     defer wg.Done()
 	for key, _ := range latterNodes {
-		conn, _ := net.Dial("tcp", key + port)
+		conn, err := net.Dial("tcp", key + port)
+        for err != nil {
+            fmt.Println("Server is not ready, retry after 1 second...")
+            time.Sleep(time.Second * 1)
+            conn, err = net.Dial("tcp", key + port)
+        }
 		/* send local DNS to other side of the connection */
 		conn.Write([]byte(key + "\n"))
 		connections[key] = conn
