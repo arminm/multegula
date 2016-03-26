@@ -13,8 +13,8 @@ import (
 	"net"
 	"bufio"
 	"strings"
-    "sync"
-    "time"
+	"sync"
+	"time"
 )
 
 /* DNS Configuration */
@@ -30,7 +30,7 @@ const delimiter string = "##"
 /* message structure
  * before message transported through TCP connection, it will
  * be converted to string in the format of: Source##Destination##Content##Kind
- # when message is received, it will be reconstructed
+ * when message is received, it will be reconstructed
  **/
 type Message struct {
 	Source string // the DNS name of sending node
