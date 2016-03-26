@@ -155,6 +155,7 @@ func sendConnection(latterNodes map[string]bool, localName string) {
 		conn.Write([]byte(localName + "\n"))
 		connections[key] = conn
 	}
+    fmt.Println()
 }
 
 /* 
@@ -167,7 +168,6 @@ func receiveMessageFromConn(conn net.Conn) {
 	for {
 		messageString, _ := bufio.NewReader(conn).ReadString('\n')
 		if(len(messageString) > 0) {
-            fmt.Println("Received message: " + messageString[0:len(messageString) - 1])
             receivedQueue <- decodeMessage(messageString[0:len(messageString) - 1])
 		}
 	}
@@ -192,7 +192,6 @@ func sendMessageToConn() {
 	for {
 		message := <- sendQueue
 		connections[message.Destination].Write([]byte(encodeMessage(message) + "\n"))
-        fmt.Println("sent message " + encodeMessage(message))
 	}
 }
 
@@ -219,12 +218,12 @@ func Send(message Message) {
 /* 
  * receive message, this is a public method
  * @return	if there are receivable messages in receivedQueue, return the first
- *			in receivedQueue; otherwise, return nil
+ *			in receivedQueue; otherwise, return an empty message
  **/
-func Receive() *Message {
-	var message *Message = nil
+func Receive() Message {
+    var message Message = Message{}
 	if(len(receivedQueue) > 0){
-		*message = <- receivedQueue
+		message = <- receivedQueue
 	}
 	return message
 }

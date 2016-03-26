@@ -105,8 +105,8 @@ func main() {
             message := messagePasser.Message{Source: configuration.LocalName[0], Destination: configuration.Group[id], Content: content, Kind: kind}
             messagePasser.Send(message)
         } else {
-            var message *messagePasser.Message = messagePasser.Receive()
-            if(message == nil) {
+            var message messagePasser.Message = messagePasser.Receive()
+            if(message == messagePasser.Message{}) {
                 fmt.Println("There is no message received right now.")
             } else {
                 fmt.Println("Mesage comes from: " + message.Source)
