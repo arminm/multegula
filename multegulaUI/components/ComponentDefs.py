@@ -7,5 +7,9 @@ class Orientation(Enum):
     DIR_WEST = 3;
 
 class Direction(Enum):
-    DIR_LEFT = 0;
-    DIR_RIGHT = 1;
+    DIR_STOP = 0;
+    DIR_LEFT = 1;
+    DIR_RIGHT = 2;
+
+class PowerUps(Enum):
+    PWR_NONE = 0;
