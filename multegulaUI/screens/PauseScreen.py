@@ -21,15 +21,15 @@ class PauseScreen:
         Y_2_THIRD = self.Y_2_THIRD;
 
         self.counter += 1;
-        if(self.counter < 100):
+        if(self.counter < 50):
             COLOR1 = "black";
             COLOR2 = "grey";
             COLOR3 = "grey";
-        elif(self.counter < 200):
+        elif(self.counter < 100):
             COLOR1 = "grey";
             COLOR2 = "black";
             COLOR3 = "grey";
-        elif(self.counter < 300):
+        elif(self.counter < 150):
             COLOR1 = "grey";
             COLOR2 = "grey";
             COLOR3 = "black";

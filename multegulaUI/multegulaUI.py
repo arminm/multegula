@@ -10,6 +10,7 @@ import random
 from components.Ball import *
 from components.Button import *
 from components.Paddle import *
+from components.Player import *
 from components.ComponentDefs import *
 from screens.SplashScreen import *
 from screens.MenuScreen import *
@@ -51,9 +52,9 @@ def keyPressed(event):
 
     elif((currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME)):
         if((event.keysym == "Left") or (event.keysym == "a") or (event.keysym == "A")):
-            canvas.data["paddle_01"].setDirection(Direction.DIR_LEFT);
+            canvas.data["Player_01"].setDirection(Direction.DIR_LEFT);
         elif((event.keysym == "Right") or (event.keysym == "d") or (event.keysym == "D")):
-            canvas.data["paddle_01"].setDirection(Direction.DIR_RIGHT);
+            canvas.data["Player_01"].setDirection(Direction.DIR_RIGHT);
 
 def keyReleased(event):
     canvas = event.widget.canvas;
@@ -62,7 +63,7 @@ def keyReleased(event):
     if((currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME)):
         if((event.keysym == "Left") or (event.keysym == "a") or (event.keysym == "A") or 
             (event.keysym == "Right") or (event.keysym == "d") or (event.keysym == "D")):
-            canvas.data["paddle_01"].setDirection(Direction.DIR_STOP);
+            canvas.data["Player_01"].setDirection(Direction.DIR_STOP);
 
 def mousePressed(event):
     # initialize variables
@@ -109,10 +110,10 @@ def redrawAll(canvas):
     canvas.data["menuScreen"] = MenuScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.data["pauseScreen"] = PauseScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.data["gameScreen"] = GameScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
-    canvas.data["paddle_01"] = Paddle(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_SOUTH, PaddleState.USER);
-    canvas.data["paddle_02"] = Paddle(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_NORTH, PaddleState.AI);
-    canvas.data["paddle_03"] = Paddle(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_EAST, PaddleState.AI);
-    canvas.data["paddle_04"] = Paddle(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_WEST, PaddleState.AI);
+    canvas.data["Player_01"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_SOUTH, PlayerState.USER);
+    canvas.data["Player_02"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_NORTH, PlayerState.AI);
+    canvas.data["Player_03"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_EAST, PlayerState.AI);
+    canvas.data["Player_04"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_WEST, PlayerState.AI);
 
     def timerFired():
         canvas.delete(ALL);
@@ -142,19 +143,19 @@ def redrawAll(canvas):
         elif(canvas.data["currentScreen"] == Screens.SCRN_PAUSE):
             canvas.data["gameScreen"].drawBackground(canvas);
             canvas.data["ball"].draw(canvas);
-            canvas.data["paddle_01"].update(canvas);
-            canvas.data["paddle_02"].update(canvas);
-            canvas.data["paddle_03"].update(canvas);
-            canvas.data["paddle_04"].update(canvas);
+            canvas.data["Player_01"].update(canvas);
+            canvas.data["Player_02"].update(canvas);
+            canvas.data["Player_03"].update(canvas);
+            canvas.data["Player_04"].update(canvas);
             canvas.data["pauseScreen"].draw(canvas);
 
         elif(canvas.data["currentScreen"] == Screens.SCRN_GAME):
             canvas.data["gameScreen"].drawBackground(canvas);
             canvas.data["ball"].updateGame(canvas);
-            canvas.data["paddle_01"].update(canvas);
-            canvas.data["paddle_02"].update(canvas);
-            canvas.data["paddle_03"].update(canvas);
-            canvas.data["paddle_04"].update(canvas);
+            canvas.data["Player_01"].update(canvas);
+            canvas.data["Player_02"].update(canvas);
+            canvas.data["Player_03"].update(canvas);
+            canvas.data["Player_04"].update(canvas);
 
         canvas.after(canvas.data["delay"], timerFired);
 

@@ -13,3 +13,8 @@ class Direction(Enum):
 
 class PowerUps(Enum):
     PWR_NONE = 0;
+
+class PlayerState(Enum):
+    USER = 0;   # controlled by this player
+    AI = 1;     # controlling it self
+    COMP = 2;   # controlled by a COMPetitor
