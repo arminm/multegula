@@ -1,0 +1,13 @@
+////////////////////////////////////////////////////////////
+//Multegula - PyBridge.go
+//Go Bridge to Python for Multegula
+//Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
+////////////////////////////////////////////////////////////
+
+package PyBridge
+
+import (
+	"os"
+	"fmt"
+	"net"
+)

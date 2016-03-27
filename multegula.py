@@ -7,8 +7,9 @@
 
 import sys
 
-#Tells Python to search multegulaUI folder for functions as well.
+#Tells Python to search UI and Bridges folder for functions as well.
 sys.path.append('UI/')
+sys.path.append('Bridges/')
 
 from multegulaUI.multegulaUI import * #Import our UI functions
 import subprocess #Needed for system calls
@@ -19,5 +20,8 @@ messagepasser = subprocess.Popen(['go', 'run', 'MessagePasser.go'], stdout=subpr
 
 #Start UI
 p1 = Process(target=runUI)
+p2 = Process(target=runGoBridge)
 p1.start()
+p2.start()
 p1.join()
+p2.join()
