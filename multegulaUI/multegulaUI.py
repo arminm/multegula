@@ -121,7 +121,7 @@ def redrawAll(canvas):
         # if the splash screen is up, make sure tha splash screen is called
         if(canvas.data["currentScreen"] == Screens.SCRN_SPLASH):
             canvas.data["splashScreen"].drawBackground(canvas);
-            canvas.data["ball"].updateSplash(canvas);
+            canvas.data["ball"].updateMenu(canvas);
             canvas.data["splashScreen"].drawText(canvas);
             if(canvas.data["playerName"] == "Type name..."):
                 canvas.create_text(X_CENTER, Y_LOC_TOP_BUTTON, 
@@ -135,7 +135,7 @@ def redrawAll(canvas):
 
         elif(canvas.data["currentScreen"] == Screens.SCRN_MAIN):
             canvas.data["menuScreen"].drawBackground(canvas);
-            canvas.data["ball"].updateSplash(canvas);
+            canvas.data["ball"].updateMenu(canvas);
             canvas.data["menuScreen"].drawText(canvas);
             canvas.data["soloButton"].draw(canvas);
             canvas.data["joinButton"].draw(canvas);

@@ -1,8 +1,10 @@
-# 18-842 Distributed Systems // Spring 2015.
+# 18-842 Distributed Systems // Spring 2016.
 # Multegula - A P2P block breaking game.
 # Player.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
+# imports
+import random
 from enum import Enum
 from components.Paddle import *
 from components.ComponentDefs import *
@@ -10,11 +12,11 @@ from screens.ScreenEnum import *
 
 # PLAYER class
 class Player:
-    # __init__  - initialize and return Player
-    ## @param canvas_width
-    ## @param canvas_height
-    ## @param orientation - location on the screen of this padde (DIR_NORTH/DIR_SOUTH/...)
-    ## @param state - current control state of the player (USER/AI/COMP)
+    ### __init__  - initialize and return Player
+    ##  @param canvas_width
+    ##  @param canvas_height
+    ##  @param orientation - location on the screen of this padde (DIR_NORTH/DIR_SOUTH/...)
+    ##  @param state - current control state of the player (USER/AI/COMP)
     def __init__(self, canvas_width, canvas_height, orientation, state):
         self.CANVAS_HEIGHT = canvas_height;
         self.CANVAS_WIDTH = canvas_width;
@@ -25,15 +27,15 @@ class Player:
         self.power = PowerUps.PWR_NONE;
         self.paddle = Paddle(canvas_width, canvas_height, orientation, state);
 
-    # get/set direction methods
+    ### get/set direction methods
     def setDirection(self, direction):
         self.paddle.setDirection(direction);
 
     def getDirection(self):
         return self.paddle.getDirection();
 
-    # AI method -
-    ## This method moves the paddles automatically to contact the ball. There are some
+    ### AI method -
+    ##  This method moves the paddles automatically to contact the ball. There are some
     ##  non-idealities built in so the computer is not perfect
     def AI(self, canvas):
         # get ball/paddle information
@@ -63,7 +65,7 @@ class Player:
         elif(chance == 0):
             self.paddle.setDirection(Direction.DIR_STOP);
 
-    # updateBall method - 
+    ### updateBall method - 
     ##  Check to see if the ball is off the playing field or is being deflected by the player's paddle.
     def updateBall(self, canvas):
         # get canvas/paddle/ball info
@@ -116,12 +118,54 @@ class Player:
             self.score -= 20;
         # bounce ball, apply appropriate scoring
         elif(ballBounce):
-            canvas.data["ball"].deflectOffPaddle(paddleCenter, paddleWidth, paddleOrientation);    
+            self.deflectOffPaddle(canvas);    
             self.score += 3; 
         # implicit else - do nothing
 
-    # displayStatus method -
-    ## display the text for the player indicating the current score and number of lives remaining
+    ### deflectOffPaddle - 
+    ##  Deflect ball off of a paddle and determine the new direction off the ball
+    def deflectOffPaddle(self, canvas):
+        # initialize speed and random offset variables
+        speed = self.CANVAS_WIDTH // 100;
+        offsetFactor = random.uniform(1, 1.1);
+        offset = random.uniform(-0.1, 0.1);
+
+        # get ball/paddle info
+        (paddleCenter, paddleWidth, paddleDir, paddleOrientation) = self.paddle.getInfo();
+        (ballCenterX, ballCenterY, ballRadius) = canvas.data["ball"].getInfo();
+
+        # deflect off NORTH paddle
+        if(paddleOrientation == Orientation.DIR_NORTH):
+            speedFactor = (ballCenterX - paddleCenter) / paddleWidth;
+            xVelocity = speed * speedFactor * offsetFactor + offset;
+            yVelocity = speed; 
+            canvas.data["ball"].setVelocity(xVelocity, yVelocity);  
+            canvas.data["ball"].randomColor();         
+        
+        # deflect off SOUTH paddle
+        elif(paddleOrientation == Orientation.DIR_SOUTH):
+            speedFactor = (ballCenterX - paddleCenter) / paddleWidth;
+            xVelocity = speed * speedFactor * offsetFactor + offset;
+            yVelocity = (-speed);
+
+        # deflect off EAST paddle
+        elif(paddleOrientation == Orientation.DIR_EAST):
+            speedFactor = (ballCenterY - paddleCenter) / paddleWidth;
+            xVelocity = (-speed);
+            yVelocity = speed * speedFactor * offsetFactor + offset;
+        
+        # deflect off WEST paddle
+        elif(paddleOrientation == Orientation.DIR_WEST):
+            speedFactor = (ballCenterY - paddleCenter) / paddleWidth;
+            xVelocity = speed;
+            yVelocity = speed * speedFactor * offsetFactor + offset;
+        
+        canvas.data["ball"].setVelocity(xVelocity, yVelocity);  
+        canvas.data["ball"].randomColor();
+ 
+
+    ### displayStatus method -
+    ##  Display the text for the player indicating the current score and number of lives remaining
     def displayStatus(self, canvas):
         # get canvas info
         ORIENTATION = self.ORIENTATION;
@@ -158,7 +202,7 @@ class Player:
         canvas.create_text(X_LOC, Y_LOC, text = statusMsg,
                 font = ("Courier", canvas.data["S_TEXT_SIZE"]), fill = "white");
 
-    # general purpose update
+    ### general purpose update
     def update(self, canvas):
         # Human player update
         if(self.state == PlayerState.USER):

@@ -1,31 +1,42 @@
-##### IMPORT MODULES #####
+# 18-842 Distributed Systems // Spring 2016.
+# Multegula - A P2P block breaking game.
+# Ball.py.
+# Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
+
+# imports
 import random
 from enum import Enum
 from components.ComponentDefs import *
 
+# BALL class
 class Ball:
+    ### __init___ - initialize and return ball
+    ##  @param canvas_width
+    ##  @param canvas_height
     def __init__(self, canvas_width, canvas_height):
+        # constant fields
         self.CANVAS_WIDTH = canvas_width;
         self.CANVAS_HEIGHT = canvas_height;
         self.BORDER_WIDTH = canvas_width // 350;
         self.COLORS = ["red", "green", "blue", "purple", "orange", "yellow"];
 
-        self.color = "green";
-        self.xVelocity = 0;
-        self.yVelocity = canvas_width // 100;
+        # dynamic fields
         self.xCenter = canvas_width // 2;
         self.yCenter = canvas_height // 2;
         self.radius = canvas_width // 50;
+        self.color = "green";
+        self.xVelocity = 0;
+        self.yVelocity = canvas_width // 100;
 
+    ### reset - reset dynamic ball location/speed properties 
     def reset(self):
         self.randomXVelocity();
         self.yVelocity = random.choice([-1, 1])*self.CANVAS_WIDTH // 100;
         self.xCenter = self.CANVAS_WIDTH // 2;
         self.yCenter = self.CANVAS_HEIGHT // 2;
-        self.radius = self.CANVAS_WIDTH // 50;
         self.randomColor();
 
-    # get/set center methods
+    ### get/set CENTER methods
     def setCenter(self, xCenter, yCenter):
         self.xCenter = xCenter;
         self.yCenter = yCenter;
@@ -33,25 +44,48 @@ class Ball:
     def getCenter(self):
         return(self.xCenter, self.yCenter);
 
-    # get/set radius methods
+    ### get/set RADIUS methods
     def setRadius(self, radius):
         self.radius = radius;
 
-    def incrementRadius(self):
+    def increaseRadius(self):
         self.radius *= 1.1;
 
-    def decrementRadius(self):
+    def decreaseRadius(self):
         self.radius /= 0.9;
 
     def getRadius(self):
         return self.radius;
 
-    # get/set speed methods
-    def setSpeed(self, xVelocity, yVelocity):
+    ### get/set VELOCITY methods
+    def setVelocity(self, xVelocity, yVelocity):
         self.xVelocity = xVelocity;
         self.yVelocity = yVelocity;
 
-    # get/set color methods
+    def increaseVelocity(self):
+        self.xVelocity *= 1.1;
+        self.yVelocity *= 1.1;
+
+    def decreaseVelocity(self):
+        self.xVelocity *= 0.9;
+        self.yVelocity *= 0.9;
+
+    def randomXVelocity(self):
+        speed = self.CANVAS_WIDTH // 100
+        factor = random.random();
+        factor *= random.randint(-2, 2);
+        self.xVelocity = speed*factor;
+
+    def randomYVelocity(self):
+        speed = self.CANVAS_WIDTH // 100
+        factor = random.random();
+        factor *= random.randint(-2, 2);
+        self.yVelocity = speed*factor;  
+
+    def getVelocity(self):
+        return (self.xVelocity, self.yVelocity); 
+
+    ### get/set COLOR methods
     def setColor(self, color):
         self.color = color;
 
@@ -67,119 +101,57 @@ class Ball:
         self.color = newColor;
 
     def getColor(self):
-        return self.color;
+        return self.color;     
 
-    # get/set speed methods
-    def setVelocity(self, xVelocity, yVelocity):
-        self.xVelocity = xVelocity;
-        self.yVelocity = yVelocity;
-
-    def randomXVelocity(self):
-        speed = self.CANVAS_WIDTH // 100
-        factor = random.random();
-        factor *= random.randint(-2, 2);
-        self.xVelocity = speed*factor;
-
-    def randomYVelocity(self):
-        speed = self.CANVAS_WIDTH // 100
-        factor = random.random();
-        factor *= random.randint(-2, 2);
-        self.yVelocity = speed*factor;        
-
-    def moveSplash(self):
-        # these variables need to be called here because they are constantly changing
-        xCenter = self.xCenter;
-        yCenter = self.yCenter;
-        xVelocity = self.xVelocity;
-        yVelocity = self.yVelocity;
-        radius = self.radius;
+    ### moveMenu - 
+    ##  The method moves the ball around the screen and bounces it off of walls. This mode
+    ##  is meant for use on menu screens only.
+    def moveMenu(self):
+        # constants
         CANVAS_WIDTH = self.CANVAS_WIDTH;
         CANVAS_HEIGHT = self.CANVAS_HEIGHT;
 
+        # dynamic variables
+        xCenter = self.xCenter;
+        yCenter = self.yCenter;
+        radius = self.radius;
+        xVelocity = self.xVelocity;
+        yVelocity = self.yVelocity;
+
         # UPDATE Y VELOCITY - 
+        # Bounce ball off of bottom wall...
         if (((yCenter + radius) >= CANVAS_HEIGHT) and (yVelocity > 0)):
             self.randomXVelocity();
             self.randomColor();
             self.yVelocity -= (2*yVelocity);
+        # Bounce ball off of top wall...
         elif (((yCenter - radius) <= 0) and (yVelocity < 0)):
             self.randomColor();
             self.yVelocity -= (2*yVelocity);
+        # Move the ball
         else: 
             self.yCenter += yVelocity
 
         # UPDATE X VELOCITY -
+        # Bounce ball off left wall
         if (((xCenter - radius) <= 0) and (xVelocity < 0)):
             self.randomColor();
             self.xVelocity -= (xVelocity*2);
+        # Bounce ball off right wall
         elif(((xCenter + radius) >= CANVAS_WIDTH) and (xVelocity > 0)):
             self.randomColor();
             self.xVelocity -= (xVelocity*2);
+        # Move ball
         else: 
             self.xCenter += xVelocity; 
 
+    ### moveGame -
+    ##  This method moves the ball during gameplay.
     def moveGame(self):
-        # these variables need to be called here because they are constantly changing
-        xCenter = self.xCenter;
-        yCenter = self.yCenter;
-        xVelocity = self.xVelocity;
-        yVelocity = self.yVelocity;
-        radius = self.radius;
-        CANVAS_WIDTH = self.CANVAS_WIDTH;
-        CANVAS_HEIGHT = self.CANVAS_HEIGHT;
+        self.xCenter += self.xVelocity; 
+        self.yCenter += self.yVelocity   
 
-        # UPDATE Y VELOCITY - 
-        if (((yCenter + radius) >= CANVAS_HEIGHT) and (yVelocity > 0)):
-            self.reset();
-        elif (((yCenter - radius) <= 0) and (yVelocity < 0)):
-            self.reset();
-        else: 
-            self.yCenter += yVelocity
-
-        # UPDATE X VELOCITY -
-        if (((xCenter - radius) <= 0) and (xVelocity < 0)):
-            self.reset();
-        elif(((xCenter + radius) >= CANVAS_WIDTH) and (xVelocity > 0)):
-            self.reset();
-        else: 
-            self.xCenter += xVelocity; 
-
-    def deflectOffPaddle(self, paddleCenter, paddleWidth, paddleOrientation):
-        xVelocity = self.xVelocity;
-        yVelocity = self.yVelocity;
-
-        speed = self.CANVAS_WIDTH // 100;
-
-        offsetFactor = random.uniform(1, 1.1);
-        offset = random.uniform(-0.1, 0.1);
-
-        if(paddleOrientation == Orientation.DIR_NORTH):
-            speedFactor = (self.xCenter - paddleCenter) / paddleWidth;
-            self.xVelocity = speed * speedFactor * offsetFactor + offset;
-            self.yVelocity = speed;   
-            self.randomColor();         
-        
-        elif(paddleOrientation == Orientation.DIR_SOUTH):
-            speedFactor = (self.xCenter - paddleCenter) / paddleWidth;
-            self.xVelocity = speed * speedFactor * offsetFactor + offset;
-            self.yVelocity = (-speed);
-            self.randomColor();         
-        
-        elif(paddleOrientation == Orientation.DIR_EAST):
-            speedFactor = (self.yCenter - paddleCenter) / paddleWidth;
-            self.xVelocity = (-speed);
-            self.yVelocity = speed * speedFactor * offsetFactor + offset;
-            self.randomColor();         
-        
-        elif(paddleOrientation == Orientation.DIR_WEST):
-            speedFactor = (self.yCenter - paddleCenter) / paddleWidth;
-            self.xVelocity = speed;
-            self.yVelocity = speed * speedFactor * offsetFactor + offset;
-            self.randomColor();         
-
-    def getVelocity(self):
-        return  (self.xVelocity, self.yVelocity);
-
-    # draw the ball
+    ### draw - draw the ball
     def draw(self, canvas):
         BORDER_WIDTH = self.BORDER_WIDTH;
         color   = self.color;
@@ -193,14 +165,17 @@ class Ball:
                             yCenter + radius,
                             fill = color, width = BORDER_WIDTH)
 
-    def updateSplash(self, canvas): 
-        self.moveSplash(); 
+    ### updateMenu - general purpose menu update function
+    def updateMenu(self, canvas): 
+        self.moveMenu(); 
         self.draw(canvas);
 
+    ### updateGame - general purpose game update function
     def updateGame(self, canvas):
         self.moveGame();
         self.draw(canvas);
 
+    ### getInfo - get ball info
     def getInfo(self): 
         return(self.xCenter, self.yCenter, self.radius);
 
