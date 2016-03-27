@@ -5,12 +5,11 @@
 #Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He#
 ###########################################################
 
-import sys
-
 #Tells Python to search UI and Bridges folder for functions as well.
 sys.path.append('UI/')
 sys.path.append('Bridges/')
 
+import sys
 from multegulaUI.multegulaUI import * #Import our UI functions
 import subprocess #Needed for system calls
 from multiprocessing import Process #Needed for function concurrency
