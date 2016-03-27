@@ -1,0 +1,7 @@
+{
+	"BootstrapServer": ["multegula.dyndns.org"],
+	"LocalName": ["ec2-54-193-125-61.us-west-1.compute.amazonaws.com"],
+	"Group": ["ec2-54-193-110-172.us-west-1.compute.amazonaws.com",
+		  "ec2-54-183-108-117.us-west-1.compute.amazonaws.com",
+		  "ec2-54-193-125-61.us-west-1.compute.amazonaws.com"]
+}
