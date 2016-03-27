@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-//Multegula - MessagePasser.go 
+//Multegula - MessagePasser.go
 //Multicasting Message Passer for Multegula
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
@@ -25,6 +25,9 @@ type Configuration struct {
 }
 
 /* delimiter for formatting message */
+/* NOTE: Make sure a message does not include the delimiter in any of
+ *       the fields.
+ */
 const delimiter string = "##"
 
 /* message structure
@@ -42,7 +45,7 @@ type Message struct {
 /* InitMessagePasser has to wait all work done before exiting */
 var wg sync.WaitGroup
 
-/* 
+/*
  * convert message to string
  * @param	message
  *			message to be converted
@@ -70,7 +73,7 @@ func decodeMessage(messageString string) Message {
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
 
-/* 
+/*
  * connection for localhost, this is the receive side,
  * the send side is stored in connections map
  **/
@@ -92,7 +95,7 @@ const port string = ":8081"
  *
  * @param	localName
  *			the DNS name of local node
- * 
+ *
  * @return	frontNodes
  *			nodes smaller than localName
  *			latterNodes
@@ -115,14 +118,14 @@ func getFrontAndLatterNodes(group []string, localName string) (map[string]bool, 
 }
 
 
-/* 
- * accepts connections from other nodes and stores 
+/*
+ * accepts connections from other nodes and stores
  * connections into connections map, after accepting
  * all connections from all other nodes in the group,
  * this routine exits
  * @param	frontNodes
  *			map that contains all nodes with smaller DNS names
- * 
+ *
  * @param   localName
  *          the DNS name of local node
  **/
@@ -130,8 +133,8 @@ func acceptConnection(frontNodes map[string]bool, localName string) {
     defer wg.Done()
     ln, _ := net.Listen("tcp", port)
 	for len(frontNodes) > 0 {
-		/* 
-		 * when a node first connects to other nodes, it will first 
+		/*
+		 * when a node first connects to other nodes, it will first
 		 * send it's DNS name so that another node can know it's name
 		 **/
 		conn, _ := ln.Accept()
@@ -171,8 +174,8 @@ func sendConnection(latterNodes map[string]bool, localName string) {
     fmt.Println()
 }
 
-/* 
- * receive message from TCP connection, reconstruct message and 
+/*
+ * receive message from TCP connection, reconstruct message and
  * put it into receivedQueue of message
  * @param	conn
  *			TCP connection
@@ -181,16 +184,15 @@ func receiveMessageFromConn(conn net.Conn) {
 	for {
 		messageString, _ := bufio.NewReader(conn).ReadString('\n')
 		if(len(messageString) > 0) {
-            receivedQueue <- decodeMessage(messageString[0:len(messageString) - 1])
+    	receivedQueue <- decodeMessage(messageString[0:len(messageString) - 1])
 		}
 	}
 }
 
-/* 
+/*
  * for each TCP connection, start a new receiveMessageFromConn routine to
  * receive messages sent from that connection. A constraint for this mechanism
  * is that each routine waits in a infinite loop which makes code inefficient.
- * //TODO find more efficient way in go for listening messages for net.Conn
  **/
 func startReceiveRoutine() {
 	for _, conn := range connections {
@@ -209,7 +211,7 @@ func sendMessageToConn() {
 	}
 }
 
-/* 
+/*
  * put message to sendQueue, since the chan <- maybe blocked if the channel is full,
  * in order to not block the void send(message Message) method, we creates a new routine
  * to do this
@@ -220,7 +222,7 @@ func putMessageToSendQueue(message Message) {
 	sendQueue <- message
 }
 
-/* 
+/*
  * send message, this is a public method
  * @param	message
  *			message to be sent
@@ -229,7 +231,7 @@ func Send(message Message) {
 	go putMessageToSendQueue(message)
 }
 
-/* 
+/*
  * receive message, this is a public method
  * @return	if there are receivable messages in receivedQueue, return the first
  *			in receivedQueue; otherwise, return an empty message
@@ -242,7 +244,7 @@ func Receive() Message {
 	return message
 }
 
-/* 
+/*
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser() {
@@ -270,4 +272,3 @@ func InitMessagePasser() {
   	/* start routine to send message */
   	go sendMessageToConn()
 }
-
