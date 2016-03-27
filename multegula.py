@@ -8,7 +8,7 @@
 import sys
 
 #Tells Python to search multegulaUI folder for functions as well.
-sys.path.append('multegulaUI/')
+sys.path.append('UI/')
 
 from multegulaUI.multegulaUI import * #Import our UI functions
 import subprocess #Needed for system calls
