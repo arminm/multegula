@@ -6,3 +6,6 @@ go:
 notifications:
   email: false
   slack: dsteammisfits:aWBRmxo3RYztkof5bMamYQHh
+
+before_script:
+  - cd MessagePasser/
