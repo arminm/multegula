@@ -6,3 +6,5 @@ go:
 notifications:
   email: false
   slack: dsteammisfits:aWBRmxo3RYztkof5bMamYQHh
+
+go_import_path: src/
