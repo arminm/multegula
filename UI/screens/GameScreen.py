@@ -17,8 +17,8 @@ class GameScreen:
 
     ### drawBackground - draw white background with a white border
     def drawBackground(self, canvas):
-        CANVAS_HEIGHT = cavnas.data["CANVAS_HEIGHT"];
-        CANVAS_WIDTH = canvas.data["CANVAS_WIDTH"];
+        CANVAS_HEIGHT = self.CANVAS_HEIGHT;
+        CANVAS_WIDTH = self.CANVAS_WIDTH;
         X_MARGIN = self.X_MARGIN;
         Y_MARGIN = self.Y_MARGIN;
 

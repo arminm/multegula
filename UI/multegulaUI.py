@@ -182,7 +182,7 @@ def init(canvas):
     canvas.data["ball"] = Ball(CANVAS_WIDTH, CANVAS_HEIGHT);
 
     # screens
-    canvas.data["gameScreen"]   = GameScreen();
+    canvas.data["gameScreen"]   = GameScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.data["menuScreen"]   = MenuScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.data["pauseScreen"]  = PauseScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.data["splashScreen"] = SplashScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
