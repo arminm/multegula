@@ -84,30 +84,35 @@ class Player:
         if(ORIENTATION == Orientation.DIR_NORTH):
             if((ballCenterY - ballRadius) <= 0):
                 ballReset = True;
-            elif((leftEdge <= ballCenterX <= rightEdge) and (topEdge <= (ballCenterY - ballRadius) < bottomEdge)): 
+            elif(((leftEdge <= (ballCenterX + ballRadius) < rightEdge) and (topEdge <= (ballCenterY - ballRadius) < bottomEdge)) or 
+                    (leftEdge < ((ballCenterX - ballRadius) <= rightEdge) and (topEdge <= (ballCenterY - ballRadius) < bottomEdge))):
                 ballBounce = True;
 
         # ball out of bounds/deflected on the SOUTH edge/paddle
         elif(ORIENTATION == Orientation.DIR_SOUTH):
-
             if((ballCenterY + ballRadius) >= CANVAS_HEIGHT): 
                 ballReset = True;
-            elif((leftEdge <= ballCenterX <= rightEdge) and (topEdge <= (ballCenterY + ballRadius) < bottomEdge)): 
+            elif(((leftEdge <= (ballCenterX + ballRadius) < rightEdge) and (topEdge <= (ballCenterY + ballRadius) < bottomEdge)) or 
+                    (leftEdge < ((ballCenterX - ballRadius) <= rightEdge) and (topEdge <= (ballCenterY + ballRadius) < bottomEdge))):
                 ballBounce = True;
 
         # ball out of bounds/deflected on the EAST edge/paddle
         elif(ORIENTATION == Orientation.DIR_EAST):
             if((ballCenterX + ballRadius) >= CANVAS_WIDTH):
                 ballReset = True;
-            elif((topEdge <= ballCenterY <= bottomEdge) and (leftEdge <= (ballCenterX + ballRadius) < rightEdge)):
+            elif(((topEdge <= (ballCenterY + ballRadius) < bottomEdge) and (leftEdge <= (ballCenterX + ballRadius) < rightEdge)) or
+                    (topEdge < ((ballCenterX - ballRadius) <= bottomEdge) and (leftEdge <= (ballCenterX + ballRadius) < rightEdge))):
                 ballBounce = True;
 
         # ball out of bounds/deflected on the WEST edge/paddle
         elif(ORIENTATION == Orientation.DIR_WEST):
+            # out of play
             if((ballCenterX - ballRadius) <= 0):
                 ballReset = True;
-            elif((topEdge <= ballCenterY <= bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge)):
+            elif(((topEdge <= (ballCenterY + ballRadius) < bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge)) or
+                    (topEdge < ((ballCenterX - ballRadius) <= bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge))):
                 ballBounce = True;
+
 
         # reset ball, apply appropriate scoring
         if(ballReset):
@@ -138,9 +143,8 @@ class Player:
         if(paddleOrientation == Orientation.DIR_NORTH):
             speedFactor = (ballCenterX - paddleCenter) / paddleWidth;
             xVelocity = speed * speedFactor * offsetFactor + offset;
-            yVelocity = speed; 
-            canvas.data["ball"].setVelocity(xVelocity, yVelocity);  
-            canvas.data["ball"].randomColor();         
+            yVelocity = speed;        
+
         
         # deflect off SOUTH paddle
         elif(paddleOrientation == Orientation.DIR_SOUTH):
@@ -159,7 +163,7 @@ class Player:
             speedFactor = (ballCenterY - paddleCenter) / paddleWidth;
             xVelocity = speed;
             yVelocity = speed * speedFactor * offsetFactor + offset;
-        
+            
         canvas.data["ball"].setVelocity(xVelocity, yVelocity);  
         canvas.data["ball"].randomColor();
  

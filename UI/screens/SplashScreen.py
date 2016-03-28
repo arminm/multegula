@@ -1,5 +1,14 @@
+# 18-842 Distributed Systems // Spring 2016.
+# Multegula - A P2P block breaking game.
+# SplashScreen.py.
+# Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
+# SplashScreen - first thing visible to a user. A name prompt is to be superimposed
+#   over top of this class.
 class SplashScreen:
+    ### __init__ - initialize and return a MenuScreen
+    ##  @param canvas_width
+    ##  @param canvas_height
     def __init__(self, canvas_width, canvas_height):
         self.CANVAS_WIDTH = canvas_width;
         self.CANVAS_HEIGHT = canvas_height;
