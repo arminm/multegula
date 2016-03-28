@@ -5,7 +5,7 @@ import (
 	"fmt"
     "os"
     "sort"
-    "./go/messagePasser"
+    "multegula/messagePasser"
     "strconv"
 )
 /*
