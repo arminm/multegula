@@ -1,10 +1,9 @@
-# EXAMPLE UI CODE FROM BLOCKBUSTER
-# For porting to Multegula
-# Adapted for Python 3 by Garrett Miller and 2to3 utility
-#
-# by daniel santoro. ddsantor.
+# 18-842 Distributed Systems // Spring 2016.
+# Multegula - A P2P block breaking game.
+# multegulaUI.py.
+# Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
-##### IMPORT MODULES #####
+# imports
 from tkinter import *
 import random
 from components.Ball import *
@@ -18,59 +17,66 @@ from screens.PauseScreen import *
 from screens.ScreenEnum import *
 from screens.GameScreen import *
 
+### keyPressed - handle keypressed events
 def keyPressed(event):
-    # initialize variable
     canvas = event.widget.canvas;
     currentScreen = canvas.data["currentScreen"];
 
+    # handle splash screen events - entering a name
     if(currentScreen == Screens.SCRN_SPLASH):
         tempName = canvas.data["playerName"];
 
         # add new characters
-        if(("!" <= event.char <= "z") and (len(tempName) <= 16)):
+        if(("!" <= event.char <= "z") and (len(tempName) < 16)):
             # initial name - clear it
             if(tempName == "Type name..."):
                 tempName = "";
             tempName += event.char;
+        # remove characters
         elif(event.keysym == "BackSpace"):
             # initial name - clear it
             if(tempName == "Type name..."):
                 tempName = "";
             else:
                 tempName = tempName[:-1];
-        elif((event.keysym == "space") and (len(tempName) <= 16)):
+        # addd space 
+        elif((event.keysym == "space") and (len(tempName) < 16)):
             # initial name - clear it
             if(tempName == "Type name..."):
                 tempName = "";
             else:
                 tempName += " ";
+        # enter the name
         elif((event.keysym == "Return") and (tempName != "Type name...")):
-            canvas.data["currentScreen"] = Screens.SCRN_MAIN;
+            canvas.data["currentScreen"] = Screens.SCRN_MENU;
 
         # set name
         canvas.data["playerName"] = tempName;
 
+    # pause screen / gameplay keyPressed events - move the paddle
     elif((currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME)):
         if((event.keysym == "Left") or (event.keysym == "a") or (event.keysym == "A")):
             canvas.data["Player_01"].setDirection(Direction.DIR_LEFT);
         elif((event.keysym == "Right") or (event.keysym == "d") or (event.keysym == "D")):
             canvas.data["Player_01"].setDirection(Direction.DIR_RIGHT);
 
+### keyReleased - handle key release events
 def keyReleased(event):
     canvas = event.widget.canvas;
     currentScreen = canvas.data["currentScreen"];
 
+    # pause screen / gameplay keyReleased events - stop paddle motion
     if((currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME)):
         if((event.keysym == "Left") or (event.keysym == "a") or (event.keysym == "A") or 
             (event.keysym == "Right") or (event.keysym == "d") or (event.keysym == "D")):
             canvas.data["Player_01"].setDirection(Direction.DIR_STOP);
 
+### mousePressed - handle mouse press events
 def mousePressed(event):
-    # initialize variables
     canvas = event.widget.canvas;
 
-    # if the splashscreen is up, call helper function
-    if (canvas.data["currentScreen"] == Screens.SCRN_MAIN): 
+    # main screen mouse pressed events - button clicks
+    if (canvas.data["currentScreen"] == Screens.SCRN_MENU): 
         if(canvas.data["soloButton"].clicked(event.x, event.y)):
             canvas.data["currentScreen"] = Screens.SCRN_PAUSE;
             canvas.data["nextScreen"] = Screens.SCRN_GAME;
@@ -78,116 +84,116 @@ def mousePressed(event):
         elif(canvas.data["joinButton"].clicked(event.x, event.y)):
             print("JOIN");
 
-## REDRAW all: takes "canvas", returns None
-## # this function draws everything on the canvas with A LOT of help
-## # # from helper functions. It makes sure the correct functions are
-## # # # called.        
-def redrawAll(canvas):    
-    # EXTRACT information from the canvas
-    # # canvas variables
+### redrawAll - draw the game screen
+def redrawAll(canvas):
+    Y_LOC_TOP_BUTTON = canvas.data["Y_LOC_TOP_BUTTON"];
+    X_CENTER  = canvas.data["CANVAS_WIDTH"] // 2;
+    L_TEXT_SIZE   = canvas.data["L_TEXT_SIZE"];
+
+    canvas.delete(ALL);
+
+    ### SPLASH SCREEN
+    if(canvas.data["currentScreen"] == Screens.SCRN_SPLASH):
+        canvas.data["splashScreen"].drawBackground(canvas);
+        canvas.data["ball"].updateMenu(canvas);
+        canvas.data["splashScreen"].drawText(canvas);
+
+        # dynamically color name field
+        if(canvas.data["playerName"] == "Type name..."):
+            canvas.create_text(X_CENTER, Y_LOC_TOP_BUTTON, 
+                text = canvas.data["playerName"], 
+                font = ("Courier", L_TEXT_SIZE), fill = "grey"); 
+        else:
+            canvas.create_text(X_CENTER, Y_LOC_TOP_BUTTON, 
+                text = canvas.data["playerName"], 
+                font = ("Courier", L_TEXT_SIZE), fill = "black");             
+
+    ### MAIN SCREEN 
+    elif(canvas.data["currentScreen"] == Screens.SCRN_MENU):
+        canvas.data["menuScreen"].drawBackground(canvas);
+        canvas.data["ball"].updateMenu(canvas);
+        canvas.data["menuScreen"].drawText(canvas);
+        canvas.data["soloButton"].draw(canvas);
+        canvas.data["joinButton"].draw(canvas);
+
+    ### PAUSE SCREEN
+    elif(canvas.data["currentScreen"] == Screens.SCRN_PAUSE):
+        canvas.data["gameScreen"].drawBackground(canvas);
+        canvas.data["ball"].draw(canvas);
+        canvas.data["Player_01"].update(canvas);
+        canvas.data["Player_02"].update(canvas);
+        canvas.data["Player_03"].update(canvas);
+        canvas.data["Player_04"].update(canvas);
+        canvas.data["pauseScreen"].draw(canvas);
+
+    ### GAME SCREEN
+    elif(canvas.data["currentScreen"] == Screens.SCRN_GAME):
+        canvas.data["gameScreen"].drawBackground(canvas);
+        canvas.data["Player_01"].update(canvas);
+        canvas.data["Player_02"].update(canvas);
+        canvas.data["Player_03"].update(canvas);
+        canvas.data["Player_04"].update(canvas);
+        canvas.data["ball"].updateGame(canvas);
+
+
+    #  redraw after delay
+    canvas.after(canvas.data["delay"], redrawAll, canvas);
+
+
+### init - initialize dictionary
+def init(canvas):
+    # location constants
     CANVAS_HEIGHT = canvas.data["CANVAS_HEIGHT"]
     CANVAS_WIDTH = canvas.data["CANVAS_WIDTH"]
-
-    Y_LOC_TOP_BUTTON    = canvas.data["Y_LOC_TOP_BUTTON"];
+    canvas.data["Y_LOC_TOP_BUTTON"] = 0.70*CANVAS_HEIGHT;
+    canvas.data["Y_LOC_BOTTOM_BUTTON"] = 0.85*CANVAS_HEIGHT;
+    Y_LOC_TOP_BUTTON = canvas.data["Y_LOC_TOP_BUTTON"];
     Y_LOC_BOTTOM_BUTTON = canvas.data["Y_LOC_BOTTOM_BUTTON"];
+    X_CENTER = CANVAS_WIDTH // 2;
+    Y_CENTER = CANVAS_HEIGHT // 2;
+    X_MARGIN = CANVAS_WIDTH // 30;
+    Y_MARGIN = CANVAS_HEIGHT // 30;
 
-    # # text sizes
-    S_TEXT_SIZE   = canvas.data["S_TEXT_SIZE"];
-    M_TEXT_SIZE   = canvas.data["M_TEXT_SIZE"];
-    L_TEXT_SIZE   = canvas.data["L_TEXT_SIZE"];
-    XL_TEXT_SIZE  = canvas.data["XL_TEXT_SIZE"];
+    # current screen
+    canvas.data["currentScreen"] = Screens.SCRN_SPLASH;
+    canvas.data["nextScreen"] = Screens.SCRN_NONE;
 
-    # general location variables
-    X_CENTER  = CANVAS_WIDTH // 2;
-    Y_CENTER  = CANVAS_HEIGHT // 2;
-    X_MARGIN  = CANVAS_WIDTH // 30;
-    Y_MARGIN  = CANVAS_HEIGHT // 30;
+    # text size
+    canvas.data["S_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 35
+    canvas.data["M_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 28
+    canvas.data["L_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 20
+    canvas.data["XL_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 10
+    S_TEXT_SIZE = canvas.data["S_TEXT_SIZE"];
+    M_TEXT_SIZE = canvas.data["M_TEXT_SIZE"];
+    L_TEXT_SIZE = canvas.data["L_TEXT_SIZE"];
+    XL_TEXT_SIZE = canvas.data["XL_TEXT_SIZE"];
 
+    # misc
+    canvas.data["delay"] = 10;
+    canvas.data["currentTextLevel"] = "LEVEL ONE.";
+    canvas.data["playerName"] = "Type name...";
+
+    ### COMPONENETS
+    # buttons
     canvas.data["soloButton"] = Button(CANVAS_WIDTH, CANVAS_HEIGHT, X_CENTER, Y_LOC_TOP_BUTTON, "Solo Game", True);
     canvas.data["joinButton"] = Button(CANVAS_WIDTH, CANVAS_HEIGHT, X_CENTER, Y_LOC_BOTTOM_BUTTON, "Join Game", False);
+
+    # ball
     canvas.data["ball"] = Ball(CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    # screens
+    canvas.data["gameScreen"]   = GameScreen();
+    canvas.data["menuScreen"]   = MenuScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
+    canvas.data["pauseScreen"]  = PauseScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.data["splashScreen"] = SplashScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
-    canvas.data["menuScreen"] = MenuScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
-    canvas.data["pauseScreen"] = PauseScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
-    canvas.data["gameScreen"] = GameScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    # players
     canvas.data["Player_01"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_SOUTH, PlayerState.USER);
     canvas.data["Player_02"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_NORTH, PlayerState.AI);
     canvas.data["Player_03"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_EAST, PlayerState.AI);
     canvas.data["Player_04"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_WEST, PlayerState.AI);
 
-    def timerFired():
-        canvas.delete(ALL);
-
-        # if the splash screen is up, make sure tha splash screen is called
-        if(canvas.data["currentScreen"] == Screens.SCRN_SPLASH):
-            canvas.data["splashScreen"].drawBackground(canvas);
-            canvas.data["ball"].updateMenu(canvas);
-            canvas.data["splashScreen"].drawText(canvas);
-            if(canvas.data["playerName"] == "Type name..."):
-                canvas.create_text(X_CENTER, Y_LOC_TOP_BUTTON, 
-                    text = canvas.data["playerName"], 
-                    font = ("Courier", L_TEXT_SIZE), fill = "grey"); 
-            else:
-                canvas.create_text(X_CENTER, Y_LOC_TOP_BUTTON, 
-                    text = canvas.data["playerName"], 
-                    font = ("Courier", L_TEXT_SIZE), fill = "black");             
-
-
-        elif(canvas.data["currentScreen"] == Screens.SCRN_MAIN):
-            canvas.data["menuScreen"].drawBackground(canvas);
-            canvas.data["ball"].updateMenu(canvas);
-            canvas.data["menuScreen"].drawText(canvas);
-            canvas.data["soloButton"].draw(canvas);
-            canvas.data["joinButton"].draw(canvas);
-
-        elif(canvas.data["currentScreen"] == Screens.SCRN_PAUSE):
-            canvas.data["gameScreen"].drawBackground(canvas);
-            canvas.data["ball"].draw(canvas);
-            canvas.data["Player_01"].update(canvas);
-            canvas.data["Player_02"].update(canvas);
-            canvas.data["Player_03"].update(canvas);
-            canvas.data["Player_04"].update(canvas);
-            canvas.data["pauseScreen"].draw(canvas);
-
-        elif(canvas.data["currentScreen"] == Screens.SCRN_GAME):
-            canvas.data["gameScreen"].drawBackground(canvas);
-            canvas.data["ball"].updateGame(canvas);
-            canvas.data["Player_01"].update(canvas);
-            canvas.data["Player_02"].update(canvas);
-            canvas.data["Player_03"].update(canvas);
-            canvas.data["Player_04"].update(canvas);
-
-        canvas.after(canvas.data["delay"], timerFired);
-
-    timerFired();
-
-
-## INITIALIZES the dictionary: takes "canvas", returns None
-## # this function uses local functions (for organization purposes) to
-## # # initialize all of thevalues in the dictionary
-def init(canvas):
-    # current screen
-    canvas.data["currentScreen"] = Screens.SCRN_SPLASH;
-    canvas.data["nextScreen"] = Screens.SCRN_NONE;
-
-    canvas.data["Y_LOC_TOP_BUTTON"]     = 0.70*canvas.data["CANVAS_HEIGHT"];
-    canvas.data["Y_LOC_BOTTOM_BUTTON"]  = 0.85*canvas.data["CANVAS_HEIGHT"];
-
-    # misc
-    canvas.data["delay"] = 10;
-
-    # text
-    canvas.data["S_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 35
-    canvas.data["M_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 28
-    canvas.data["L_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 20
-    canvas.data["XL_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 10
-
-    canvas.data["currentTextLevel"] = "LEVEL ONE.";
-
-    canvas.data["playerName"] = "Type name...";
-
-## RUN the program
-## # this function starts the program running
+### run - run the program
 def run():
     # intialize variables
     CANVAS_WIDTH = 700
@@ -209,10 +215,6 @@ def run():
 
     # set up dicitonary
     canvas.data = {}
-
-    # store values in the dictionary that will not need to be reset
-    # # when most else needs to be.  These variables will be changed
-    # # # in the code as needed
     canvas.data["CANVAS_WIDTH"]  = CANVAS_WIDTH
     canvas.data["CANVAS_HEIGHT"] = CANVAS_HEIGHT
 
@@ -222,12 +224,9 @@ def run():
     root.bind("<Key>", keyPressed)
     root.bind("<KeyRelease>", keyReleased)
 
-
     # let the games begin
     init(canvas)
     redrawAll(canvas)
-
-    # This call BLOCKS (so your program waits until you close the window!)
     root.mainloop()
 
 run()
