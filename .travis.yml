@@ -8,4 +8,4 @@ notifications:
   slack: dsteammisfits:aWBRmxo3RYztkof5bMamYQHh
 
 before_script:
-  - cd MessagePasser/
+  - cd MessagePasser/src/
