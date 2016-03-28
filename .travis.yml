@@ -3,6 +3,8 @@ language: go
 go:
   - 1.6
 
+go_import_path: github.com/arminm/go/
+
 notifications:
   email: false
   slack: dsteammisfits:aWBRmxo3RYztkof5bMamYQHh
