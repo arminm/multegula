@@ -5,7 +5,7 @@ import (
 	"fmt"
     "os"
     "sort"
-    "multegula/messagePasser"
+    "github.com/arminm/multegula/messagePasser"
     "strconv"
 )
 /*
