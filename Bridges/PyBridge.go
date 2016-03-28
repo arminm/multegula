@@ -4,7 +4,7 @@
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-package PyBridge
+package pyBridge
 
 import (
 	"os"
@@ -24,3 +24,4 @@ import (
 func runPythonBridge() {
     ln, _ := net.Listen("tcp", 44444)
 	conn, _ := ln.Accept()
+}
