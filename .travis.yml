@@ -4,4 +4,5 @@ go:
   - 1.6
 
 notifications:
+  email: false
   slack: dsteammisfits:aWBRmxo3RYztkof5bMamYQHh
