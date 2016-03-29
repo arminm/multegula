@@ -5,10 +5,10 @@ import (
 	"fmt"
     "os"
     "sort"
-    "messagePasser"
+    "github.com/arminm/multegula/messagePasser"
     "strconv"
 )
-/* 
+/*
  * get the operation, send or receive
  * @return if send, return 1; otherwise return 0
  **/
@@ -39,7 +39,7 @@ func printDNSID(n int) {
     }
 }
 
-/*  
+/*
  * get DNS ID
  * @param n
  *        the number of DNS ID
