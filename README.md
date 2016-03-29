@@ -1,4 +1,4 @@
-# Multegula
+# Multegula [![Build Status](https://travis-ci.org/arminm/multegula.svg?branch=master)](https://travis-ci.org/arminm/multegula)
 
 Multiplayer Distributed Brick Gaming  
 18-842, Spring 2016, Carnegie Mellon University  
@@ -25,6 +25,5 @@ Running:
 
 Acknowledgements:
 ---------------------------------------------------------
-Dr. Bill Nace, Mayank Shishodia, and the teaching staff of 18-842, 
+Dr. Bill Nace, Mayank Shishodia, and the teaching staff of 18-842,
 Embedded Systems, at Carnegie Mellon University, Spring 2016.
-

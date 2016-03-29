@@ -33,8 +33,12 @@ def runGoBridge():
 
 ## Build and Send Message
 ## # this function builds and sends a message
-def sendMessage(src, dest, content, kind):
-	message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind
+def sendMessage(src, dest, content, kind, multicastFlag):
+	message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + DELIMITER + multicastFlag
 	MessagePasser.send(message)
+
+## Receive Message
+## # this function receives a message from the receive buffer
+def receiveMessage():
 	receivedData = MessagePasser.recv(BUFFER_SIZE)
 	return receivedData
