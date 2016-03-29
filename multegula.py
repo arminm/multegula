@@ -12,7 +12,7 @@ import sys
 sys.path.append('UI/')
 sys.path.append('Bridges/')
 
-from multegulaUI.multegulaUI import * #Import our UI functions
+from UI.multegulaUI import * #Import our UI functions
 import subprocess #Needed for system calls
 from multiprocessing import Process #Needed for function concurrency
 
