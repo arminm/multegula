@@ -30,7 +30,7 @@ class Button:
         else:
             self.color = "grey";
             self.active = False;
-
+        self.first = True;
     ### get/set location methods
     def setLocation(self, xCenter, yCenter):
         self.xCenter = xCenter;
@@ -51,9 +51,8 @@ class Button:
     def getActive(self):
         return self.active;
 
-    ### draw - draw the button
-    def draw(self, canvas):
-        # get constants
+    def setButton(self, canvas):
+         # get constants
         BUTTON_X_SIZE = self.BUTTON_X_SIZE;
         BUTTON_Y_SIZE = self.BUTTON_Y_SIZE;
         BUTTON_MARGIN = self.BUTTON_MARGIN;
@@ -65,22 +64,34 @@ class Button:
         label = self.text;
 
         # create outter rectangle
-        canvas.create_rectangle(xCenter - BUTTON_X_SIZE, 
-        yCenter - BUTTON_Y_SIZE,
-        xCenter + BUTTON_X_SIZE,
-        yCenter + BUTTON_Y_SIZE, 
-        fill = "black");
+        self.background = canvas.create_rectangle(xCenter - BUTTON_X_SIZE, 
+                                                    yCenter - BUTTON_Y_SIZE,
+                                                    xCenter + BUTTON_X_SIZE,
+                                                    yCenter + BUTTON_Y_SIZE, 
+                                                    fill = "black");
 
         # create button's clickable region
-        canvas.create_rectangle(xCenter - BUTTON_X_SIZE + BUTTON_MARGIN,
-        yCenter - BUTTON_Y_SIZE + BUTTON_MARGIN,
-        xCenter + BUTTON_X_SIZE - BUTTON_MARGIN,
-        yCenter + BUTTON_Y_SIZE - BUTTON_MARGIN,
-        fill = color);
+        self.foreground = canvas.create_rectangle(xCenter - BUTTON_X_SIZE + BUTTON_MARGIN,
+                                                    yCenter - BUTTON_Y_SIZE + BUTTON_MARGIN,
+                                                    xCenter + BUTTON_X_SIZE - BUTTON_MARGIN,
+                                                    yCenter + BUTTON_Y_SIZE - BUTTON_MARGIN,
+                                                    fill = color);
 
         # set button text
-        canvas.create_text(xCenter, yCenter, text = label,
-        font = ("Courier", canvas.data["S_TEXT_SIZE"]));   
+        self.t = canvas.create_text(xCenter, yCenter, text = label,
+                                    font = ("Courier", canvas.data["S_TEXT_SIZE"]));  
+               
+    ### draw - draw the button
+    def draw(self, canvas):
+        if(not(self.first)):
+            canvas.delete(self.background);
+            canvas.delete(self.foreground);
+            canvas.delete(self.t);
+            self.setButton(canvas);
+        else:
+            self.setButton(canvas);
+            self.first = False;
+
 
     ### clicked - determine if the button has been clicked
     def clicked(self, xClick, yClick):

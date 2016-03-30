@@ -44,3 +44,8 @@ class PlayerState(Enum):
     USER        = 0; # controlled by this player
     AI          = 1; # controlling it self
     COMP        = 2; # controlled by a COMPetitor
+
+### Tilt - defines the tilt of a block, either vertical or horizontal
+class Tilt(Enum):
+    VERT    = 0;
+    HORZ    = 1;

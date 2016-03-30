@@ -26,12 +26,13 @@ class Ball:
         self.radius = canvas_width // 50;
         self.color = "green";
         self.xVelocity = 0;
-        self.yVelocity = canvas_width // 100;
+        self.yVelocity = canvas_width // 110;
+        self.first = True;
 
     ### reset - reset dynamic ball location/speed properties 
     def reset(self):
         self.randomXVelocity();
-        self.yVelocity = random.choice([-1, 1])*self.CANVAS_WIDTH // 100;
+        self.yVelocity = random.choice([-1, 1])*self.CANVAS_WIDTH // 110;
         self.xCenter = self.CANVAS_WIDTH // 2;
         self.yCenter = self.CANVAS_HEIGHT // 2;
         self.randomColor();
@@ -71,13 +72,13 @@ class Ball:
         self.yVelocity *= 0.9;
 
     def randomXVelocity(self):
-        speed = self.CANVAS_WIDTH // 100
+        speed = self.CANVAS_WIDTH // 110
         factor = random.random();
         factor *= random.randint(-2, 2);
         self.xVelocity = speed*factor;
 
     def randomYVelocity(self):
-        speed = self.CANVAS_WIDTH // 100
+        speed = self.CANVAS_WIDTH // 110
         factor = random.random();
         factor *= random.randint(-2, 2);
         self.yVelocity = speed*factor;  
@@ -149,21 +150,28 @@ class Ball:
     ##  This method moves the ball during gameplay.
     def moveGame(self):
         self.xCenter += self.xVelocity; 
-        self.yCenter += self.yVelocity   
+        self.yCenter += self.yVelocity 
 
-    ### draw - draw the ball
-    def draw(self, canvas):
+    def setBall(self, canvas): 
         BORDER_WIDTH = self.BORDER_WIDTH;
         color   = self.color;
         xCenter = self.xCenter;
         yCenter = self.yCenter;
         radius  = self.radius;
 
-        canvas.create_oval(xCenter - radius,
-                            yCenter - radius,
-                            xCenter + radius,
-                            yCenter + radius,
-                            fill = color, width = BORDER_WIDTH)
+        self.ball = canvas.create_oval(xCenter - radius,
+                                        yCenter - radius,
+                                        xCenter + radius,
+                                        yCenter + radius,
+                                        fill = color, width = BORDER_WIDTH)
+    ### draw - draw the ball
+    def draw(self, canvas):
+        if(not(self.first)):
+            canvas.delete(self.ball);
+            self.setBall(canvas);
+        else:
+            self.setBall(canvas);
+            self.first = False;
 
     ### updateMenu - general purpose menu update function
     def updateMenu(self, canvas): 
@@ -178,5 +186,13 @@ class Ball:
     ### getInfo - get ball info
     def getInfo(self): 
         return(self.xCenter, self.yCenter, self.radius);
+
+    def getEdges(self):
+        x = self.xCenter;
+        y = self.yCenter;
+        r = self.radius;
+
+        # left, right, top, bottom
+        return (x - r, x + r, y - r, y + r);
 
 

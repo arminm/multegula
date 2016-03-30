@@ -26,6 +26,8 @@ class Player:
         self.lives = 5;
         self.power = PowerUps.PWR_NONE;
         self.paddle = Paddle(canvas_width, canvas_height, orientation, state);
+        self.first = True;
+        self.statusUpdate = False;
 
     ### get/set direction methods
     def setDirection(self, direction):
@@ -121,17 +123,19 @@ class Player:
             canvas.data["nextScreen"] = Screens.SCRN_GAME;
             self.lives -= 1;
             self.score -= 20;
+            self.statusUpdate = True;
         # bounce ball, apply appropriate scoring
         elif(ballBounce):
             self.deflectOffPaddle(canvas);    
             self.score += 3; 
+            self.statusUpdate = True;
         # implicit else - do nothing
 
     ### deflectOffPaddle - 
     ##  Deflect ball off of a paddle and determine the new direction off the ball
     def deflectOffPaddle(self, canvas):
         # initialize speed and random offset variables
-        speed = self.CANVAS_WIDTH // 100;
+        speed = self.CANVAS_WIDTH // 110;
         offsetFactor = random.uniform(1, 1.1);
         offset = random.uniform(-0.1, 0.1);
 
@@ -168,9 +172,7 @@ class Player:
         canvas.data["ball"].randomColor();
  
 
-    ### displayStatus method -
-    ##  Display the text for the player indicating the current score and number of lives remaining
-    def displayStatus(self, canvas):
+    def setStatus(self, canvas):
         # get canvas info
         ORIENTATION = self.ORIENTATION;
         CANVAS_HEIGHT = self.CANVAS_HEIGHT;
@@ -203,8 +205,18 @@ class Player:
 
         # finish status message and display
         statusMsg += "P/" + str(self.score) + ".  L/" + str(self.lives) + ".";
-        canvas.create_text(X_LOC, Y_LOC, text = statusMsg,
-                font = ("Courier", canvas.data["S_TEXT_SIZE"]), fill = "white");
+        self.t = canvas.create_text(X_LOC, Y_LOC, text = statusMsg,
+                                    font = ("Courier", canvas.data["S_TEXT_SIZE"]), fill = "white");
+    ### displayStatus method -
+    ##  Display the text for the player indicating the current score and number of lives remaining
+    def displayStatus(self, canvas):
+        if(not(self.first) and self.statusUpdate):
+            canvas.delete(self.t);
+            self.setStatus(canvas);
+            self.statusUpdate = False;
+        elif(self.first):
+            self.setStatus(canvas);
+            self.first = False;
 
     ### general purpose update
     def update(self, canvas):

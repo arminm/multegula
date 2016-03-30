@@ -20,10 +20,10 @@ class Paddle:
         self.CANVAS_WIDTH = canvas_width;
         self.CANVAS_HEIGHT = canvas_height;
         self.MARGIN = canvas_width // 30;
-        self.PADDLE_MARGIN = canvas_height // 20;
-        self.PADDLE_HEIGHT = canvas_height // 50;   
-        self.MIN = self.PADDLE_MARGIN + (2*self.PADDLE_HEIGHT);
-        self.MAX = canvas_width - self.PADDLE_MARGIN - (2*self.PADDLE_HEIGHT);   
+        self.MARGIN = canvas_height // 20;
+        self.HEIGHT = canvas_height // 50;   
+        self.MIN = self.MARGIN + (2*self.HEIGHT);
+        self.MAX = canvas_width - self.MARGIN - (2*self.HEIGHT);   
         self.BORDER_WIDTH = canvas_width // 350;
         self.ORIENTATION = orientation;
         self.COLORS = ["red", "green", "blue", "purple", "orange", "yellow", "black", "white"];
@@ -36,6 +36,8 @@ class Paddle:
         self.width = canvas_width // 6;
         self.color = "black";
         self.randomColor();
+        self.redraw = False;
+        self.first = True;
 
     #### get/set STATE methods
     def setState(self, state):
@@ -77,9 +79,11 @@ class Paddle:
 
     def increaseWidth(self):
         self.width *= 1.1;
+        self.redraw = True;
 
     def decreaseWidth(self):
         self.width -= 0.9;
+        self.redraw = True;
 
     def getWidth(self):
         return self.width;
@@ -95,9 +99,11 @@ class Paddle:
 
         # set new color
         self.color = newColor;
+        self.redraw = True;
 
     def setColor(self, color):
         self.color = color;
+        self.redraw = True;
 
     def getColor(self):
         return self.color;
@@ -108,21 +114,29 @@ class Paddle:
         MAX = self.MAX;
 
         # move paddle left if not already at the MIN possible
-        if(self.direction == Direction.DIR_LEFT):
-            if((self.center - self.width) > self.MIN):
-                self.center = self.center - self.speed;
+        if((self.direction == Direction.DIR_LEFT) and ((self.center - self.width) > self.MIN)):
+            self.center = self.center - self.speed;
+            self.redraw = True;
         # move paddle right if not already at the MAX possible
-        elif(self.direction == Direction.DIR_RIGHT):
-            if((self.center + self.width) < self.MAX):
-                self.center = self.center + self.speed;
-        # implicit else - do nothing
+        elif((self.direction == Direction.DIR_RIGHT) and ((self.center + self.width) < self.MAX)):
+            self.center = self.center + self.speed;
+            self.redraw = True;
+        else:
+            self.redraw = False;
 
+    def setPaddle(self, canvas):
+        (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges();
+        self.p = canvas.create_rectangle(leftEdge, topEdge, rightEdge, bottomEdge,
+                                            fill = self.color, width = self.BORDER_WIDTH);
     ### draw - draw the paddle
     def draw(self, canvas): 
-        (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges();
-
-        canvas.create_rectangle(leftEdge, topEdge, rightEdge, bottomEdge,
-                                fill = self.color, width = self.BORDER_WIDTH);
+        if(not(self.first) and self.redraw):
+            canvas.delete(self.p);
+            self.setPaddle(canvas);
+            self.redraw = False;
+        elif(self.first):
+            self.setPaddle(canvas);
+            self.first = False;
 
     ### update - update the paddle location (that is, 'move' if applicable) and draw
     def update(self, canvas):
@@ -142,8 +156,8 @@ class Paddle:
     def getEdges(self):
         CANVAS_HEIGHT = self.CANVAS_HEIGHT;
         CANVAS_WIDTH = self.CANVAS_WIDTH;
-        PADDLE_MARGIN = self.PADDLE_MARGIN;
-        PADDLE_HEIGHT = self.PADDLE_HEIGHT;
+        MARGIN = self.MARGIN;
+        HEIGHT = self.HEIGHT;
         BORDER_WIDTH = self.BORDER_WIDTH; 
 
         center = self.center;
@@ -153,30 +167,31 @@ class Paddle:
         if(self.ORIENTATION == Orientation.DIR_NORTH):
             leftEdge    = center - width;
             rightEdge   = center + width;
-            topEdge     = PADDLE_MARGIN;
-            bottomEdge  = PADDLE_MARGIN + PADDLE_HEIGHT;     
+            topEdge     = MARGIN;
+            bottomEdge  = MARGIN + HEIGHT;     
 
         # edges of the SOUTH paddle
         elif(self.ORIENTATION == Orientation.DIR_SOUTH):
             leftEdge    = center - width;
             rightEdge   = center + width;
-            topEdge     = CANVAS_HEIGHT - PADDLE_HEIGHT - PADDLE_MARGIN;
-            bottomEdge  = CANVAS_HEIGHT - PADDLE_MARGIN;
+            topEdge     = CANVAS_HEIGHT - HEIGHT - MARGIN;
+            bottomEdge  = CANVAS_HEIGHT - MARGIN;
 
         # edges of the EAST paddle
         elif(self.ORIENTATION == Orientation.DIR_EAST):
-            leftEdge    = CANVAS_WIDTH - PADDLE_MARGIN - PADDLE_HEIGHT;
-            rightEdge   = CANVAS_WIDTH - PADDLE_MARGIN;
+            leftEdge    = CANVAS_WIDTH - MARGIN - HEIGHT;
+            rightEdge   = CANVAS_WIDTH - MARGIN;
             topEdge     = center - width;
             bottomEdge  = center + width; 
 
         # edges of the WEST paddle
         elif(self.ORIENTATION == Orientation.DIR_WEST):
-            leftEdge    = PADDLE_MARGIN;
-            rightEdge   = PADDLE_MARGIN + PADDLE_HEIGHT;
+            leftEdge    = MARGIN;
+            rightEdge   = MARGIN + HEIGHT;
             topEdge     = center - width;
             bottomEdge  = center + width;
 
+        # left right top 
         return (leftEdge, rightEdge, topEdge, bottomEdge);
 
 
