@@ -4,7 +4,7 @@
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-package BootstrapServer
+package main
 
 import (
     "fmt"
@@ -22,7 +22,7 @@ func main() {
         log.Fatal(err)
     }
     for {
-        c, err := l.Accept(
+        c, err := l.Accept()
         //Catch Errors
         if err != nil {
             log.Fatal(err)
