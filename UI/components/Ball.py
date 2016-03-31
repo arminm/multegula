@@ -1,4 +1,4 @@
-# 18-842 Distributed Systems // Spring 2016.
+ # 18-842 Distributed Systems // Spring 2016.
 # Multegula - A P2P block breaking game.
 # Ball.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
@@ -37,6 +37,7 @@ class Ball :
         self.xCenter = self.CANVAS_WIDTH // 2
         self.yCenter = self.CANVAS_HEIGHT // 2
         self.randomColor()
+        self.lastToTouch = "";
 
     ### get/set CENTER methods
     def setCenter(self, xCenter, yCenter) :

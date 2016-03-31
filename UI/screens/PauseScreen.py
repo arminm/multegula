@@ -71,7 +71,7 @@ class PauseScreen :
         color3 = self.color3
 
         # print the pause screen text
-        self.tLevel = canvas.create_text(X_CENTER, Y_1_THIRD, text = canvas.data["currentTextLevel"],
+        self.tLevel = canvas.create_text(X_CENTER, Y_1_THIRD, text = canvas.data["level"].getTextLevel(),
                                         font = ("Courier", canvas.data["XL_TEXT_SIZE"]))
 
         self.tSub = canvas.create_text(X_CENTER, Y_CENTER, text = "Starting in...",

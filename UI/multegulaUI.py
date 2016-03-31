@@ -17,6 +17,7 @@ from screens.SplashScreen import *
 from screens.MenuScreen import *
 from screens.PauseScreen import *
 from screens.ScreenEnum import *
+from screens.GameOver import *
 from screens.GameScreen import *
 
 from levels.Level import *
@@ -108,7 +109,6 @@ def redrawAll(canvas) :
 
     ### GAME SCREEN
     elif canvas.data["currentScreen"] == Screens.SCRN_GAME :
-        pass
         canvas.data["gameScreen"].drawBackground(canvas)
         canvas.data["Player_01"].update(canvas)
         canvas.data["Player_02"].update(canvas)
@@ -116,6 +116,11 @@ def redrawAll(canvas) :
         canvas.data["Player_04"].update(canvas)
         canvas.data["level"].update(canvas)
         canvas.data["ball"].updateGame(canvas)
+
+    # GAME OVER SCREEN
+    elif canvas.data["currentScreen"] == Screens.SCRN_GAME_OVER : 
+        canvas.data["gameOverScreen"].drawBackground(canvas);
+
 
 
     #  redraw after delay
@@ -152,7 +157,6 @@ def init(canvas) :
 
     # misc
     canvas.data["delay"] = 10
-    canvas.data["currentTextLevel"] = "LEVEL ONE."
     canvas.data["playerName"] = "Type name..."
 
     ### COMPONENETS
@@ -168,6 +172,7 @@ def init(canvas) :
     canvas.data["menuScreen"]   = MenuScreen(CANVAS_WIDTH, CANVAS_HEIGHT)
     canvas.data["pauseScreen"]  = PauseScreen(CANVAS_WIDTH, CANVAS_HEIGHT)
     canvas.data["splashScreen"] = SplashScreen(CANVAS_WIDTH, CANVAS_HEIGHT)
+    canvas.data["gameOverScreen"] = GameOver(CANVAS_WIDTH, CANVAS_HEIGHT)
 
     # players
     canvas.data["Player_01"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_SOUTH, PlayerState.USER, "TO CHANGE")

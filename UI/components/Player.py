@@ -61,6 +61,76 @@ class Player :
         elif(chance == 0) :
             self.paddle.direction = Direction.DIR_STOP
 
+    def breakBlock(self, canvas) :
+        (ballLeft, ballRight, ballTop, ballBottom) = canvas.data["ball"].getEdges()
+        (ballCenterX, ballCenterY, ballRadius) = canvas.data["ball"].getInfo()
+        (xVelocity, yVelocity) = canvas.data["ball"].getVelocity()
+        blocks = canvas.data["level"].blocks;
+        broken = -1;
+
+        # ball moving NORTH WEST
+        if(xVelocity < 0) and (yVelocity <= 0) :
+            for i, block in enumerate(blocks) :
+                if(block.enabled == True) :
+                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
+                    if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballCenterX <= blkRight) :
+                        canvas.data["ball"].setVelocity(xVelocity, (-yVelocity))
+                        broken = i;
+                        break
+                    elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballCenterY <= blkBottom) :
+                        canvas.data["ball"].setVelocity((-xVelocity), yVelocity)
+                        broken = i;
+                        break                                     
+
+        # ball moving NORTH EAST
+        elif(xVelocity > 0) and (yVelocity < 0) :
+            for i, block in enumerate(blocks) :
+                if(block.enabled == True) :
+                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
+                    if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballCenterX <= blkRight) :
+                        canvas.data["ball"].setVelocity(xVelocity, (-yVelocity))
+                        broken = i;
+                        break
+                    elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballCenterY <= blkBottom) :
+                        canvas.data["ball"].setVelocity((-xVelocity), yVelocity)
+                        broken = i;
+                        break                                   
+          
+        # ball moving SOUTH WEST
+        elif(xVelocity < 0) and (yVelocity > 0) :
+            for i, block in enumerate(blocks) :
+                if(block.enabled == True) :
+                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
+                    if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballCenterX <= blkRight) :
+                        canvas.data["ball"].setVelocity(xVelocity, (-yVelocity))
+                        broken = i;
+                        break
+                    elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballCenterY <= blkBottom) :
+                        canvas.data["ball"].setVelocity((-xVelocity), yVelocity)
+                        broken = i;
+                        break
+
+        # ball moving SOUTH EAST
+        elif(xVelocity > 0) and (yVelocity > 0) :
+            for i, block in enumerate(blocks) :
+                if(block.enabled == True) :
+                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
+                    if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballCenterX <= blkRight) :
+                        canvas.data["ball"].setVelocity(xVelocity, (-yVelocity))
+                        broken = i;
+                        break
+                    elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballCenterY <= blkBottom) :
+                        canvas.data["ball"].setVelocity((-xVelocity), yVelocity)
+                        broken = i;
+                        break
+
+        if broken >= 0:
+            canvas.data["level"].blocks[broken].disable()
+            canvas.data["level"].updated = True 
+            self.score += 5;    
+            self.statusUpdate = True
+
+
     ### updateBall method - 
     ##  Check to see if the ball is off the playing field or is being deflected by the player's paddle.
     def updateBall(self, canvas) :
@@ -118,11 +188,16 @@ class Player :
             self.lives -= 1
             self.score -= 20
             self.statusUpdate = True
+            return True;
         # bounce ball, apply appropriate scoring
         elif(ballBounce) :
             self.deflectOffPaddle(canvas)    
             self.score += 3 
             self.statusUpdate = True
+            canvas.data["ball"].lastToTouch = self.name;
+            return True;
+        else:
+            return False;
         # implicit else - do nothing
 
     ### deflectOffPaddle - 
@@ -213,13 +288,15 @@ class Player :
         # Human player update
         if(self.state == PlayerState.USER) :
             self.paddle.update(canvas)
-            self.updateBall(canvas)
+            if not(self.updateBall(canvas)) and (canvas.data["ball"].lastToTouch == self.name):
+                self.breakBlock(canvas);
             self.displayStatus(canvas)
         # Artificial player update
         elif(self.state == PlayerState.AI) :
             self.AI(canvas)
             self.paddle.update(canvas)
-            self.updateBall(canvas)
+            if not(self.updateBall(canvas)) and (canvas.data["ball"].lastToTouch == self.name):
+                self.breakBlock(canvas);
             self.displayStatus(canvas)
         # Only competitor update
         elif(self.state == PlayerState.COMP) :
