@@ -7,9 +7,10 @@
 from enum import Enum
 
 ### Screens - enumerate different screens
-class Screens(Enum):
-  SCRN_NONE = 0;
-  SCRN_SPLASH = 1;
-  SCRN_MENU = 2;
-  SCRN_PAUSE = 3;
-  SCRN_GAME = 4;
+class Screens(Enum) :
+  SCRN_NONE = 0
+  SCRN_SPLASH = 1
+  SCRN_MENU = 2
+  SCRN_PAUSE = 3
+  SCRN_GAME = 4
+  SCRN_GAME_OVER = 5
