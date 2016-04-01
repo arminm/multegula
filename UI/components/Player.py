@@ -13,19 +13,15 @@ from screens.ScreenEnum import *
 # PLAYER class
 class Player :
     ### __init__  - initialize and return Player
-    ##  @param canvas_width
-    ##  @param canvas_height
     ##  @param orientation - location on the screen of this padde (DIR_NORTH/DIR_SOUTH/...)
     ##  @param state - current control state of the player (USER/AI/COMP)
-    def __init__(self, canvas_width, canvas_height, orientation, state, name) :
-        self.CANVAS_HEIGHT = canvas_height
-        self.CANVAS_WIDTH = canvas_width
+    def __init__(self, orientation, state, name) :
         self.ORIENTATION = orientation
         self.state = state
         self.score = 0
         self.lives = 5
         self.power = PowerUps.PWR_NONE
-        self.paddle = Paddle(canvas_width, canvas_height, orientation, state)
+        self.paddle = Paddle(orientation, state)
         self.first = True
         self.statusUpdate = False
         self.name = name
@@ -61,6 +57,8 @@ class Player :
         elif(chance == 0) :
             self.paddle.direction = Direction.DIR_STOP
 
+    ### breakBlock --
+    ##  handles the breaking of blocks
     def breakBlock(self, canvas) :
         (ballLeft, ballRight, ballTop, ballBottom) = canvas.data["ball"].getEdges()
         (ballCenterX, ballCenterY, ballRadius) = canvas.data["ball"].getInfo()
@@ -135,8 +133,6 @@ class Player :
     ##  Check to see if the ball is off the playing field or is being deflected by the player's paddle.
     def updateBall(self, canvas) :
         # get canvas/paddle/ball info
-        CANVAS_HEIGHT = self.CANVAS_HEIGHT
-        CANVAS_WIDTH = self.CANVAS_WIDTH
         ORIENTATION = self.ORIENTATION
         (ballCenterX, ballCenterY, ballRadius) = canvas.data["ball"].getInfo()
         (leftEdge, rightEdge, topEdge, bottomEdge) = self.paddle.getEdges()
@@ -204,7 +200,7 @@ class Player :
     ##  Deflect ball off of a paddle and determine the new direction off the ball
     def deflectOffPaddle(self, canvas) :
         # initialize speed and random offset variables
-        speed = self.CANVAS_WIDTH // 110
+        speed = BALL_SPEED_INIT
         offsetFactor = random.uniform(1, 1.1)
         offset = random.uniform(-0.1, 0.1)
 
@@ -244,8 +240,6 @@ class Player :
     def setStatus(self, canvas) :
         # get canvas info
         ORIENTATION = self.ORIENTATION
-        CANVAS_HEIGHT = self.CANVAS_HEIGHT
-        CANVAS_WIDTH = self.CANVAS_WIDTH
         X_MARGIN = CANVAS_WIDTH // 60
         Y_MARGIN = CANVAS_HEIGHT // 60
 
@@ -259,11 +253,9 @@ class Player :
         elif(ORIENTATION == Orientation.DIR_SOUTH) :
             X_LOC = CANVAS_WIDTH*0.75
             Y_LOC = CANVAS_HEIGHT - Y_MARGIN
-
         elif(ORIENTATION == Orientation.DIR_EAST) :
             X_LOC = CANVAS_WIDTH*0.75
             Y_LOC = Y_MARGIN    
-
         elif(ORIENTATION == Orientation.DIR_WEST) :
             X_LOC = CANVAS_WIDTH*0.25
             Y_LOC = CANVAS_HEIGHT - Y_MARGIN
@@ -271,11 +263,12 @@ class Player :
         # finish status message and display
         statusMsg += "P/" + str(self.score) + ".  L/" + str(self.lives) + "."
         self.t = canvas.create_text(X_LOC, Y_LOC, text = statusMsg,
-                                    font = ("Courier", canvas.data["S_TEXT_SIZE"]), fill = "white")
+                                    font = ("Courier", S_TEXT_SIZE), fill = "white")
+        
     ### displayStatus method -
     ##  Display the text for the player indicating the current score and number of lives remaining
     def displayStatus(self, canvas) :
-        if(not(self.first) and self.statusUpdate) :
+        if not(self.first) and self.statusUpdate :
             canvas.delete(self.t)
             self.setStatus(canvas)
             self.statusUpdate = False
@@ -302,3 +295,5 @@ class Player :
         elif(self.state == PlayerState.COMP) :
             self.paddle.draw(canvas)
             self.displayStatus(canvas)
+
+

@@ -11,33 +11,37 @@ from components.ComponentDefs import *
 # BALL class
 class Ball :
     ### __init___ - initialize and return ball
-    ##  @param canvas_width
-    ##  @param canvas_height
-    def __init__(self, canvas_width, canvas_height) :
+    def __init__(self) :
         # constant fields
-        self.CANVAS_WIDTH = canvas_width
-        self.CANVAS_HEIGHT = canvas_height
-        self.BORDER_WIDTH = canvas_width // 350
         self.COLORS = ["red", "green", "blue", "purple", "orange", "yellow"]
 
         # dynamic fields
-        self.xCenter = canvas_width // 2
-        self.yCenter = canvas_height // 2
-        self.radius = canvas_width // 50
+        self.xCenter = CANVAS_WIDTH // 2
+        self.yCenter = CANVAS_HEIGHT // 2
+        self.radius = CANVAS_WIDTH // 50
         self.color = "green"
         self.xVelocity = 0
-        self.yVelocity = canvas_width // 110
+        self.yVelocity = CANVAS_WIDTH // 110
         self.first = True
         self.lastToTouch = ""
 
     ### reset - reset dynamic ball location/speed properties 
     def reset(self) :
         self.randomXVelocity()
-        self.yVelocity = random.choice([-1, 1])*self.CANVAS_WIDTH // 110
-        self.xCenter = self.CANVAS_WIDTH // 2
-        self.yCenter = self.CANVAS_HEIGHT // 2
+        self.yVelocity = random.choice([-1, 1])*CANVAS_WIDTH // 110
+        self.xCenter = CANVAS_WIDTH // 2
+        self.yCenter = CANVAS_HEIGHT // 2
         self.randomColor()
         self.lastToTouch = "";
+
+    ### getEdges - get the edges of the ball
+    def getEdges(self) :
+        x = self.xCenter
+        y = self.yCenter
+        r = self.radius
+
+        # left, right, top, bottom
+        return (x - r, x + r, y - r, y + r)
 
     ### get/set CENTER methods
     def setCenter(self, xCenter, yCenter) :
@@ -68,13 +72,13 @@ class Ball :
         self.yVelocity *= 0.9
 
     def randomXVelocity(self) :
-        speed = self.CANVAS_WIDTH // 110
+        speed = CANVAS_WIDTH // 110
         factor = random.random()
         factor *= random.randint(-2, 2)
         self.xVelocity = speed*factor
 
     def randomYVelocity(self) :
-        speed = self.CANVAS_WIDTH // 110
+        speed = CANVAS_WIDTH // 110
         factor = random.random()
         factor *= random.randint(-2, 2)
         self.yVelocity = speed*factor  
@@ -98,10 +102,6 @@ class Ball :
     ##  The method moves the ball around the screen and bounces it off of walls. This mode
     ##  is meant for use on menu screens only.
     def moveMenu(self) :
-        # constants
-        CANVAS_WIDTH = self.CANVAS_WIDTH
-        CANVAS_HEIGHT = self.CANVAS_HEIGHT
-
         # dynamic variables
         xCenter = self.xCenter
         yCenter = self.yCenter
@@ -136,14 +136,14 @@ class Ball :
         else : 
             self.xCenter += xVelocity 
 
-    ### moveGame -
-    ##  This method moves the ball during gameplay.
+    ### moveGame - move the ball during gameplay.
     def moveGame(self) :
         self.xCenter += self.xVelocity 
         self.yCenter += self.yVelocity 
 
+
+    ### setBall - set the ball in the canvas
     def setBall(self, canvas) : 
-        BORDER_WIDTH = self.BORDER_WIDTH
         color   = self.color
         xCenter = self.xCenter
         yCenter = self.yCenter
@@ -154,7 +154,8 @@ class Ball :
                                         xCenter + radius,
                                         yCenter + radius,
                                         fill = color, width = BORDER_WIDTH)
-    ### draw - draw the ball
+        
+    ### draw - handles the drawing of the bills 
     def draw(self, canvas) :
         if not(self.first) :
             canvas.delete(self.ball)
@@ -176,13 +177,5 @@ class Ball :
     ### getInfo - get ball info
     def getInfo(self) : 
         return(self.xCenter, self.yCenter, self.radius)
-
-    def getEdges(self) :
-        x = self.xCenter
-        y = self.yCenter
-        r = self.radius
-
-        # left, right, top, bottom
-        return (x - r, x + r, y - r, y + r)
 
 

@@ -11,29 +11,19 @@ from components.ComponentDefs import *
 # PADDLE class
 class Paddle :
     ### __init__ - initialize and return a paddle
-    ##  @param canvas_width
-    ##  @param canvas_height
     ##  @param orientation - location on the screen of this padde (DIR_NORTH/DIR_SOUTH/...)
     ##  @param state - current control state of the player (USER/AI/COMP)
-    def __init__(self, canvas_width, canvas_height, orientation, state) :
-        # CONSTANT fields
-        self.CANVAS_WIDTH = canvas_width
-        self.CANVAS_HEIGHT = canvas_height
-        self.MARGIN = canvas_width // 30
-        self.MARGIN = canvas_height // 20
-        self.HEIGHT = canvas_height // 50   
-        self.MIN = self.MARGIN + (2*self.HEIGHT)
-        self.MAX = canvas_width - self.MARGIN - (2*self.HEIGHT)   
-        self.BORDER_WIDTH = canvas_width // 350
+    def __init__(self, orientation, state) :
+        # CONSTANT fields   
         self.ORIENTATION = orientation
         self.COLORS = ["red", "green", "blue", "purple", "orange", "yellow", "black", "white"]
 
         # dynamic fields
         self.state = state
-        self.speed = canvas_width // 70 
+        self.speed = PADDLE_SPEED_INIT 
         self.direction = Direction.DIR_STOP
-        self.center = canvas_width // 2
-        self.width = canvas_width // 6
+        self.center = X_CENTER
+        self.width = PADDLE_WIDTH_INIT
         self.color = "black"
         self.randomColor()
         self.redraw = False
@@ -74,15 +64,12 @@ class Paddle :
 
     ### move - move the paddle based on the current direction
     def move(self) :
-        MIN = self.MIN
-        MAX = self.MAX
-
         # move paddle left if not already at the MIN possible
-        if((self.direction == Direction.DIR_LEFT) and ((self.center - self.width) > self.MIN)) :
+        if((self.direction == Direction.DIR_LEFT) and ((self.center - self.width) > PADDLE_MIN)) :
             self.center = self.center - self.speed
             self.redraw = True
         # move paddle right if not already at the MAX possible
-        elif((self.direction == Direction.DIR_RIGHT) and ((self.center + self.width) < self.MAX)) :
+        elif((self.direction == Direction.DIR_RIGHT) and ((self.center + self.width) < PADDLE_MAX)) :
             self.center = self.center + self.speed
             self.redraw = True
         else :
@@ -91,7 +78,7 @@ class Paddle :
     def setPaddle(self, canvas) :
         (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges()
         self.p = canvas.create_rectangle(leftEdge, topEdge, rightEdge, bottomEdge,
-                                            fill = self.color, width = self.BORDER_WIDTH)
+                                            fill = self.color, width = BORDER_WIDTH)
     ### draw - draw the paddle
     def draw(self, canvas) : 
         if(not(self.first) and self.redraw) :
@@ -118,12 +105,6 @@ class Paddle :
 
     ### getEdges - get the edges of the paddle based on the orientation
     def getEdges(self) :
-        CANVAS_HEIGHT = self.CANVAS_HEIGHT
-        CANVAS_WIDTH = self.CANVAS_WIDTH
-        MARGIN = self.MARGIN
-        HEIGHT = self.HEIGHT
-        BORDER_WIDTH = self.BORDER_WIDTH 
-
         center = self.center
         width = self.width
         
@@ -131,27 +112,27 @@ class Paddle :
         if(self.ORIENTATION == Orientation.DIR_NORTH) :
             leftEdge    = center - width
             rightEdge   = center + width
-            topEdge     = MARGIN
-            bottomEdge  = MARGIN + HEIGHT     
+            topEdge     = PADDLE_MARGIN
+            bottomEdge  = PADDLE_MARGIN + PADDLE_HEIGHT     
 
         # edges of the SOUTH paddle
         elif(self.ORIENTATION == Orientation.DIR_SOUTH) :
             leftEdge    = center - width
             rightEdge   = center + width
-            topEdge     = CANVAS_HEIGHT - HEIGHT - MARGIN
-            bottomEdge  = CANVAS_HEIGHT - MARGIN
+            topEdge     = CANVAS_HEIGHT - PADDLE_HEIGHT - PADDLE_MARGIN
+            bottomEdge  = CANVAS_HEIGHT - PADDLE_MARGIN
 
         # edges of the EAST paddle
         elif(self.ORIENTATION == Orientation.DIR_EAST) :
-            leftEdge    = CANVAS_WIDTH - MARGIN - HEIGHT
-            rightEdge   = CANVAS_WIDTH - MARGIN
+            leftEdge    = CANVAS_WIDTH - PADDLE_MARGIN - PADDLE_HEIGHT
+            rightEdge   = CANVAS_WIDTH - PADDLE_MARGIN
             topEdge     = center - width
             bottomEdge  = center + width 
 
         # edges of the WEST paddle
         elif(self.ORIENTATION == Orientation.DIR_WEST) :
-            leftEdge    = MARGIN
-            rightEdge   = MARGIN + HEIGHT
+            leftEdge    = PADDLE_MARGIN
+            rightEdge   = PADDLE_MARGIN + PADDLE_HEIGHT
             topEdge     = center - width
             bottomEdge  = center + width
 

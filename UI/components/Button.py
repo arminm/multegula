@@ -4,22 +4,16 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
+from components.ComponentDefs import *
+
+# Class
 class Button :
     ### __init__ - initialize and return button
-    ##  canvas_width
-    ##  canvas_height
     ##  xCenter - x-coordinate for the center of the button
     ##  yButton - y-coordinate for the center of the button
     ##  text - button label
     ##  active - flag setting the button to be enabled/disabled
-    def __init__(self, canvas_width, canvas_height, xCenter, yCenter, text, active) :
-        # constant fields
-        self.CANVAS_WIDTH = canvas_width
-        self.CANVAS_HEIGHT = canvas_height
-        self.BUTTON_X_SIZE = canvas_width // 10
-        self.BUTTON_Y_SIZE = canvas_height // 20
-        self.BUTTON_MARGIN = (canvas_width // 10) - (canvas_width // 11)
-
+    def __init__(self, xCenter, yCenter, text, active) :
         # dynamic fields
         self.xCenter = xCenter
         self.yCenter = yCenter
@@ -31,6 +25,7 @@ class Button :
             self.color = "grey"
             self.active = False
         self.first = True
+
     ### get/set location methods
     def setLocation(self, xCenter, yCenter) :
         self.xCenter = xCenter
@@ -49,11 +44,6 @@ class Button :
         self.active = False
 
     def setButton(self, canvas) :
-         # get constants
-        BUTTON_X_SIZE = self.BUTTON_X_SIZE
-        BUTTON_Y_SIZE = self.BUTTON_Y_SIZE
-        BUTTON_MARGIN = self.BUTTON_MARGIN
-
         # get get button variables
         xCenter = self.xCenter
         yCenter = self.yCenter
@@ -76,7 +66,7 @@ class Button :
 
         # set button text
         self.t = canvas.create_text(xCenter, yCenter, text = label,
-                                    font = ("Courier", canvas.data["S_TEXT_SIZE"]))  
+                                    font = ("Courier", S_TEXT_SIZE))  
                
     ### draw - draw the button
     def draw(self, canvas) :
@@ -92,11 +82,6 @@ class Button :
 
     ### clicked - determine if the button has been clicked
     def clicked(self, xClick, yClick) :
-        # get constants
-        BUTTON_X_SIZE = self.BUTTON_X_SIZE
-        BUTTON_Y_SIZE = self.BUTTON_Y_SIZE
-        BUTTON_MARGIN = self.BUTTON_MARGIN
-
         # get button variables
         active = self.active
         xCenter = self.xCenter

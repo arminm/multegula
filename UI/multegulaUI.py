@@ -76,11 +76,14 @@ def mousePressed(event) :
         elif canvas.data["joinButton"].clicked(event.x, event.y) :
             print("JOIN")
 
+    # game over screen mouse pressed events - start over
+    elif canvas.data["currentScreen"] == Screens.SCRN_GAME_OVER :
+        init(canvas);
+
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
     Y_LOC_TOP_BUTTON = canvas.data["Y_LOC_TOP_BUTTON"]
-    X_CENTER  = canvas.data["CANVAS_WIDTH"] // 2
-    L_TEXT_SIZE   = canvas.data["L_TEXT_SIZE"]
+    X_CENTER  = CANVAS_WIDTH // 2
 
     ### SPLASH SCREEN
     if canvas.data["currentScreen"] == Screens.SCRN_SPLASH :
@@ -130,14 +133,11 @@ def redrawAll(canvas) :
 ### init - initialize dictionary
 def init(canvas) :
     # location constants
-    CANVAS_HEIGHT = canvas.data["CANVAS_HEIGHT"]
-    CANVAS_WIDTH = canvas.data["CANVAS_WIDTH"]
     canvas.data["Y_LOC_TOP_BUTTON"] = 0.70*CANVAS_HEIGHT
     canvas.data["Y_LOC_BOTTOM_BUTTON"] = 0.85*CANVAS_HEIGHT
     Y_LOC_TOP_BUTTON = canvas.data["Y_LOC_TOP_BUTTON"]
     Y_LOC_BOTTOM_BUTTON = canvas.data["Y_LOC_BOTTOM_BUTTON"]
-    X_CENTER = CANVAS_WIDTH // 2
-    Y_CENTER = CANVAS_HEIGHT // 2
+
     X_MARGIN = CANVAS_WIDTH // 30
     Y_MARGIN = CANVAS_HEIGHT // 30
 
@@ -145,50 +145,36 @@ def init(canvas) :
     canvas.data["currentScreen"] = Screens.SCRN_SPLASH
     canvas.data["nextScreen"] = Screens.SCRN_NONE
 
-    # text size
-    canvas.data["S_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 35
-    canvas.data["M_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 28
-    canvas.data["L_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 20
-    canvas.data["XL_TEXT_SIZE"] = canvas.data["CANVAS_WIDTH"] // 10
-    S_TEXT_SIZE = canvas.data["S_TEXT_SIZE"]
-    M_TEXT_SIZE = canvas.data["M_TEXT_SIZE"]
-    L_TEXT_SIZE = canvas.data["L_TEXT_SIZE"]
-    XL_TEXT_SIZE = canvas.data["XL_TEXT_SIZE"]
-
     # misc
     canvas.data["delay"] = 10
     canvas.data["playerName"] = "Type name..."
 
     ### COMPONENETS
     # buttons
-    canvas.data["soloButton"] = Button(CANVAS_WIDTH, CANVAS_HEIGHT, X_CENTER, Y_LOC_TOP_BUTTON, "Solo Game", True)
-    canvas.data["joinButton"] = Button(CANVAS_WIDTH, CANVAS_HEIGHT, X_CENTER, Y_LOC_BOTTOM_BUTTON, "Join Game", False)
+    canvas.data["soloButton"] = Button(X_CENTER, Y_LOC_TOP_BUTTON, "Solo Game", True)
+    canvas.data["joinButton"] = Button(X_CENTER, Y_LOC_BOTTOM_BUTTON, "Join Game", False)
 
     # ball
-    canvas.data["ball"] = Ball(CANVAS_WIDTH, CANVAS_HEIGHT)
+    canvas.data["ball"] = Ball()
 
     # screens
-    canvas.data["gameScreen"]   = GameScreen(CANVAS_WIDTH, CANVAS_HEIGHT)
-    canvas.data["menuScreen"]   = MenuScreen(CANVAS_WIDTH, CANVAS_HEIGHT)
-    canvas.data["pauseScreen"]  = PauseScreen(CANVAS_WIDTH, CANVAS_HEIGHT)
-    canvas.data["splashScreen"] = SplashScreen(CANVAS_WIDTH, CANVAS_HEIGHT)
-    canvas.data["gameOverScreen"] = GameOver(CANVAS_WIDTH, CANVAS_HEIGHT)
+    canvas.data["gameScreen"]   = GameScreen()
+    canvas.data["menuScreen"]   = MenuScreen()
+    canvas.data["pauseScreen"]  = PauseScreen()
+    canvas.data["splashScreen"] = SplashScreen()
+    canvas.data["gameOverScreen"] = GameOver()
 
     # players
-    canvas.data["Player_01"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_SOUTH, PlayerState.USER, "TO CHANGE")
-    canvas.data["Player_02"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_NORTH, PlayerState.AI, "NoRTH")
-    canvas.data["Player_03"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_EAST, PlayerState.AI, "eaST")
-    canvas.data["Player_04"] = Player(CANVAS_WIDTH, CANVAS_HEIGHT, Orientation.DIR_WEST, PlayerState.AI, "WeST")
+    canvas.data["Player_01"] = Player(Orientation.DIR_SOUTH, PlayerState.USER, "TO CHANGE")
+    canvas.data["Player_02"] = Player(Orientation.DIR_NORTH, PlayerState.AI, "NoRTH")
+    canvas.data["Player_03"] = Player(Orientation.DIR_EAST, PlayerState.AI, "eaST")
+    canvas.data["Player_04"] = Player(Orientation.DIR_WEST, PlayerState.AI, "WeST")
 
     canvas.data["splashTextField"] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, "Type name...", L_TEXT_SIZE)
-    canvas.data["level"] = Level(CANVAS_WIDTH, CANVAS_HEIGHT)
+    canvas.data["level"] = Level()
 
 ### run - run the program
 def run() :
-    # intialize variables
-    CANVAS_WIDTH = 700
-    CANVAS_HEIGHT = CANVAS_WIDTH
-
     # initialize canvas
     root = Tk()
     canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background="white")
@@ -205,8 +191,6 @@ def run() :
 
     # set up dicitonary
     canvas.data = {}
-    canvas.data["CANVAS_WIDTH"]  = CANVAS_WIDTH
-    canvas.data["CANVAS_HEIGHT"] = CANVAS_HEIGHT
 
     # sets up events
     #root.bind("<Key>", keyPressed)

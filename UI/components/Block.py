@@ -1,42 +1,68 @@
 # 18-842 Distributed Systems // Spring 2016.
 # Multegula - A P2P block breaking game.
-# Paddle.py.
+# Block.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
 from enum import Enum
 from components.ComponentDefs import *
 
-#
+# BLOCK class
 class Block :
-    def __init__(self, canvas_width, canvas_height, xCenter, yCenter, initPwr, tilt) :
-        self.CANVAS_WIDTH = canvas_width
-        self.CANVAS_HEIGHT = canvas_height
+    ### __init__ - initialize and return block
+    ##  @param xCenter - x-coordinate for the center of the button
+    ##  @param yButton - y-coordinate for the center of the button
+    ##  @param initPwr - initial power up state of the block
+    ##  @param tilt - the orientation of the block (vert/horz)
+    def __init__(self, xCenter, yCenter, initPwr, tilt) :
         self.X_CENTER = xCenter
         self.Y_CENTER = yCenter
         self.powerUp = initPwr
-        self.WIDTH = canvas_width // 10
-        self.HEIGHT = canvas_height // 50
-        self.BORDER_WIDTH = canvas_width // 350
         self.TILT = tilt
         self.enabled = True
         self.first = True
         self.changed = False
 
+    ### getEdges - get the edges of the block based on the orientation
+    def getEdges(self) :
+        X_CENTER = self.X_CENTER
+        Y_CENTER = self.Y_CENTER
+
+        # vertical paddle
+        if self.TILT == Tilt.HORZ :
+            leftEdge    = X_CENTER - BLOCK_WIDTH
+            rightEdge   = X_CENTER + BLOCK_WIDTH
+            topEdge     = Y_CENTER - BLOCK_HEIGHT
+            bottomEdge  = Y_CENTER + BLOCK_HEIGHT     
+
+        # edges of the SOUTH paddle
+        elif self.TILT == Tilt.VERT :
+            leftEdge    = X_CENTER - BLOCK_HEIGHT
+            rightEdge   = X_CENTER + BLOCK_HEIGHT
+            topEdge     = Y_CENTER - BLOCK_WIDTH
+            bottomEdge  = Y_CENTER + BLOCK_WIDTH
+
+        return (leftEdge, rightEdge, topEdge, bottomEdge) 
+
+    ### enable - enable the use of this block if appropriate
     def enable(self) :
         if self.enabled == False :
             self.enabled = True
             self.changed = True
 
+    ### disable - disable the use of this block if appropriate
     def disable(self) :
         if self.enabled == True :
             self.enabled = False
             self.changed = True
 
+    ### setBlock - set the block in the canvas
     def setBlock(self, canvas) :
         (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges()
 
+        ## TODO: THE COLOR SHOULD BE SET BASED ON THE POWER UP
         color = "white"
+
         self.b = canvas.create_rectangle(leftEdge, topEdge, rightEdge, bottomEdge,
                                             fill = color, width = self.BORDER_WIDTH)  
         
@@ -50,27 +76,3 @@ class Block :
         elif self.first :
             self.setBlock(canvas)
             self.first = False
-
-
-        ### getEdges - get the edges of the paddle based on the orientation
-    def getEdges(self) :
-        HEIGHT = self.HEIGHT
-        WIDTH = self.WIDTH
-        X_CENTER = self.X_CENTER
-        Y_CENTER = self.Y_CENTER
-
-        # vertical paddle
-        if self.TILT == Tilt.HORZ :
-            leftEdge    = X_CENTER - WIDTH
-            rightEdge   = X_CENTER + WIDTH
-            topEdge     = Y_CENTER - HEIGHT
-            bottomEdge  = Y_CENTER + HEIGHT     
-
-        # edges of the SOUTH paddle
-        elif self.TILT == Tilt.VERT :
-            leftEdge    = X_CENTER - HEIGHT
-            rightEdge   = X_CENTER + HEIGHT
-            topEdge     = Y_CENTER - WIDTH
-            bottomEdge  = Y_CENTER + WIDTH
-
-        return (leftEdge, rightEdge, topEdge, bottomEdge) 
