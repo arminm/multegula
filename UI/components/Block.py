@@ -25,22 +25,19 @@ class Block :
 
     ### getEdges - get the edges of the block based on the orientation
     def getEdges(self) :
-        X_CENTER = self.X_CENTER
-        Y_CENTER = self.Y_CENTER
-
         # vertical paddle
         if self.TILT == Tilt.HORZ :
-            leftEdge    = X_CENTER - BLOCK_WIDTH
-            rightEdge   = X_CENTER + BLOCK_WIDTH
-            topEdge     = Y_CENTER - BLOCK_HEIGHT
-            bottomEdge  = Y_CENTER + BLOCK_HEIGHT     
+            leftEdge    = self.X_CENTER - BLOCK_WIDTH
+            rightEdge   = self.X_CENTER + BLOCK_WIDTH
+            topEdge     = self.Y_CENTER - BLOCK_HEIGHT
+            bottomEdge  = self.Y_CENTER + BLOCK_HEIGHT     
 
         # edges of the SOUTH paddle
         elif self.TILT == Tilt.VERT :
-            leftEdge    = X_CENTER - BLOCK_HEIGHT
-            rightEdge   = X_CENTER + BLOCK_HEIGHT
-            topEdge     = Y_CENTER - BLOCK_WIDTH
-            bottomEdge  = Y_CENTER + BLOCK_WIDTH
+            leftEdge    = self.X_CENTER - BLOCK_HEIGHT
+            rightEdge   = self.X_CENTER + BLOCK_HEIGHT
+            topEdge     = self.Y_CENTER - BLOCK_WIDTH
+            bottomEdge  = self.Y_CENTER + BLOCK_WIDTH
 
         return (leftEdge, rightEdge, topEdge, bottomEdge) 
 
@@ -64,7 +61,7 @@ class Block :
         color = "white"
 
         self.b = canvas.create_rectangle(leftEdge, topEdge, rightEdge, bottomEdge,
-                                            fill = color, width = self.BORDER_WIDTH)  
+                                            fill = color, width = BORDER_WIDTH)  
         
     ### draw - draw the block
     def draw(self, canvas) : 

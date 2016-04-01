@@ -12,14 +12,15 @@ class GameScreen :
     def __init__(self) :
         self.first = True
 
-    def setBackground(self, canvas) :
+    ### set - sets the screen in the canvas
+    def set(self, canvas) :
         self.background = canvas.create_rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, fill = "black", width = 0)
-        
+
         self.foreground = canvas.create_rectangle(X_MARGIN, Y_MARGIN, CANVAS_WIDTH - X_MARGIN,
                                                     CANVAS_HEIGHT - Y_MARGIN, fill = "white", width = 0)
-    ### drawBackground - draw white background with a white border
-    def drawBackground(self, canvas) :
+    ### draw - manages drawing the screen
+    def draw(self, canvas) :
         if(self.first) :
-            self.setBackground(canvas)
+            self.set(canvas)
             self.first = False
 

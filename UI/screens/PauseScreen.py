@@ -17,6 +17,7 @@ class PauseScreen :
         self.counter = 0
         self.first = True
 
+    ### reset -- resets the screen data
     def reset(self, canvas) :
         canvas.delete(self.tLevel)
         canvas.delete(self.tSub)
@@ -28,6 +29,7 @@ class PauseScreen :
         self.color2 = "grey"
         self.color3 = "grey"     
 
+    ### count - count the number of times this has been drawn to change the color of the blocks
     def count(self, canvas) :
         # counter - 
         #   - use to display 3 - 2 - 1 countdown
@@ -48,7 +50,7 @@ class PauseScreen :
             canvas.data["nextScreen"] = Screens.SCRN_NONE
             self.reset(canvas)
 
-
+    ### setScreen - set the screen in the canvas
     def setScreen(self, canvas) : 
         color1 = self.color1
         color2 = self.color2
@@ -70,7 +72,7 @@ class PauseScreen :
         self.t1 = canvas.create_text(X_2THIRD, Y_2THIRD, text = "1",
                                         font = ("Courier", XL_TEXT_SIZE), fill = color3)
 
-    ### draw - make the PauseScreen visible
+    ### draw - manages the drawing of this screen
     def draw(self, canvas) :
         if(not(self.first)) :
             canvas.delete(self.tLevel)

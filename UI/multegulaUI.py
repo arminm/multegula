@@ -102,7 +102,7 @@ def redrawAll(canvas) :
 
     ### PAUSE SCREEN
     elif canvas.data["currentScreen"] == Screens.SCRN_PAUSE :
-        canvas.data["gameScreen"].drawBackground(canvas)
+        canvas.data["gameScreen"].draw(canvas)
         canvas.data["ball"].draw(canvas)
         canvas.data["Player_01"].update(canvas)
         canvas.data["Player_02"].update(canvas)
@@ -112,7 +112,7 @@ def redrawAll(canvas) :
 
     ### GAME SCREEN
     elif canvas.data["currentScreen"] == Screens.SCRN_GAME :
-        canvas.data["gameScreen"].drawBackground(canvas)
+        canvas.data["gameScreen"].draw(canvas)
         canvas.data["Player_01"].update(canvas)
         canvas.data["Player_02"].update(canvas)
         canvas.data["Player_03"].update(canvas)
@@ -122,7 +122,7 @@ def redrawAll(canvas) :
 
     # GAME OVER SCREEN
     elif canvas.data["currentScreen"] == Screens.SCRN_GAME_OVER : 
-        canvas.data["gameOverScreen"].drawBackground(canvas);
+        canvas.data["gameOverScreen"].draw(canvas);
 
 
 
