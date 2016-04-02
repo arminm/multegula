@@ -13,17 +13,20 @@ import (
  * @return if send, return 1; otherwise return 0
  **/
 func getOperation() int {
-	fmt.Println("Send(s) / Receive(r): ")
 	var operation string
-	fmt.Scanf("%s", &operation)
-	for operation != "s" && operation != "r" {
-		fmt.Println("Please select a valid operation, Send(s) / Receive(r): ")
+	for {
+		fmt.Println("Send(s) / Receive(r) / Multicast (m): ")
 		fmt.Scanf("%s", &operation)
-	}
-	if operation == "s" {
-		return 1
-	} else {
-		return 0
+		switch operation {
+		case "s":
+			return 0
+		case "r":
+			return 1
+		case "m":
+			return 2
+		default:
+			fmt.Printf("'%v' is Invalid. Please select a valid operation.", operation)
+		}
 	}
 }
 
@@ -99,6 +102,16 @@ func getLocalName() string {
 	return localName
 }
 
+/*
+ * prompts the user and builds a message
+ */
+func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.Message {
+	dest := getDest(nodes)
+	kind := getString("message kind")
+	content := getString("message content")
+	return messagePasser.Message{Source: localNodeName, Destination: dest, Content: content, Kind: kind}
+}
+
 func main() {
 	// Read command-line arguments and prompt the user if not provided
 	args := os.Args[1:]
@@ -111,14 +124,14 @@ func main() {
 	}
 	fmt.Println("Config Name:", configName)
 
-	var nodeName string
+	var localNodeName string
 	if len(args) > 1 {
-		nodeName = args[1]
+		localNodeName = args[1]
 	} else {
-		nodeName = getLocalName()
+		localNodeName = getLocalName()
 	}
-	fmt.Println("Local Node Name:", nodeName)
-	messagePasser.InitMessagePasser(configName, nodeName)
+	fmt.Println("Local Node Name:", localNodeName)
+	messagePasser.InitMessagePasser(configName, localNodeName)
 
 	fmt.Print("--------------------------------\n")
 
@@ -131,19 +144,21 @@ func main() {
 	fmt.Println("Please select the operation you want to do:")
 	for {
 		operation := getOperation()
-		if operation == 1 {
-			dest := getDest(configuration.Nodes)
-			kind := getString("message kind")
-			content := getString("message content")
-			message := messagePasser.Message{Source: nodeName, Destination: dest, Content: content, Kind: kind}
+		if operation == 0 {
+			message := getMessage(configuration.Nodes, localNodeName)
 			messagePasser.Send(message)
-		} else {
+		} else if operation == 1 {
 			var message messagePasser.Message = messagePasser.Receive()
 			if (message == messagePasser.Message{}) {
 				fmt.Print("No messages received.\n\n")
 			} else {
 				fmt.Printf("Received: %+v\n\n", message)
 			}
+		} else if operation == 2 {
+			message := getMessage(configuration.Nodes, localNodeName)
+			messagePasser.Multicast(&message)
+		} else {
+			fmt.Println("Operation not recognized. Please try again.")
 		}
 	}
 }

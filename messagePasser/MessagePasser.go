@@ -18,6 +18,10 @@ import (
 	"time"
 )
 
+// Constants
+const KIND_MULTICAST string = "multicast"
+const KIND_REMULTICAST string = "remulticast"
+
 // Node structure to hold each node's information
 type Node struct {
 	Name string
@@ -44,18 +48,25 @@ type Message struct {
 	Destination string // the DNS name of receiving node
 	Content     string // the Content of message
 	Kind        string // the Kind of messages
+	SeqNum      int
 }
 
 /* InitMessagePasser has to wait for all work to be done before exiting */
 var wg sync.WaitGroup
+
+func updateSeqNum(message *Message) {
+	seqNum := seqNums[message.Destination] + 1
+	seqNums[message.Destination] = seqNum
+	message.SeqNum = seqNum
+}
 
 /*
  * send TCP messages
  * @param	conn – connection to send message over
  * @param	message – message to be sent
  **/
-func sendMessageTCP(conn net.Conn, message *Message) {
-	encoder := gob.NewEncoder(conn)
+func sendMessageTCP(nodeName string, message *Message) {
+	encoder := gob.NewEncoder(connections[nodeName])
 	encoder.Encode(message)
 }
 
@@ -74,6 +85,23 @@ func receiveMessageTCP(conn net.Conn) Message {
 }
 
 /*
+ * basic multicasts a message to all nodes
+ */
+func Multicast(message *Message) {
+	if len(message.Destination) == 0 {
+		message.Destination = config.Group[0]
+	}
+	if message.Kind != KIND_REMULTICAST {
+		message.Kind = KIND_MULTICAST
+		updateSeqNum(message)
+	}
+
+	for _, node := range config.Nodes {
+		sendMessageTCP(node.Name, message)
+	}
+}
+
+/*
  * local instance holding the parsed config info.
  */
 var config Configuration = Configuration{}
@@ -86,6 +114,7 @@ func Config() Configuration {
  * <key, value> = <dns, connection>
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
+var seqNums map[string]int = make(map[string]int)
 
 /*
  * connection for localhost, this is the receive side,
@@ -173,6 +202,7 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 			localConn = conn
 		} else {
 			connections[msg.Source] = conn
+			seqNums[msg.Source] = 0
 		}
 	}
 }
@@ -194,11 +224,12 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 			time.Sleep(time.Second * 1)
 			conn, err = net.Dial("tcp", node.IP+":"+strconv.Itoa(node.Port))
 		}
-		/* send an initial ping message to other side of the connection */
-		msg := Message{localNode.Name, node.Name, "ping", "ping"}
-		sendMessageTCP(conn, &msg)
-
 		connections[node.Name] = conn
+		seqNums[node.Name] = 0
+
+		/* send an initial ping message to other side of the connection */
+		msg := Message{localNode.Name, node.Name, "ping", "ping", 0}
+		sendMessageTCP(node.Name, &msg)
 	}
 	fmt.Println()
 }
@@ -210,7 +241,12 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  **/
 func receiveMessageFromConn(conn net.Conn) {
 	for {
-		receivedQueue <- receiveMessageTCP(conn)
+		msg := receiveMessageTCP(conn)
+		if msg.Kind == KIND_MULTICAST {
+			msg.Kind = KIND_REMULTICAST
+			Multicast(&msg)
+		}
+		receivedQueue <- msg
 	}
 }
 
@@ -232,7 +268,7 @@ func startReceiveRoutine() {
 func sendMessageToConn() {
 	for {
 		message := <-sendQueue
-		sendMessageTCP(connections[message.Destination], &message)
+		sendMessageTCP(message.Destination, &message)
 	}
 }
 
@@ -253,6 +289,7 @@ func putMessageToSendQueue(message Message) {
  *			message to be sent
  **/
 func Send(message Message) {
+	updateSeqNum(&message)
 	go putMessageToSendQueue(message)
 }
 
@@ -284,6 +321,9 @@ func InitMessagePasser(configName string, localName string) {
 	if err != nil {
 		panic(err)
 	}
+	/* keep track of group seqNum for multicasting */
+	seqNums[config.Group[0]] = 0
+
 	/* separate Node names */
 	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
 
