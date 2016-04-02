@@ -26,21 +26,28 @@ func getOperation() int {
 }
 
 /*
- * get DNS ID
- * @param n
- *        the number of DNS ID
+ * get destination name
+ * @param nodes
+ *        the available nodes to contact
  *
- * @return selected DNS ID
+ * @return destination name string
  **/
-func getNodeID(n int) int {
-	fmt.Println("Please choose one Node ID: ")
-	var id int
-	fmt.Scanf("%d", &id)
-	for id < 0 || id >= n {
-		fmt.Println("Invalid Node ID, please select again: ")
-		fmt.Scanf("%d", &id)
+func getDest(nodes []messagePasser.Node) string {
+	fmt.Println("To: (ex. lunwen)")
+	var destName string
+	fmt.Scanf("%v", &destName)
+	var destNode messagePasser.Node
+	var err error
+	for len(destName) > 0 {
+		destNode, err = messagePasser.FindNodeByName(nodes, destName)
+		if err == nil {
+			break
+		}
+		fmt.Printf("Couldn't find '%v', please try again:\n", destName)
+		fmt.Scanf("%v", &destName)
 	}
-	return id
+
+	return destNode.Name
 }
 
 /*
@@ -54,10 +61,6 @@ func getString(stringType string) string {
 	fmt.Println("Please input " + stringType + ":")
 	var res string
 	fmt.Scanf("%s", &res)
-	for len(res) == 0 {
-		fmt.Println("string cannot be empty, please input again:")
-		fmt.Scanf("%s", &res)
-	}
 	return res
 }
 
@@ -91,20 +94,17 @@ func main() {
 	for {
 		operation := getOperation()
 		if operation == 1 {
-			id := getNodeID(len(configuration.Nodes))
+			dest := getDest(configuration.Nodes)
 			kind := getString("message kind")
 			content := getString("message content")
-			message := messagePasser.Message{Source: nodeName, Destination: configuration.Nodes[id].Name, Content: content, Kind: kind}
+			message := messagePasser.Message{Source: nodeName, Destination: dest, Content: content, Kind: kind}
 			messagePasser.Send(message)
 		} else {
 			var message messagePasser.Message = messagePasser.Receive()
 			if (message == messagePasser.Message{}) {
 				fmt.Println("No messages received.")
 			} else {
-				fmt.Println("Message comes from: " + message.Source)
-				fmt.Println("Message goes to: " + message.Destination)
-				fmt.Println("Message content: " + message.Content)
-				fmt.Println("Message kind: " + message.Kind)
+				fmt.Printf("Message: %+v\n", message)
 			}
 		}
 	}

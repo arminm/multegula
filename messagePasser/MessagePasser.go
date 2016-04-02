@@ -7,14 +7,13 @@
 package messagePasser
 
 import (
-	"bufio"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -33,12 +32,6 @@ type Configuration struct {
 	Group           []string // Group DNS
 	Nodes           []Node
 }
-
-/* delimiter for formatting message */
-/* NOTE: Make sure a message does not include the delimiter in any of
- *       the fields.
- */
-const delimiter string = "##"
 
 /* message structure
  * before message transported through TCP connection, it will
@@ -62,8 +55,9 @@ var wg sync.WaitGroup
  *
  * @return	the string format of the message
  **/
-func encodeMessage(message Message) string {
-	return message.Source + delimiter + message.Destination + delimiter + message.Content + delimiter + message.Kind
+func sendMessageTCP(conn net.Conn, message *Message) {
+	encoder := gob.NewEncoder(conn)
+	encoder.Encode(message)
 }
 
 /*
@@ -73,9 +67,12 @@ func encodeMessage(message Message) string {
  *
  * @return	message
  **/
-func decodeMessage(messageString string) Message {
-	var elements []string = strings.Split(messageString, delimiter)
-	return Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
+func receiveMessageTCP(conn net.Conn) Message {
+	dec := gob.NewDecoder(conn)
+	msg := &Message{}
+	dec.Decode(msg)
+	// fmt.Printf("Received : %+v", msg)
+	return *msg
 }
 
 /*
@@ -109,10 +106,7 @@ var sendQueue chan Message = make(chan Message, 100)
 /* the queue for received messages */
 var receivedQueue chan Message = make(chan Message, 100)
 
-/* port number for TCP connection */
-const port string = ":8081"
-
-func findNodeByName(nodes []Node, name string) (Node, error) {
+func FindNodeByName(nodes []Node, name string) (Node, error) {
 	for _, node := range nodes {
 		if node.Name == name {
 			return node, nil
@@ -175,14 +169,15 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 		 * send it's DNS name so that another node can know it's name
 		 **/
 		conn, _ := ln.Accept()
-		dns, _ := bufio.NewReader(conn).ReadString('\n')
-		dns = dns[0 : len(dns)-1]
+		// dns, _ := bufio.NewReader(conn).ReadString('\n')
+		// dns = dns[0 : len(dns)-1]
+		msg := receiveMessageTCP(conn)
 		/* dns contains \n in it's end */
-		delete(frontNodes, dns)
-		if dns == localNode.Name {
+		delete(frontNodes, msg.Source)
+		if msg.Source == localNode.Name {
 			localConn = conn
 		} else {
-			connections[dns] = conn
+			connections[msg.Source] = conn
 		}
 	}
 }
@@ -206,7 +201,10 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 			conn, err = net.Dial("tcp", node.IP+":"+strconv.Itoa(node.Port))
 		}
 		/* send local DNS to other side of the connection */
-		conn.Write([]byte(localNode.Name + "\n"))
+		msg := Message{localNode.Name, node.Name, "ping", "ping"}
+		sendMessageTCP(conn, &msg)
+
+		// conn.Write([]byte(localNode.Name + "\n"))
 		connections[node.Name] = conn
 	}
 	fmt.Println()
@@ -220,10 +218,10 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  **/
 func receiveMessageFromConn(conn net.Conn) {
 	for {
-		messageString, _ := bufio.NewReader(conn).ReadString('\n')
-		if len(messageString) > 0 {
-			receivedQueue <- decodeMessage(messageString[0 : len(messageString)-1])
-		}
+		// messageString, _ := bufio.NewReader(conn).ReadString('\n')
+		// if len(messageString) > 0 {
+		receivedQueue <- receiveMessageTCP(conn)
+		// }
 	}
 }
 
@@ -245,7 +243,7 @@ func startReceiveRoutine() {
 func sendMessageToConn() {
 	for {
 		message := <-sendQueue
-		connections[message.Destination].Write([]byte(encodeMessage(message) + "\n"))
+		sendMessageTCP(connections[message.Destination], &message)
 	}
 }
 
@@ -293,7 +291,7 @@ func InitMessagePasser(configName string, localName string) {
 		fmt.Println("error:", err)
 	}
 	// fmt.Println("Configuration:", config)
-	localNode, err := findNodeByName(config.Nodes, localName)
+	localNode, err := FindNodeByName(config.Nodes, localName)
 	if err != nil {
 		panic(err)
 	}
