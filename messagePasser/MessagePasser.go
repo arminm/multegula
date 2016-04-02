@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// Node structure to hold each node's information
 type Node struct {
 	Name string
 	IP   string
@@ -30,10 +31,10 @@ type Configuration struct {
 	BootstrapServer []string //BootstrapServer DNS
 	LocalName       []string // Local DNS
 	Group           []string // Group DNS
-	Nodes           []Node
+	Nodes           []Node   // List of available nodes
 }
 
-/* message structure
+/* Message structure
  * before message transported through TCP connection, it will
  * be converted to string in the format of: Source##Destination##Content##Kind
  * when message is received, it will be reconstructed
@@ -45,15 +46,13 @@ type Message struct {
 	Kind        string // the Kind of messages
 }
 
-/* InitMessagePasser has to wait all work done before exiting */
+/* InitMessagePasser has to wait for all work to be done before exiting */
 var wg sync.WaitGroup
 
 /*
- * convert message to string
- * @param	message
- *			message to be converted
- *
- * @return	the string format of the message
+ * send TCP messages
+ * @param	conn – connection to send message over
+ * @param	message – message to be sent
  **/
 func sendMessageTCP(conn net.Conn, message *Message) {
 	encoder := gob.NewEncoder(conn)
@@ -61,9 +60,8 @@ func sendMessageTCP(conn net.Conn, message *Message) {
 }
 
 /*
- * construct message from it's string format
- * @param	messageString
- *			message in string format
+ * receive TCP messages
+ * @param	conn – the connection to use
  *
  * @return	message
  **/
@@ -71,7 +69,7 @@ func receiveMessageTCP(conn net.Conn) Message {
 	dec := gob.NewDecoder(conn)
 	msg := &Message{}
 	dec.Decode(msg)
-	// fmt.Printf("Received : %+v", msg)
+	// fmt.Printf("Received : %+v\n", msg)
 	return *msg
 }
 
@@ -106,6 +104,9 @@ var sendQueue chan Message = make(chan Message, 100)
 /* the queue for received messages */
 var receivedQueue chan Message = make(chan Message, 100)
 
+/*
+ * finds a node within an array of nodes by Name
+ */
 func FindNodeByName(nodes []Node, name string) (Node, error) {
 	for _, node := range nodes {
 		if node.Name == name {
@@ -117,16 +118,13 @@ func FindNodeByName(nodes []Node, name string) (Node, error) {
 
 /*
  * separate nodes' DNS name into two parts based on lexicographical order
- * @param	group
- *			the DNS name of each node in the group
+ * @param	nodes
+ *			the nodes in the group
  *
- * @param	localName
- *			the DNS name of local node
+ * @param	localNode
  *
- * @return	frontNodes
- *			nodes smaller than localName
- *			latterNodes
- *			nodes greater or equal to localName
+ * @return	frontNodes – nodes smaller than localName
+ *					latterNodes – nodes greater or equal to localName
  **/
 func getFrontAndLatterNodes(nodes []Node, localNode Node) (map[string]Node, map[string]Node) {
 	var frontNodes map[string]Node = make(map[string]Node)
@@ -150,10 +148,9 @@ func getFrontAndLatterNodes(nodes []Node, localNode Node) (map[string]Node, map[
  * all connections from all other nodes in the group,
  * this routine exits
  * @param	frontNodes
- *			map that contains all nodes with smaller DNS names
+ *			map that contains all nodes with smaller Node names
  *
- * @param   localName
- *          the DNS name of local node
+ * @param   localNode
  **/
 func acceptConnection(frontNodes map[string]Node, localNode Node) {
 	defer wg.Done()
@@ -169,10 +166,8 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 		 * send it's DNS name so that another node can know it's name
 		 **/
 		conn, _ := ln.Accept()
-		// dns, _ := bufio.NewReader(conn).ReadString('\n')
-		// dns = dns[0 : len(dns)-1]
 		msg := receiveMessageTCP(conn)
-		/* dns contains \n in it's end */
+		// remove the connected node from the frontNodes
 		delete(frontNodes, msg.Source)
 		if msg.Source == localNode.Name {
 			localConn = conn
@@ -183,13 +178,12 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 }
 
 /*
- * send connections to nodes with greater DNS names
+ * send connections to nodes with greater Names
  * and stores connections into connections map
  * @param	latterNodes
- *			map that contains all nodes with greater or equal DNS names
+ *			map that contains all nodes with greater or equal Node names
  *
- * @param	localName
- *			the DNS name of local node
+ * @param	localNode
  **/
 func sendConnection(latterNodes map[string]Node, localNode Node) {
 	defer wg.Done()
@@ -200,28 +194,23 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 			time.Sleep(time.Second * 1)
 			conn, err = net.Dial("tcp", node.IP+":"+strconv.Itoa(node.Port))
 		}
-		/* send local DNS to other side of the connection */
+		/* send an initial ping message to other side of the connection */
 		msg := Message{localNode.Name, node.Name, "ping", "ping"}
 		sendMessageTCP(conn, &msg)
 
-		// conn.Write([]byte(localNode.Name + "\n"))
 		connections[node.Name] = conn
 	}
 	fmt.Println()
 }
 
 /*
- * receive message from TCP connection, reconstruct message and
- * put it into receivedQueue of message
+ * receive message from TCP connection, and put it into receivedQueue of message
  * @param	conn
  *			TCP connection
  **/
 func receiveMessageFromConn(conn net.Conn) {
 	for {
-		// messageString, _ := bufio.NewReader(conn).ReadString('\n')
-		// if len(messageString) > 0 {
 		receivedQueue <- receiveMessageTCP(conn)
-		// }
 	}
 }
 
@@ -268,7 +257,7 @@ func Send(message Message) {
 }
 
 /*
- * receive message, this is a public method
+ * Delivers received messages from the receiveQueue
  * @return	if there are receivable messages in receivedQueue, return the first
  *			in receivedQueue; otherwise, return an empty message
  **/
@@ -284,18 +273,18 @@ func Receive() Message {
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser(configName string, localName string) {
-	file, _ := os.Open("./messagePasser/" + configName + ".json")
+	filePath := "./messagePasser/" + configName + ".json"
+	file, _ := os.Open(filePath)
 	decoder := json.NewDecoder(file)
 	err := decoder.Decode(&config)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	// fmt.Println("Configuration:", config)
 	localNode, err := FindNodeByName(config.Nodes, localName)
 	if err != nil {
 		panic(err)
 	}
-	/* separate DNS names */
+	/* separate Node names */
 	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
 
 	/* wait for connections setup before proceeding */
