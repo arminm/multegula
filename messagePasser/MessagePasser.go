@@ -78,6 +78,15 @@ func decodeMessage(messageString string) Message {
 	return Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
 }
 
+/*
+ * local instance holding the parsed config info.
+ */
+var config Configuration = Configuration{}
+
+func Config() Configuration {
+	return config
+}
+
 /* map stores connections to each node
  * <key, value> = <dns, connection>
  **/
@@ -279,18 +288,17 @@ func Receive() Message {
 func InitMessagePasser(configName string, localName string) {
 	file, _ := os.Open("./messagePasser/" + configName + ".json")
 	decoder := json.NewDecoder(file)
-	configuration := Configuration{}
-	err := decoder.Decode(&configuration)
+	err := decoder.Decode(&config)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	// fmt.Println("Configuration:", configuration)
-	localNode, err := findNodeByName(configuration.Nodes, localName)
+	// fmt.Println("Configuration:", config)
+	localNode, err := findNodeByName(config.Nodes, localName)
 	if err != nil {
 		panic(err)
 	}
 	/* separate DNS names */
-	frontNodes, latterNodes := getFrontAndLatterNodes(configuration.Nodes, localNode)
+	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
 
 	/* wait for connections setup before proceeding */
 	wg.Add(2)

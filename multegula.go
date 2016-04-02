@@ -1,11 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"sort"
-	"strconv"
 
 	"github.com/arminm/multegula/messagePasser"
 )
@@ -30,31 +26,18 @@ func getOperation() int {
 }
 
 /*
- * print out available DNS IDs
- * @param n
- *        number of DNS IDs
- **/
-func printDNSID(n int) {
-	fmt.Println("Valid operation ID: ")
-	for i := 0; i < n; i++ {
-		fmt.Println("\t" + strconv.Itoa(i))
-	}
-}
-
-/*
  * get DNS ID
  * @param n
  *        the number of DNS ID
  *
  * @return selected DNS ID
  **/
-func getDNSID(n int) int {
-	printDNSID(n)
-	fmt.Println("Please choose one DNS ID: ")
+func getNodeID(n int) int {
+	fmt.Println("Please choose one Node ID: ")
 	var id int
 	fmt.Scanf("%d", &id)
 	for id < 0 || id >= n {
-		fmt.Println("Invalid DNS ID, please select again: ")
+		fmt.Println("Invalid Node ID, please select again: ")
 		fmt.Scanf("%d", &id)
 	}
 	return id
@@ -99,38 +82,29 @@ func main() {
 	messagePasser.InitMessagePasser(configName, nodeName)
 	fmt.Println("message passer initialzed")
 
-	file, _ := os.Open("./messagePasser/config.json")
-	decoder := json.NewDecoder(file)
-	configuration := messagePasser.Configuration{}
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
+	configuration := messagePasser.Config()
 
-	sort.Strings(configuration.Group)
-
-	fmt.Println("local name: " + configuration.LocalName[0])
-	for i, dns := range configuration.Group {
-		fmt.Printf("ID %d, DNS name %s\n", i, dns)
+	for i, node := range configuration.Nodes {
+		fmt.Printf("ID: %d, Node name: %s\n", i, node.Name)
 	}
 
 	for {
 		operation := getOperation()
 		if operation == 1 {
-			id := getDNSID(len(configuration.Group))
+			id := getNodeID(len(configuration.Nodes))
 			kind := getString("message kind")
 			content := getString("message content")
-			message := messagePasser.Message{Source: configuration.LocalName[0], Destination: configuration.Group[id], Content: content, Kind: kind}
+			message := messagePasser.Message{Source: nodeName, Destination: configuration.Nodes[id].Name, Content: content, Kind: kind}
 			messagePasser.Send(message)
 		} else {
 			var message messagePasser.Message = messagePasser.Receive()
 			if (message == messagePasser.Message{}) {
-				fmt.Println("There is no message received right now.")
+				fmt.Println("No messages received.")
 			} else {
 				fmt.Println("Message comes from: " + message.Source)
 				fmt.Println("Message goes to: " + message.Destination)
 				fmt.Println("Message content: " + message.Content)
-				fmt.Println("Message kind: " + message.Content)
+				fmt.Println("Message kind: " + message.Kind)
 			}
 		}
 	}
