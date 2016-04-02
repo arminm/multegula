@@ -3,28 +3,30 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-    "os"
-    "sort"
-    "github.com/arminm/multegula/messagePasser"
-    "strconv"
+	"os"
+	"sort"
+	"strconv"
+
+	"github.com/arminm/multegula/messagePasser"
 )
+
 /*
  * get the operation, send or receive
  * @return if send, return 1; otherwise return 0
  **/
 func getOperation() int {
-    fmt.Println("Please select the operation you want to do, send(s)/receive(r): ")
-    var operation string
-    fmt.Scanf("%s", &operation)
-    for operation != "s" && operation != "r" {
-        fmt.Println("Please select a valid operation, send(s)/receive(r): ")
-        fmt.Scanf("%s", &operation)
-    }
-    if(operation == "s") {
-        return 1
-    } else {
-        return 0
-    }
+	fmt.Println("Please select the operation you want to do, send(s)/receive(r): ")
+	var operation string
+	fmt.Scanf("%s", &operation)
+	for operation != "s" && operation != "r" {
+		fmt.Println("Please select a valid operation, send(s)/receive(r): ")
+		fmt.Scanf("%s", &operation)
+	}
+	if operation == "s" {
+		return 1
+	} else {
+		return 0
+	}
 }
 
 /*
@@ -33,10 +35,10 @@ func getOperation() int {
  *        number of DNS IDs
  **/
 func printDNSID(n int) {
-    fmt.Println("Valid operation ID: ")
-    for i := 0; i < n; i++ {
-        fmt.Println("\t" + strconv.Itoa(i))
-    }
+	fmt.Println("Valid operation ID: ")
+	for i := 0; i < n; i++ {
+		fmt.Println("\t" + strconv.Itoa(i))
+	}
 }
 
 /*
@@ -47,15 +49,15 @@ func printDNSID(n int) {
  * @return selected DNS ID
  **/
 func getDNSID(n int) int {
-    printDNSID(n)
-    fmt.Println("Please choose one DNS ID: ")
-    var id int
-    fmt.Scanf("%d", &id)
-    for id < 0 || id >= n {
-        fmt.Println("Invalid DNS ID, please select again: ")
-        fmt.Scanf("%d", &id)
-    }
-    return id
+	printDNSID(n)
+	fmt.Println("Please choose one DNS ID: ")
+	var id int
+	fmt.Scanf("%d", &id)
+	for id < 0 || id >= n {
+		fmt.Println("Invalid DNS ID, please select again: ")
+		fmt.Scanf("%d", &id)
+	}
+	return id
 }
 
 /*
@@ -66,19 +68,35 @@ func getDNSID(n int) int {
  * @return string got from stdin
  **/
 func getString(stringType string) string {
-    fmt.Println("Please input " + stringType + ":")
-    var res string
-    fmt.Scanf("%s", &res)
-    for len(res) == 0 {
-        fmt.Println("string cannot be empty, please input again:")
-        fmt.Scanf("%s", &res)
-    }
-    return res
+	fmt.Println("Please input " + stringType + ":")
+	var res string
+	fmt.Scanf("%s", &res)
+	for len(res) == 0 {
+		fmt.Println("string cannot be empty, please input again:")
+		fmt.Scanf("%s", &res)
+	}
+	return res
 }
 
 func main() {
 	fmt.Println("initialzing message passer...")
-	messagePasser.InitMessagePasser()
+	fmt.Println("What's the config file's name? (ex. config)")
+	var configName string
+	fmt.Scanf("%s", &configName)
+	if len(configName) == 0 {
+		configName = "config"
+	}
+	fmt.Println("Config Name:", configName)
+
+	fmt.Println("Who are you? (ex. armin)")
+	var nodeName string
+	fmt.Scanf("%s", &nodeName)
+	if len(configName) == 0 {
+		configName = "armin"
+	}
+	fmt.Println("Node Name:", nodeName)
+
+	messagePasser.InitMessagePasser(configName, nodeName)
 	fmt.Println("message passer initialzed")
 
 	file, _ := os.Open("./messagePasser/config.json")
@@ -86,7 +104,7 @@ func main() {
 	configuration := messagePasser.Configuration{}
 	err := decoder.Decode(&configuration)
 	if err != nil {
-	  fmt.Println("error:", err)
+		fmt.Println("error:", err)
 	}
 
 	sort.Strings(configuration.Group)
@@ -96,24 +114,24 @@ func main() {
 		fmt.Printf("ID %d, DNS name %s\n", i, dns)
 	}
 
-    for {
-        operation := getOperation()
-        if(operation == 1) {
-            id := getDNSID(len(configuration.Group))
-            kind := getString("message kind")
-            content := getString("message content")
-            message := messagePasser.Message{Source: configuration.LocalName[0], Destination: configuration.Group[id], Content: content, Kind: kind}
-            messagePasser.Send(message)
-        } else {
-            var message messagePasser.Message = messagePasser.Receive()
-            if(message == messagePasser.Message{}) {
-                fmt.Println("There is no message received right now.")
-            } else {
-                fmt.Println("Message comes from: " + message.Source)
-                fmt.Println("Message goes to: " + message.Destination)
-                fmt.Println("Message content: " + message.Content)
-                fmt.Println("Message kind: " + message.Content)
-            }
-        }
-    }
+	for {
+		operation := getOperation()
+		if operation == 1 {
+			id := getDNSID(len(configuration.Group))
+			kind := getString("message kind")
+			content := getString("message content")
+			message := messagePasser.Message{Source: configuration.LocalName[0], Destination: configuration.Group[id], Content: content, Kind: kind}
+			messagePasser.Send(message)
+		} else {
+			var message messagePasser.Message = messagePasser.Receive()
+			if (message == messagePasser.Message{}) {
+				fmt.Println("There is no message received right now.")
+			} else {
+				fmt.Println("Message comes from: " + message.Source)
+				fmt.Println("Message goes to: " + message.Destination)
+				fmt.Println("Message content: " + message.Content)
+				fmt.Println("Message kind: " + message.Content)
+			}
+		}
+	}
 }
