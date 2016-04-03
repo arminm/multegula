@@ -10,7 +10,7 @@ import (
     "fmt"
     "net"
     "bufio"
-    "messagePasser"
+    "github.com/arminm/multegula/messagePasser"
     "strings"
 )
 
