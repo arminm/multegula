@@ -4,19 +4,17 @@
 #Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He#
 ###########################################################
 
-import socket
+import socket #Needed for network communications
 import time #Needed for labeling date/time
 import datetime #Needed for labeling date/time
 import base64 #Needed for encoding network messages
 
 ########PARAMETERS########
-#Set arbitrary buffer size for received messages
-BUFFER_SIZE = 200
+BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
 DELIMITER = "##"
 LOCALHOST_IP = '127.0.0.1'
 TCP_PORT = 44444
 ##########################
-
 
 ## RUN the GoBridge
 ## # this function starts the GoBridge running
@@ -37,9 +35,6 @@ def runGoBridge():
 	message = "localhost##localhost##messagecontent##testMessage"
 	GoBridge.send(message.encode(encoding='utf-8'))
 	###############FOR TESTING/DEBUG ONLY#################
-	
-	#Close the connection, but commented because we don't want to do that yet.
-	#MessagePasser.close()
 
 ## Build and Send Message
 ## # this function builds and sends a message.
