@@ -8,8 +8,8 @@ package main
 
 import (
     "fmt"
+    "encoding/gob"
     "net"
-    "bufio"
     "github.com/arminm/multegula/messagePasser"
     "strings"
 )
@@ -50,10 +50,12 @@ func encodeMessage(message messagePasser.Message) string {
  **/
 func receiveFromUI(conn net.Conn) {
     for {
-        messageString, _ := bufio.NewReader(conn).ReadString('\n')
-        if(len(messageString) > 0) {
-            fmt.Printf("Message received from UI: %s\n", messageString[0:len(messageString) - 1])
-            messagePasser.Send(decodeMessage(messageString[0:len(messageString) - 1]))
+        deCoder := gob.NewDecoder(conn)
+        message := &messagePasser.Message{}
+        deCoder.Decode(message)
+        if (*message != messagePasser.Message{}) {
+            fmt.Printf("Message received from UI: %+v\n", message)
+            messagePasser.Send(*message)
         }
     }
 }
@@ -68,7 +70,8 @@ func sendToUI(conn net.Conn) {
         var message messagePasser.Message = messagePasser.BlockReceive()
         if(message != messagePasser.Message{}) {
             fmt.Printf("Message sent to UI: %s\n", encodeMessage(message))
-            conn.Write([]byte(encodeMessage(message) + "\n"))
+            encoder := gob.NewEncoder(conn)
+            encoder.Encode(&message)
         }
     }
 }
