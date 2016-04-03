@@ -34,7 +34,7 @@ type Rules struct {
 var rules Rules = Rules{}
 
 /* init function, decode rules from rules.json */
-func Init() {
+func InitRules() {
     file, errOpenFile := os.Open("./rules.json")
     if errOpenFile != nil {
         fmt.Println("error when open file: ", errOpenFile)
@@ -44,6 +44,41 @@ func Init() {
     if errDecode != nil {
         fmt.Println("error when decoding: ", errDecode)
     }
+}
+
+/**
+ *if rule can be applied to message
+ *@param message
+ *       message to be tested
+ *
+ *@param rule
+ *       rule to be applied
+ *
+ *@return if the rule can be applied to message,
+ *        return true; otherwise return false
+ */
+func matchRule(message Message, rule Rule) bool {
+    if len(rule.Src) > 0 && rule.Src != message.Source {
+        return false
+    }
+    if len(rule.Dest) > 0 && rule.Dest != message.Destination {
+        return false
+    }
+    if len(rule.Kind) > 0 && rule.Kind != message.Kind {
+        return false
+    }
+    if rule.SeqNum > 0 {
+        if rule.Action == "dropAfter" {
+            if message.SeqNum <= rule.SeqNum {
+                return false
+            }
+        } else {
+            if message.SeqNum != rule.SeqNum {
+                return false
+            }
+        }
+    }
+    return true
 }
 
 /**
