@@ -13,6 +13,7 @@ sys.path.append('UI/')
 sys.path.append('Bridges/')
 
 from UI.multegulaUI import * #Import our UI functions
+from Bridges.GoBridge.py import * #Import our Go Bridge
 import subprocess #Needed for system calls
 from multiprocessing import Process #Needed for function concurrency
 
@@ -20,8 +21,8 @@ from multiprocessing import Process #Needed for function concurrency
 messagepasser = subprocess.Popen(['go', 'run', 'MessagePasser.go'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 #Start UI
-p1 = Process(target=runUI)
-p2 = Process(target=runGoBridge)
+p1 = Process(target=runGoBridge)
+p2 = Process(target=runUI)
 p1.start()
 p2.start()
 p1.join()
