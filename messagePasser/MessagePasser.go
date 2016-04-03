@@ -259,7 +259,7 @@ func BlockReceive() Message {
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser() {
-	file, _ := os.Open("./messagePasser/config.json")
+	file, _ := os.Open("../messagePasser/config.json")
 	decoder := json.NewDecoder(file)
 	configuration := Configuration{}
 	err := decoder.Decode(&configuration)
