@@ -54,7 +54,7 @@ func receiveFromUI(conn net.Conn) {
         message := &messagePasser.Message{}
         deCoder.Decode(message)
         if (*message != messagePasser.Message{}) {
-            fmt.Printf("Message received from UI: %+v\n", message)
+            fmt.Printf("Message received from UI: %+v\n", *message)
             messagePasser.Send(*message)
         }
     }
@@ -69,7 +69,7 @@ func sendToUI(conn net.Conn) {
     for {
         var message messagePasser.Message = messagePasser.BlockReceive()
         if(message != messagePasser.Message{}) {
-            fmt.Printf("Message sent to UI: %s\n", encodeMessage(message))
+            fmt.Printf("Message sent to UI: %+v\n", message)
             encoder := gob.NewEncoder(conn)
             encoder.Encode(&message)
         }
