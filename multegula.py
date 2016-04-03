@@ -16,14 +16,13 @@ import time #Needed to sleep
 sys.path.append('UI/')
 sys.path.append('Bridges/')
 
-#####MORE IMPORTS####
+#####OUR IMPORTS#####
 from UI.multegulaUI import * #Import our UI functions
 from Bridges.GoBridge import * #Import our Go Bridge
 #####################
 
-#Start Go Bridge, and give it time to come up before continuing
-messagepasser = subprocess.Popen(['go', 'run', 'Bridges/PyBridge.go'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-#subprocess.check_output("go run Bridges/PyBridge.go", shell=True)
+#Start PyBridge, and give it time to come up before continuing
+PyBridge = subprocess.Popen(['go', 'run', 'Bridges/PyBridge.go'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 time.sleep(1)
 
 #Start UI
