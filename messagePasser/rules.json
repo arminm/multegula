@@ -1,0 +1,37 @@
+{
+    "SendRules": [
+        {
+            "Action": "drop",
+            "Src": "A",
+            "Dest": "B",
+            "Kind": "Ack",
+            "SeqNum": 4
+        },
+
+        {
+            "Action": "delay",
+            "Src": "A",
+            "Dest": "C",
+            "Kind": "Reply",
+            "SeqNum": 4
+        }
+    ],
+
+    "ReceiveRules": [
+    	{	
+            "Action": "delay",
+            "Src": "B",
+            "Dest": "C",
+            "Kind": "Ack",
+            "SeqNum": 4
+	    },
+	
+    	{
+            "Action": "dropAfter",
+            "Src": "C",
+            "Dest": "A",
+            "Kind": "Reply",
+            "SeqNum": 4
+	    }
+    ]
+}
