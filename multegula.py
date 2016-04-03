@@ -9,20 +9,21 @@
 import sys #Needs to be here before the path append.
 import subprocess #Needed for system calls
 from multiprocessing import Process #Needed for function concurrency
+import time #Needed to sleep
 #####################
 
 #Tells Python to search UI and Bridges folder for functions as well.
-#sys.path.append('UI/')
-#sys.path.append('Bridges/')
+sys.path.append('UI/')
+sys.path.append('Bridges/')
 
 #####MORE IMPORTS####
-#from UI.multegulaUI import * #Import our UI functions
-from Bridges.GoBridge.py import * #Import our Go Bridge
+from UI.multegulaUI import * #Import our UI functions
+from Bridges.GoBridge import * #Import our Go Bridge
 #####################
 
-#Start Go Bridge
+#Start Go Bridge, and give it time to come up before continuing
 messagepasser = subprocess.Popen(['go', 'run', 'Bridges/PyBridge.go'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
+time.sleep(3)
 
 #Start UI
 p1 = Process(target=runGoBridge)
