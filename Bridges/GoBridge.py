@@ -26,7 +26,6 @@ def runGoBridge():
 		MessagePasser.connect("127.0.0.1", "44444")
 	except:
 		print("[" + prettytime + "] Can't connect. Is Go MessagePasser up?")
-		break
 	
 	#Close the connection, but commented because we don't want to do that yet.
 	#MessagePasser.close()
