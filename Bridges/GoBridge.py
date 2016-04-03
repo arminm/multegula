@@ -11,6 +11,9 @@ import datetime #Needed for labeling date/time
 #Set arbitrary buffer size for received messages
 BUFFER_SIZE = 200
 DELIMITER = "##"
+LOCALHOST_IP = '127.0.0.1'
+TCP_PORT = 44444
+
 
 ## RUN the GoBridge
 ## # this function starts the GoBridge running
@@ -20,12 +23,12 @@ def runGoBridge():
 	prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 	
 	#Set up the connection
-	MessagePasser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	GoBridge = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	try:
-		#Try to open connection to local Go MessagePasser
-		MessagePasser.connect("127.0.0.1", "44444")
+		#Try to open connection to local Go Bridge
+		GoBridge.connect((LOCALHOST_IP, TCP_PORT))
 	except:
-		print("[" + prettytime + "] Can't connect. Is Go MessagePasser up?")
+		print("[" + prettytime + "] Can't connect. Is GoBridge up?")
 	
 	#Close the connection, but commented because we don't want to do that yet.
 	#MessagePasser.close()
