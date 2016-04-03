@@ -91,5 +91,27 @@ func matchRule(message Message, rule Rule) bool {
  *        empty rule
  **/
 func MatchSendRule(message Message) Rule {
-    
+    for _, rule := range rules.SendRules {
+        if matchRule(message, rule) {
+            return rule
+        }
+    }
+    return Rule{}
+}
+/**
+ *find if there is a receive rule which can be applied to message
+ *@param  message
+ *        message to be matched 
+ *
+ *@return if there is a receive rule which can be applied to 
+ *        message, return that receive rule; otherwise, return 
+ *        empty rule
+ **/
+func MatchReceiveRule(message Message) Rule {
+    for _, rule := range rules.SendRules {
+        if matchRule(message, rule) {
+            return rule
+        }
+    }
+    return Rule{}
 }
