@@ -10,6 +10,7 @@ Dependencies Required:
 * Go 1.6 (or greater)  
 * Python 3.5.1 (or greater)
 * python3-tk
+* git (for installation)
 
 #### OS X:  
 ```bash
@@ -37,10 +38,9 @@ cd multegula/
 
 Running:
 ---------------------------------------------------------
-1. Set configuration parameters in config.json.
-2. ./run.sh (OS X, Linux) or click run.bat (Windows)
+1. ./run.sh (OS X, Linux) or click run.bat (Windows)
 
 Acknowledgements:
 ---------------------------------------------------------
 Dr. Bill Nace, Mayank Shishodia, and the teaching staff of 18-842,
-Embedded Systems, at Carnegie Mellon University, Spring 2016.
+Distributed Systems, at Carnegie Mellon University, Spring 2016.
