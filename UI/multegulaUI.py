@@ -3,6 +3,10 @@
 # multegulaUI.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
+#Tells Python to search Bridges folder for functions as well.
+import sys
+sys.path.append('../Bridges/')
+
 # imports
 from tkinter import *
 import random
@@ -19,8 +23,9 @@ from screens.PauseScreen import *
 from screens.ScreenEnum import *
 from screens.GameOver import *
 from screens.GameScreen import *
-
 from levels.Level import *
+from Bridges.GoBridge import * #This is our GoBridge
+
 
 ### keyPressed - handle keypressed events
 def keyPressed(event) :

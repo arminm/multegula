@@ -18,44 +18,41 @@ LOCALHOST_IP = '127.0.0.1'
 TCP_PORT = 44444
 ##########################
 
-## RUN the GoBridge
-## # this function starts the GoBridge running
-## # Returns a connected socket object GoBridge
-def runGoBridge():
-	#Get Time
-	timestamp = int(time.time())
-	prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-	
-	#Set up the connection
-	GoBridge = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	
-	#Disable Nagle's Algorithm to decrease latency.
-	#TCP_NODELAY sends packets immediately.
-	GoBridge.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-	
-	try:
-		#Try to open connection to local Go Bridge
-		GoBridge.connect((LOCALHOST_IP, TCP_PORT))
-	except:
-		print("[" + prettytime + "] Can't connect. Is GoBridge up?")
+# BALL class
+class GoBridge :
+    ### __init___ - initialize and return GoBridge
+    ## # this function starts the GoBridge running
+	## # Returns a connected socket object GoBridge
+	def __init__(self) :
+		#Get Time
+		timestamp = int(time.time())
+		prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+		
+		#Set up the connection
+		GoBridge = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		
+		#Disable Nagle's Algorithm to decrease latency.
+		#TCP_NODELAY sends packets immediately.
+		GoBridge.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+		
+		try:
+			#Try to open connection to local Go Bridge
+			GoBridge.connect((LOCALHOST_IP, TCP_PORT))
+		except:
+			print("[" + prettytime + "] Can't connect. Is GoBridge up?")
 
-	###############FOR TESTING/DEBUG ONLY#################
-	message = "localhost##localhost##messagecontent##testMessage##true"
-	GoBridge.send(message.encode(encoding='utf-8'))
-	###############FOR TESTING/DEBUG ONLY#################
+		#And declare GoBridge
+		self.GoBridge = GoBridge
 
-	#Returns our connected socket object
-	return GoBridge
+	## Build and Send Message
+	## # this function builds and sends a message.
+	## # Explicit encoding declaration became necessary in Python 3.
+	def sendMessage(src, dest, content, kind, multicastFlag):
+		message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + DELIMITER + multicastFlag
+		GoBridge.send(message.encode(encoding='utf-8'))
 
-## Build and Send Message
-## # this function builds and sends a message.
-## # Explicit encoding declaration became necessary in Python 3.
-def sendMessage(GoBridge, src, dest, content, kind, multicastFlag):
-	message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + DELIMITER + multicastFlag
-	GoBridge.send(message.encode(encoding='utf-8'))
-
-## Receive Message
-## # this function receives a message from the receive buffer
-def receiveMessage():
-	receivedData = GoBridge.recv(BUFFER_SIZE)
-	return receivedData
+	## Receive Message
+	## # this function receives a message from the receive buffer
+	def receiveMessage():
+		receivedData = GoBridge.recv(BUFFER_SIZE)
+		return receivedData

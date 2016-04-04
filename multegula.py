@@ -26,9 +26,6 @@ PyBridge = subprocess.Popen(['go', 'run', 'Bridges/PyBridge.go'], stdout=subproc
 time.sleep(1)
 
 #Start UI
-p1 = Process(target=runGoBridge)
-p2 = Process(target=runUI)
+p1 = Process(target=runUI)
 p1.start()
-p2.start()
 p1.join()
-p2.join()
