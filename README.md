@@ -34,9 +34,12 @@ cd multegula/
 ```
 Install Go 1.6 - https://golang.org/dl/
 Install Python 3.5.1 (includes pip) - https://www.python.org/downloads/
+	BE SURE TO CHECK "Add Python 3.5 to PATH"
 Open a command prompt and run the following: 
-	C:\Python35\Scripts\pip install python3-tk --upgrade
-Download Multegula and Unzip: https://github.com/arminm/multegula/archive/master.zip
+	mkdir C:\Go\src\github.com\arminm\multegula\
+Download Multegula and unzip contents of: https://github.com/arminm/multegula/archive/master.zip
+	into C:\Go\src\github.com\arminm\multegula\
+Click "Allow" on any Windows Firewall notifications upon running.
 ```
 
 Running:
