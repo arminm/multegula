@@ -12,13 +12,11 @@ from multiprocessing import Process #Needed for function concurrency
 import time #Needed to sleep
 #####################
 
-#Tells Python to search UI and Bridges folder for functions as well.
+#Tells Python to search UI folder for functions as well.
 sys.path.append('UI/')
-sys.path.append('Bridges/')
 
 #####OUR IMPORTS#####
 from UI.multegulaUI import * #Import our UI functions
-from Bridges.GoBridge import * #Import our Go Bridge
 #####################
 
 #Start PyBridge, and give it time to come up before continuing

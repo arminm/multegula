@@ -4,8 +4,8 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 #Tells Python to search Bridges folder for functions as well.
-import sys
-sys.path.append('../Bridges/')
+#import sys
+#sys.path.append('../Bridges/')
 
 # imports
 from tkinter import *
