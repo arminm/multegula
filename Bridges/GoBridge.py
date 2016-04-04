@@ -4,10 +4,12 @@
 #Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He#
 ###########################################################
 
+#######IMPORTS#######
 import socket #Needed for network communications
 import time #Needed for labeling date/time
 import datetime #Needed for labeling date/time
 import base64 #Needed for encoding network messages
+#####################
 
 ########PARAMETERS########
 BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
@@ -18,6 +20,7 @@ TCP_PORT = 44444
 
 ## RUN the GoBridge
 ## # this function starts the GoBridge running
+## # Returns a connected socket object GoBridge
 def runGoBridge():
 	#Get Time
 	timestamp = int(time.time())
@@ -37,14 +40,17 @@ def runGoBridge():
 		print("[" + prettytime + "] Can't connect. Is GoBridge up?")
 
 	###############FOR TESTING/DEBUG ONLY#################
-	message = "localhost##localhost##messagecontent##testMessage"
+	message = "localhost##localhost##messagecontent##testMessage##true"
 	GoBridge.send(message.encode(encoding='utf-8'))
 	###############FOR TESTING/DEBUG ONLY#################
 
+	#Returns our connected socket object
+	return GoBridge
+
 ## Build and Send Message
 ## # this function builds and sends a message.
-## # Base64 encoding isn't my favorite, but it became necessary in Python 3.
-def sendMessage(src, dest, content, kind, multicastFlag):
+## # Explicit encoding declaration became necessary in Python 3.
+def sendMessage(GoBridge, src, dest, content, kind, multicastFlag):
 	message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + DELIMITER + multicastFlag
 	GoBridge.send(message.encode(encoding='utf-8'))
 
