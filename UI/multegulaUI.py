@@ -24,8 +24,7 @@ from screens.ScreenEnum import *
 from screens.GameOver import *
 from screens.GameScreen import *
 from levels.Level import *
-from Bridges.GoBridge import * #This is our GoBridge
-
+#from Bridges.GoBridge import * #This is our GoBridge
 
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
