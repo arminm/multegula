@@ -21,13 +21,22 @@ git clone https://github.com/arminm/multegula.git
 cd multegula/
 ```
 
-#### Ubuntu Linux 16.04:  
+#### Ubuntu Linux 16.04 LTS:  
 ```bash
 sudo apt-get install python3-tk golang git  
 mkdir -p ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git  
 cd multegula/
+```
+
+#### Windows 7 or Newer (REQUIRES TESTING):  
+```
+Install Go 1.6 - https://golang.org/dl/
+Install Python 3.5.1 (includes pip) - https://www.python.org/downloads/
+Open a command prompt and run the following: 
+	C:\Python35\Scripts\pip install python3-tk --upgrade
+Download Multegula and Unzip: https://github.com/arminm/multegula/archive/master.zip
 ```
 
 Running:
