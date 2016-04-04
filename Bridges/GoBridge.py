@@ -25,6 +25,11 @@ def runGoBridge():
 	
 	#Set up the connection
 	GoBridge = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	
+	#Disable Nagle's Algorithm to decrease latency.
+	#TCP_NODELAY sends packets immediately.
+	GoBridge.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+	
 	try:
 		#Try to open connection to local Go Bridge
 		GoBridge.connect((LOCALHOST_IP, TCP_PORT))
