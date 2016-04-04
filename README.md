@@ -12,7 +12,7 @@ Dependencies Required:
 * python3-tk
 * git (for installation)
 
-#### OS X:  
+#### OS X (using Homebrew):  
 ```bash
 brew install python3 golang git  
 mkdir -p ~/go/src/github.com/arminm/  
