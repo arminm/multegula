@@ -12,24 +12,24 @@ Dependencies Required:
 * python3-tk
 
 #### OS X:  
-brew install python3 golang git
+```brew install python3 golang git
 mkdir ~/go
 mkdir ~/go/src
 mkdir ~/go/src/github.com
 mkdir ~/go/src/github.com/arminm/
 cd ~/go/src/github.com/arminm/
 git clone https://github.com/arminm/multegula.git
-cd multegula/
+cd multegula/```
 
 #### Ubuntu Linux 16.04:  
-sudo apt-get install python3-tk golang git  
+```sudo apt-get install python3-tk golang git  
 mkdir ~/go
 mkdir ~/go/src
 mkdir ~/go/src/github.com
 mkdir ~/go/src/github.com/arminm/
 cd ~/go/src/github.com/arminm/
 git clone https://github.com/arminm/multegula.git
-cd multegula/
+cd multegula/```
 
 Running:
 ---------------------------------------------------------
