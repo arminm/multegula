@@ -15,7 +15,7 @@ Dependencies Required:
 #### OS X:  
 ```bash
 brew install python3 golang git  
- 
+mkdir -p ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git  
 cd multegula/
