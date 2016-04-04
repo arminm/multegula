@@ -174,7 +174,7 @@ def init(canvas) :
     canvas.data["level"] = Level()
 
 ### run - run the program
-def run() :
+def runUI() :
     # initialize canvas
     root = Tk()
     canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background="white")
@@ -202,5 +202,3 @@ def run() :
     init(canvas)
     redrawAll(canvas)
     root.mainloop()
-
-run()
