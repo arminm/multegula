@@ -20,7 +20,8 @@ mkdir ~/go/src/github.com
 mkdir ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git  
-cd multegula/```
+cd multegula/
+```
 
 #### Ubuntu Linux 16.04:  
 ```bash
@@ -31,7 +32,8 @@ mkdir ~/go/src/github.com
 mkdir ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git  
-cd multegula/```
+cd multegula/
+```
 
 Running:
 ---------------------------------------------------------
