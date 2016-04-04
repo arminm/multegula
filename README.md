@@ -30,7 +30,7 @@ git clone https://github.com/arminm/multegula.git
 cd multegula/
 ```
 
-#### Windows 7 or Newer (REQUIRES TESTING):  
+#### Windows 7 or Newer:  
 ```
 Install Go 1.6 - https://golang.org/dl/
 Install Python 3.5.1 (includes pip) - https://www.python.org/downloads/
