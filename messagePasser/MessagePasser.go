@@ -59,6 +59,39 @@ type Message struct {
 /* InitMessagePasser has to wait for all work to be done before exiting */
 var wg sync.WaitGroup
 
+/*
+ * local instance holding the parsed config info.
+ */
+var config Configuration = Configuration{}
+
+func Config() Configuration {
+	return config
+}
+
+/* map stores connections to each node
+ * <key, value> = <dns, connection>
+ **/
+var connections map[string]net.Conn = make(map[string]net.Conn)
+var seqNums map[string]int = make(map[string]int)
+
+/*
+ * connection for localhost, this is the receive side,
+ * the send side is stored in connections map
+ **/
+var localConn net.Conn
+
+/*
+ * The local node's information.
+ */
+var localNode Node
+
+/* the queue for messages to be sent */
+var sendChannel chan Message = make(chan Message, 100)
+
+/* the queue for received messages */
+var receiveChannel chan Message = make(chan Message, 100)
+var receiveQueue []Message = make([]Message, 10, 10)
+
 func updateSeqNum(message *Message) {
 	seqNum := seqNums[message.Destination] + 1
 	seqNums[message.Destination] = seqNum
@@ -105,39 +138,6 @@ func Multicast(message *Message) {
 		sendMessageTCP(node.Name, message)
 	}
 }
-
-/*
- * local instance holding the parsed config info.
- */
-var config Configuration = Configuration{}
-
-func Config() Configuration {
-	return config
-}
-
-/* map stores connections to each node
- * <key, value> = <dns, connection>
- **/
-var connections map[string]net.Conn = make(map[string]net.Conn)
-var seqNums map[string]int = make(map[string]int)
-
-/*
- * connection for localhost, this is the receive side,
- * the send side is stored in connections map
- **/
-var localConn net.Conn
-
-/*
- * The local node's information.
- */
-var localNode Node
-
-/* the queue for messages to be sent */
-var sendChannel chan Message = make(chan Message, 100)
-
-/* the queue for received messages */
-var receiveChannel chan Message = make(chan Message, 100)
-var receiveQueue []Message = make([]Message, 10, 10)
 
 /*
  * finds a node within an array of nodes by Name
@@ -248,7 +248,7 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  *			the message to be put into receiveQueue
  **/
 func putMessageToReceivedQueue(message Message) {
-	receivedQueue <- message
+	receiveChannel <- message
 }
 
 /*
@@ -263,28 +263,28 @@ func receiveMessageFromConn(conn net.Conn) {
 			msg.Kind = KIND_REMULTICAST
 			go Multicast(&msg)
 		}
-        rule := matchReceiveRule(msg)
-        /* no rule matched, put it into receivedQueue */
-        if(rule == Rule{}) {
-            go putMessageToReceivedQueue(msg)
-            /*
-             * there are delayed messages in receiveDelayedQueue
-             * get one and put it into receivedQueue
-             */
-             if len(receiveDelayedQueue) > 0 {
-                 delayedMessage := <- receiveDelayedQueue
-                 go putMessageToReceivedQueue(delayedMessage)
-             }
-         } else {
-             /*
-              * there is a receive rule matched, we only need to 
-              * check "delay" rule, since other rule will drop 
-              * this message
-              */
-              if rule.Kind == "delay" {
-                  go putMessageToReceiveDelayedQueue(msg)
-              }
-         }
+		rule := matchReceiveRule(msg)
+		/* no rule matched, put it into receivedQueue */
+		if (rule == Rule{}) {
+			go putMessageToReceivedQueue(msg)
+			/*
+			 * there are delayed messages in receiveDelayedQueue
+			 * get one and put it into receivedQueue
+			 */
+			if len(receiveDelayedQueue) > 0 {
+				delayedMessage := <-receiveDelayedQueue
+				go putMessageToReceivedQueue(delayedMessage)
+			}
+		} else {
+			/*
+			 * there is a receive rule matched, we only need to
+			 * check "delay" rule, since other rule will drop
+			 * this message
+			 */
+			if rule.Kind == "delay" {
+				go putMessageToReceiveDelayedQueue(msg)
+			}
+		}
 	}
 }
 
@@ -305,25 +305,25 @@ func startReceiveRoutine() {
  **/
 func sendMessageToConn() {
 	for {
-		message := <-sendQueue
-        rule := matchSendRule(message)
-        /* no rules matched, send the message */
-        if (rule == Rule{}) {
-		    sendMessageTCP(message.Destination, &message)
-            /* there are delayed messages, send one */
-            if len(sendDelayedQueue) > 0 {
-                delayedMessage := <- sendDelayedQueue
-                sendMessageTCP(delayedMessage.Destination, &delayedMessage)
-            }
-        } else {
-            /*
-             * rule matched, only check delay rule, because other rules
-             * will drop this message
-             */
-             if rule.Kind == "delay" {
-                 go putMessageToSendDelayedQueue(message)
-             }
-        }
+		message := <-sendChannel
+		rule := matchSendRule(message)
+		/* no rules matched, send the message */
+		if (rule == Rule{}) {
+			sendMessageTCP(message.Destination, &message)
+			/* there are delayed messages, send one */
+			if len(sendDelayedQueue) > 0 {
+				delayedMessage := <-sendDelayedQueue
+				sendMessageTCP(delayedMessage.Destination, &delayedMessage)
+			}
+		} else {
+			/*
+			 * rule matched, only check delay rule, because other rules
+			 * will drop this message
+			 */
+			if rule.Kind == "delay" {
+				go putMessageToSendDelayedQueue(message)
+			}
+		}
 	}
 }
 
@@ -357,19 +357,20 @@ func Receive() Message {
 	var message Message = Message{}
 	if len(receiveQueue) > 0 {
 		message = receiveQueue[0]
-		popMessage(receiveQueue[0])
+		// TODO: implement a queue.pop()!
+		// popMessage(receiveQueue[0])
 	}
 	return message
 }
 
-/* 
- * receive message, this is a public method and it will be blocked if there is 
+/*
+ * receive message, this is a public method and it will be blocked if there is
  * no message can be received right now
  * @return	if there are receivable messages in receivedQueue, return the first
  *			in receivedQueue; otherwise, return an empty message
  **/
 func BlockReceive() Message {
-	message := <- receivedQueue
+	message := <-receiveChannel
 	return message
 }
 
