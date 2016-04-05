@@ -5,7 +5,7 @@ NODES=(armin lunwen daniel garrett)
 ##############################
 # Modify these parameters:
 PWD=~/go/src/github.com/arminm/multegula
-CONFIG_FILE_NAME=~/go/src/github.com/arminm/multegula/messagePasser/localConfig.json
+CONFIG_FILE_NAME=localConfig
 
 ##############################
 # generate launcher files
