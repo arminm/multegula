@@ -22,6 +22,11 @@ import (
 const KIND_MULTICAST string = "multicast"
 const KIND_REMULTICAST string = "remulticast"
 
+/* the size of queue: sendQueue, receivedQueue,
+ * sendDelayedQueue and receiveDelayedQueue
+ **/
+const QUEUE_SIZE int = 100
+
 // Node structure to hold each node's information
 type Node struct {
 	Name string
@@ -128,10 +133,10 @@ var localConn net.Conn
 var localNode Node
 
 /* the queue for messages to be sent */
-var sendQueue chan Message = make(chan Message, 100)
+var sendQueue chan Message = make(chan Message, QUEUE_SIZE)
 
 /* the queue for received messages */
-var receivedQueue chan Message = make(chan Message, 100)
+var receivedQueue chan Message = make(chan Message, QUEUE_SIZE)
 
 /*
  * finds a node within an array of nodes by Name
@@ -235,6 +240,17 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 }
 
 /*
+ * put message to receiveQueue, since the chan <- maybe blocked if the channel is full,
+ * in order to not block the void receiveMessageFromConn(conn) method, we creates a new routine
+ * to do this
+ * @param	message
+ *			the message to be put into receiveQueue
+ **/
+func putMessageToReceivedQueue(message Message) {
+	receivedQueue <- message
+}
+
+/*
  * receive message from TCP connection, and put it into receivedQueue of message
  * @param	conn
  *			TCP connection
@@ -246,7 +262,28 @@ func receiveMessageFromConn(conn net.Conn) {
 			msg.Kind = KIND_REMULTICAST
 			Multicast(&msg)
 		}
-		receivedQueue <- msg
+        rule := matchReceiveRule(msg)
+        /* no rule matched, put it into receivedQueue */
+        if(rule == Rule{}) {
+            go putMessageToReceivedQueue(msg)
+            /*
+             * there are delayed messages in receiveDelayedQueue
+             * get one and put it into receivedQueue
+             */
+             if len(receiveDelayedQueue) > 0 {
+                 delayedMessage := <- receiveDelayedQueue
+                 go putMessageToReceivedQueue(delayedMessage)
+             }
+         } else {
+             /*
+              * there is a receive rule matched, we only need to 
+              * check "delay" rule, since other rule will drop 
+              * this message
+              */
+              if rule.Kind == "delay" {
+                  go putMessageToReceiveDelayedQueue(msg)
+              }
+         }
 	}
 }
 
@@ -268,7 +305,24 @@ func startReceiveRoutine() {
 func sendMessageToConn() {
 	for {
 		message := <-sendQueue
-		sendMessageTCP(message.Destination, &message)
+        rule := matchSendRule(message)
+        /* no rules matched, send the message */
+        if (rule == Rule{}) {
+		    sendMessageTCP(message.Destination, &message)
+            /* there are delayed messages, send one */
+            if len(sendDelayedQueue) > 0 {
+                delayedMessage := <- sendDelayedQueue
+                sendMessageTCP(delayedMessage.Destination, &delayedMessage)
+            }
+        } else {
+            /*
+             * rule matched, only check delay rule, because other rules
+             * will drop this message
+             */
+             if rule.Kind == "delay" {
+                 go putMessageToSendDelayedQueue(message)
+             }
+        }
 	}
 }
 

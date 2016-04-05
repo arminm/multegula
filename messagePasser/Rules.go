@@ -20,7 +20,13 @@ type Rule struct {
     Action string // action of this rule
     Src string // the source of this rule
     Dest string // the destionation of this rule
-    Kind string // the kind of message
+    /* the kind of message
+     * possible values are:
+     * drop: drop message
+     * dropAfter: drop message if SeqNum of message greater that SeqNum
+     * delay: delay message until next send of message
+     **/
+    Kind string
     SeqNum int // the sequence number of message
 }
 
@@ -32,6 +38,13 @@ type Rules struct {
 
 /* stores all send and receive rules */
 var rules Rules = Rules{}
+
+/* the queue for delayed sending messages */
+var sendDelayedQueue chan Message = make(chan Message, QUEUE_SIZE)
+
+/* the queue for delayed receive messages */
+var receiveDelayedQueue chan Message = make(chan Message, QUEUE_SIZE)
+
 
 /* init function, decode rules from rules.json */
 func InitRules() {
@@ -90,7 +103,7 @@ func matchRule(message Message, rule Rule) bool {
  *        message, return that send rule; otherwise, return 
  *        empty rule
  **/
-func MatchSendRule(message Message) Rule {
+func matchSendRule(message Message) Rule {
     for _, rule := range rules.SendRules {
         if matchRule(message, rule) {
             return rule
@@ -107,11 +120,29 @@ func MatchSendRule(message Message) Rule {
  *        message, return that receive rule; otherwise, return 
  *        empty rule
  **/
-func MatchReceiveRule(message Message) Rule {
-    for _, rule := range rules.SendRules {
+func matchReceiveRule(message Message) Rule {
+    for _, rule := range rules.ReceiveRules {
         if matchRule(message, rule) {
             return rule
         }
     }
     return Rule{}
+}
+
+/*
+ *put message to sendDelayedQueue
+ *@param message
+ *       the message to be put into sendDelayedQueue
+ **/
+func putMessageToSendDelayedQueue(message Message) {
+    sendDelayedQueue <- message
+}
+
+/*
+ *put message to receiveDelayedQueue
+ *@param message
+ *       the message to be put into receiveDelayedQueue
+ **/
+func putMessageToReceiveDelayedQueue(message Message) {
+    receiveDelayedQueue <- message
 }
