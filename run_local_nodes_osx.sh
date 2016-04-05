@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 NODES=(armin lunwen daniel garrett)
 
@@ -10,7 +10,7 @@ CONFIG_FILE_NAME=localConfig
 ##############################
 # generate launcher files
 for i in "${NODES[@]}"; do   
-    echo \#\!/bin/sh > $i.sh
+    echo \#\!/bin/bash > $i.sh
     echo cd $PWD >> $i.sh
     echo go run multegula.go $CONFIG_FILE_NAME $i >> $i.sh
     chmod +rwx $i.sh
