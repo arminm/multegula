@@ -258,32 +258,32 @@ func putMessageToReceivedQueue(message Message) {
 func receiveMessageFromConn(conn net.Conn) {
 	for {
 		msg := receiveMessageTCP(conn)
-		if msg.Kind == KIND_MULTICAST {
-			msg.Kind = KIND_REMULTICAST
-			Multicast(&msg)
+		// if msg.Kind == KIND_MULTICAST {
+		// 	msg.Kind = KIND_REMULTICAST
+		// 	Multicast(&msg)
+		// }
+		rule := matchReceiveRule(msg)
+		/* no rule matched, put it into receivedQueue */
+		if (rule == Rule{}) {
+			go putMessageToReceivedQueue(msg)
+			/*
+			 * there are delayed messages in receiveDelayedQueue
+			 * get one and put it into receivedQueue
+			 */
+			if len(receiveDelayedQueue) > 0 {
+				delayedMessage := <-receiveDelayedQueue
+				go putMessageToReceivedQueue(delayedMessage)
+			}
+		} else {
+			/*
+			 * there is a receive rule matched, we only need to
+			 * check "delay" rule, since other rule will drop
+			 * this message
+			 */
+			if rule.Kind == "delay" {
+				go putMessageToReceiveDelayedQueue(msg)
+			}
 		}
-        rule := matchReceiveRule(msg)
-        /* no rule matched, put it into receivedQueue */
-        if(rule == Rule{}) {
-            go putMessageToReceivedQueue(msg)
-            /*
-             * there are delayed messages in receiveDelayedQueue
-             * get one and put it into receivedQueue
-             */
-             if len(receiveDelayedQueue) > 0 {
-                 delayedMessage := <- receiveDelayedQueue
-                 go putMessageToReceivedQueue(delayedMessage)
-             }
-         } else {
-             /*
-              * there is a receive rule matched, we only need to 
-              * check "delay" rule, since other rule will drop 
-              * this message
-              */
-              if rule.Kind == "delay" {
-                  go putMessageToReceiveDelayedQueue(msg)
-              }
-         }
 	}
 }
 
@@ -305,24 +305,24 @@ func startReceiveRoutine() {
 func sendMessageToConn() {
 	for {
 		message := <-sendQueue
-        rule := matchSendRule(message)
-        /* no rules matched, send the message */
-        if (rule == Rule{}) {
-		    sendMessageTCP(message.Destination, &message)
-            /* there are delayed messages, send one */
-            if len(sendDelayedQueue) > 0 {
-                delayedMessage := <- sendDelayedQueue
-                sendMessageTCP(delayedMessage.Destination, &delayedMessage)
-            }
-        } else {
-            /*
-             * rule matched, only check delay rule, because other rules
-             * will drop this message
-             */
-             if rule.Kind == "delay" {
-                 go putMessageToSendDelayedQueue(message)
-             }
-        }
+		rule := matchSendRule(message)
+		/* no rules matched, send the message */
+		if (rule == Rule{}) {
+			sendMessageTCP(message.Destination, &message)
+			/* there are delayed messages, send one */
+			if len(sendDelayedQueue) > 0 {
+				delayedMessage := <-sendDelayedQueue
+				sendMessageTCP(delayedMessage.Destination, &delayedMessage)
+			}
+		} else {
+			/*
+			 * rule matched, only check delay rule, because other rules
+			 * will drop this message
+			 */
+			if rule.Kind == "delay" {
+				go putMessageToSendDelayedQueue(message)
+			}
+		}
 	}
 }
 
@@ -360,14 +360,14 @@ func Receive() Message {
 	return message
 }
 
-/* 
- * receive message, this is a public method and it will be blocked if there is 
+/*
+ * receive message, this is a public method and it will be blocked if there is
  * no message can be received right now
  * @return	if there are receivable messages in receivedQueue, return the first
  *			in receivedQueue; otherwise, return an empty message
  **/
 func BlockReceive() Message {
-	message := <- receivedQueue
+	message := <-receivedQueue
 	return message
 }
 
