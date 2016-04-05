@@ -1,3 +1,3 @@
 @echo off
-python3 multegula.py %*
+python multegula.py %*
 pause

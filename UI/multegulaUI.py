@@ -19,8 +19,12 @@ from screens.PauseScreen import *
 from screens.ScreenEnum import *
 from screens.GameOver import *
 from screens.GameScreen import *
-
 from levels.Level import *
+
+#Tells Python to search Bridges folder for functions as well.
+import sys
+sys.path.append('../Bridges/')
+from Bridges.GoBridge import * #This is our GoBridge
 
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
@@ -174,7 +178,7 @@ def init(canvas) :
     canvas.data["level"] = Level()
 
 ### run - run the program
-def run() :
+def runUI() :
     # initialize canvas
     root = Tk()
     canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background="white")
@@ -202,5 +206,3 @@ def run() :
     init(canvas)
     redrawAll(canvas)
     root.mainloop()
-
-run()

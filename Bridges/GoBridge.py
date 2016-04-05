@@ -4,41 +4,55 @@
 #Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He#
 ###########################################################
 
-import socket
+#######IMPORTS#######
+import socket #Needed for network communications
 import time #Needed for labeling date/time
 import datetime #Needed for labeling date/time
+import base64 #Needed for encoding network messages
+#####################
 
-#Set arbitrary buffer size for received messages
-BUFFER_SIZE = 200
+########PARAMETERS########
+BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
 DELIMITER = "##"
+LOCALHOST_IP = '127.0.0.1'
+TCP_PORT = 44444
+##########################
 
-## RUN the GoBridge
-## # this function starts the GoBridge running
-def runGoBridge():
-	#Get Time
-	timestamp = int(time.time())
-	prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-	
-	#Set up the connection
-	MessagePasser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	try:
-		#Try to open connection to local Go MessagePasser
-		MessagePasser.connect("127.0.0.1", "44444")
-	except:
-		print("[" + prettytime + "] Can't connect. Is Go MessagePasser up?")
-		break
-	
-	#Close the connection, but commented because we don't want to do that yet.
-	#MessagePasser.close()
+# BALL class
+class GoBridge :
+    ### __init___ - initialize and return GoBridge
+    ## # this function starts the GoBridge running
+	## # Returns a connected socket object GoBridge
+	def __init__(self) :
+		#Get Time
+		timestamp = int(time.time())
+		prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+		
+		#Set up the connection
+		GoBridge = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		
+		#Disable Nagle's Algorithm to decrease latency.
+		#TCP_NODELAY sends packets immediately.
+		GoBridge.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+		
+		try:
+			#Try to open connection to local Go Bridge
+			GoBridge.connect((LOCALHOST_IP, TCP_PORT))
+		except:
+			print("[" + prettytime + "] Can't connect. Is GoBridge up?")
 
-## Build and Send Message
-## # this function builds and sends a message
-def sendMessage(src, dest, content, kind, multicastFlag):
-	message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + DELIMITER + multicastFlag
-	MessagePasser.send(message)
+		#And declare GoBridge
+		self.GoBridge = GoBridge
 
-## Receive Message
-## # this function receives a message from the receive buffer
-def receiveMessage():
-	receivedData = MessagePasser.recv(BUFFER_SIZE)
-	return receivedData
+	## Build and Send Message
+	## # this function builds and sends a message.
+	## # Explicit encoding declaration became necessary in Python 3.
+	def sendMessage(src, dest, content, kind, multicastFlag):
+		message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + DELIMITER + multicastFlag
+		GoBridge.send(message.encode(encoding='utf-8'))
+
+	## Receive Message
+	## # this function receives a message from the receive buffer
+	def receiveMessage():
+		receivedData = GoBridge.recv(BUFFER_SIZE)
+		return receivedData

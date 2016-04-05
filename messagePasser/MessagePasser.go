@@ -306,6 +306,17 @@ func Receive() Message {
 	return message
 }
 
+/* 
+ * receive message, this is a public method and it will be blocked if there is 
+ * no message can be received right now
+ * @return	if there are receivable messages in receivedQueue, return the first
+ *			in receivedQueue; otherwise, return an empty message
+ **/
+func BlockReceive() Message {
+	message := <- receivedQueue
+	return message
+}
+
 /*
  * initialize MessagePasser, this is a public method
  **/
