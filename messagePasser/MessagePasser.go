@@ -133,10 +133,11 @@ var localConn net.Conn
 var localNode Node
 
 /* the queue for messages to be sent */
-var sendQueue chan Message = make(chan Message, QUEUE_SIZE)
+var sendChannel chan Message = make(chan Message, 100)
 
 /* the queue for received messages */
-var receivedQueue chan Message = make(chan Message, QUEUE_SIZE)
+var receiveChannel chan Message = make(chan Message, 100)
+var receiveQueue []Message = make([]Message, 10, 10)
 
 /*
  * finds a node within an array of nodes by Name
@@ -260,7 +261,7 @@ func receiveMessageFromConn(conn net.Conn) {
 		msg := receiveMessageTCP(conn)
 		if msg.Kind == KIND_MULTICAST {
 			msg.Kind = KIND_REMULTICAST
-			Multicast(&msg)
+			go Multicast(&msg)
 		}
         rule := matchReceiveRule(msg)
         /* no rule matched, put it into receivedQueue */
@@ -300,7 +301,7 @@ func startReceiveRoutine() {
 }
 
 /*
- * whnever there are messages in sendQueue, send it out to TCP connection
+ * whnever there are messages in sendChannel, send it out to TCP connection
  **/
 func sendMessageToConn() {
 	for {
@@ -327,14 +328,14 @@ func sendMessageToConn() {
 }
 
 /*
- * put message to sendQueue, since the chan <- maybe blocked if the channel is full,
+ * put message to sendChannel, since the chan <- maybe blocked if the channel is full,
  * in order to not block the void send(message Message) method, we creates a new routine
  * to do this
  * @param	message
- *			the message to be put into sendQueue
+ *			the message to be put into sendChannel
  **/
 func putMessageToSendQueue(message Message) {
-	sendQueue <- message
+	sendChannel <- message
 }
 
 /*
@@ -349,13 +350,14 @@ func Send(message Message) {
 
 /*
  * Delivers received messages from the receiveQueue
- * @return	if there are receivable messages in receivedQueue, return the first
- *			in receivedQueue; otherwise, return an empty message
+ * @return	if there are receivable messages in receiveChannel, return the first
+ *			in receiveChannel; otherwise, return an empty message
  **/
 func Receive() Message {
 	var message Message = Message{}
-	if len(receivedQueue) > 0 {
-		message = <-receivedQueue
+	if len(receiveQueue) > 0 {
+		message = receiveQueue[0]
+		popMessage(receiveQueue[0])
 	}
 	return message
 }
@@ -369,6 +371,32 @@ func Receive() Message {
 func BlockReceive() Message {
 	message := <- receivedQueue
 	return message
+}
+
+func insertMessage(queue []Message, message Message, index int) {
+	restSize := len(queue) - index
+	rest := make([]Message, restSize, restSize)
+	copy(rest, queue[index:])
+	queue = append(queue[:index], message)
+	queue = append(queue, rest...)
+}
+
+func receiveQueueRoutine() {
+	for {
+		message := <-receiveChannel
+		var index int
+		for i, msg := range receiveQueue {
+			if msg.Source == message.Source {
+				if msg.SeqNum == message.SeqNum {
+					break
+				} else if msg.SeqNum > message.SeqNum {
+					index = i
+					break
+				}
+			}
+		}
+		insertMessage(receiveQueue, message, index)
+	}
 }
 
 /*

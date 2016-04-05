@@ -8,9 +8,9 @@
 package messagePasser
 
 import (
-    "encoding/json"
-    "fmt"
-    "os"
+	"encoding/json"
+	"fmt"
+	"os"
 )
 
 /*
@@ -32,8 +32,8 @@ type Rule struct {
 
 /* this struct stores all send and receive rules */
 type Rules struct {
-    SendRules []Rule // send rules
-    ReceiveRules []Rule // receive rules
+	SendRules    []Rule // send rules
+	ReceiveRules []Rule // receive rules
 }
 
 /* stores all send and receive rules */
@@ -48,15 +48,15 @@ var receiveDelayedQueue chan Message = make(chan Message, QUEUE_SIZE)
 
 /* init function, decode rules from rules.json */
 func InitRules() {
-    file, errOpenFile := os.Open("./rules.json")
-    if errOpenFile != nil {
-        fmt.Println("error when open file: ", errOpenFile)
-    }
-    decoder := json.NewDecoder(file)
-    errDecode := decoder.Decode(&rules)
-    if errDecode != nil {
-        fmt.Println("error when decoding: ", errDecode)
-    }
+	file, errOpenFile := os.Open("./rules.json")
+	if errOpenFile != nil {
+		fmt.Println("error when open file: ", errOpenFile)
+	}
+	decoder := json.NewDecoder(file)
+	errDecode := decoder.Decode(&rules)
+	if errDecode != nil {
+		fmt.Println("error when decoding: ", errDecode)
+	}
 }
 
 /**
@@ -71,36 +71,36 @@ func InitRules() {
  *        return true; otherwise return false
  */
 func matchRule(message Message, rule Rule) bool {
-    if len(rule.Src) > 0 && rule.Src != message.Source {
-        return false
-    }
-    if len(rule.Dest) > 0 && rule.Dest != message.Destination {
-        return false
-    }
-    if len(rule.Kind) > 0 && rule.Kind != message.Kind {
-        return false
-    }
-    if rule.SeqNum > 0 {
-        if rule.Action == "dropAfter" {
-            if message.SeqNum <= rule.SeqNum {
-                return false
-            }
-        } else {
-            if message.SeqNum != rule.SeqNum {
-                return false
-            }
-        }
-    }
-    return true
+	if len(rule.Src) > 0 && rule.Src != message.Source {
+		return false
+	}
+	if len(rule.Dest) > 0 && rule.Dest != message.Destination {
+		return false
+	}
+	if len(rule.Kind) > 0 && rule.Kind != message.Kind {
+		return false
+	}
+	if rule.SeqNum > 0 {
+		if rule.Action == "dropAfter" {
+			if message.SeqNum <= rule.SeqNum {
+				return false
+			}
+		} else {
+			if message.SeqNum != rule.SeqNum {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 /**
  *find if there is a send rule which can be applied to message
  *@param  message
- *        message to be matched 
+ *        message to be matched
  *
- *@return if there is a send rule which can be applied to 
- *        message, return that send rule; otherwise, return 
+ *@return if there is a send rule which can be applied to
+ *        message, return that send rule; otherwise, return
  *        empty rule
  **/
 func matchSendRule(message Message) Rule {
@@ -111,13 +111,14 @@ func matchSendRule(message Message) Rule {
     }
     return Rule{}
 }
+
 /**
  *find if there is a receive rule which can be applied to message
  *@param  message
- *        message to be matched 
+ *        message to be matched
  *
- *@return if there is a receive rule which can be applied to 
- *        message, return that receive rule; otherwise, return 
+ *@return if there is a receive rule which can be applied to
+ *        message, return that receive rule; otherwise, return
  *        empty rule
  **/
 func matchReceiveRule(message Message) Rule {
