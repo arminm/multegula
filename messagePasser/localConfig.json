@@ -1,0 +1,31 @@
+{
+	"BootstrapServer": ["multegula.dyndns.org"],
+	"Nodes": [
+    {
+      "name": "armin",
+      "ip": "127.0.0.1",
+      "port": 1111,
+      "dns": "none"
+    },
+    {
+      "name": "lunwen",
+      "ip": "127.0.0.1",
+      "port": 2222,
+      "dns": "none"
+    },
+    {
+      "name": "daniel",
+      "ip": "127.0.0.1",
+      "port": 3333,
+      "dns": "none"
+    },
+    {
+      "name": "garrett",
+      "ip": "127.0.0.1",
+      "port": 4444,
+      "dns": "none"
+    }
+  ],
+  "LocalName":["localhost"],
+	"Group": ["localhost"]
+}
