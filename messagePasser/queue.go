@@ -20,6 +20,9 @@ func Delete(queue *[]Message, index int) {
 }
 
 func Insert(queue *[]Message, message Message, index int) *[]Message {
+	if index < 0 || index > len(*queue) {
+		return queue
+	}
 	newQueue := make([]Message, len(*queue)+1)
 	copy(newQueue[:index], (*queue)[:index])
 	copy(newQueue[index+1:], (*queue)[index:])

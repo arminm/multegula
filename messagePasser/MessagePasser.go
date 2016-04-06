@@ -350,47 +350,32 @@ func Send(message Message) {
 
 /*
  * Delivers received messages from the receiveQueue
- * @return	if there are receivable messages in receiveChannel, return the first
- *			in receiveChannel; otherwise, return an empty message
+ * @return	if there are receivable messages in receiveQueue, return the first
+ *			in receiveQueue; otherwise, return an empty message
  **/
 func Receive() Message {
 	return Pop(&receiveQueue)
 }
 
 /*
- * receive message, this is a public method and it will be blocked if there is
- * no message can be received right now
- * @return	if there are receivable messages in receivedQueue, return the first
- *			in receivedQueue; otherwise, return an empty message
- **/
-func BlockReceive() Message {
-	message := <-receiveChannel
-	return message
-}
-
-func insertMessage(queue []Message, message Message, index int) {
-	restSize := len(queue) - index
-	rest := make([]Message, restSize, restSize)
-	copy(rest, queue[index:])
-	queue = append(queue[:index], message)
-	queue = append(queue, rest...)
-}
-
+ * Receives a message from the receive channel and inserts it into the queue.
+ */
 func receiveQueueRoutine() {
 	for {
 		message := <-receiveChannel
-		var index int
 		for i, msg := range receiveQueue {
 			if msg.Source == message.Source {
 				if msg.SeqNum == message.SeqNum {
 					break
 				} else if msg.SeqNum > message.SeqNum {
-					index = i
+					receiveQueue = *Insert(&receiveQueue, message, i)
 					break
 				}
+			} else if i == len(receiveQueue) {
+				Push(&receiveQueue, message)
+				break
 			}
 		}
-		insertMessage(receiveQueue, message, index)
 	}
 }
 
