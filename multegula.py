@@ -6,7 +6,6 @@
 ###########################################################
 
 #######IMPORTS#######
-import sys #Needs to be here before the path append.
 import subprocess #Needed for system calls
 import time #Needed to sleep
 from UI.multegulaUI import * #Import our UI functions
