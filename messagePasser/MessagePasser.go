@@ -379,6 +379,7 @@ func InitMessagePasser(configName string, localName string) {
 	file, _ := os.Open(filePath)
 	decoder := json.NewDecoder(file)
 	err := decoder.Decode(&config)
+    
 	if err != nil {
 		fmt.Println("error:", err)
 	}

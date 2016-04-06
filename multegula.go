@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-
 	"github.com/arminm/multegula/messagePasser"
 )
 
