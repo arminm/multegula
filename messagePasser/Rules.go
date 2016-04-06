@@ -17,16 +17,16 @@ import (
  * rule struct
  **/
 type Rule struct {
-    Action string // action of this rule
-    Src string // the source of this rule
-    Dest string // the destionation of this rule
-    /* the kind of message
+    /* action of this rule
      * possible values are:
      * drop: drop message
      * dropAfter: drop message if SeqNum of message greater that SeqNum
      * delay: delay message until next send of message
-     **/
-    Kind string
+     */
+    Action string
+    Src string // the source of this rule
+    Dest string // the destionation of this rule
+    Kind string // the kind of message
     SeqNum int // the sequence number of message
 }
 
