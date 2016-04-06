@@ -1,15 +1,15 @@
-//////////////////////////////////////////////////////////
-//Multegula - PyBridge.go 
+////////////////////////////////////////////////////////////
+//Multegula - PythonBridge.go 
 //Server for interacting with UI written in Python
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-package bridges
+package main
 
 import (
     "fmt"
-    "encoding/gob"
     "net"
+    "bufio"
     "github.com/arminm/multegula/messagePasser"
     "strings"
 )
@@ -22,25 +22,25 @@ const delimiter string = "##"
 
 /*
  * construct message from it's string format
- * @param	messageString
- *			message in string format
+ * @param   messageString
+ *          message in string format
  *
- * @return	message
+ * @return  message
  **/
 func decodeMessage(messageString string) messagePasser.Message {
-	var elements []string = strings.Split(messageString, delimiter)
-	return messagePasser.Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
+    var elements []string = strings.Split(messageString, delimiter)
+    return messagePasser.Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
 }
 
 /* 
  * convert message to string
- * @param	message
- *			message to be converted
+ * @param   message
+ *          message to be converted
  *
- * @return	the string format of the message
+ * @return  the string format of the message
  **/
 func encodeMessage(message messagePasser.Message) string {
-	return message.Source + delimiter + message.Destination + delimiter + message.Content + delimiter + message.Kind
+    return message.Source + delimiter + message.Destination + delimiter + message.Content + delimiter + message.Kind
 }
 
 /**
@@ -50,12 +50,10 @@ func encodeMessage(message messagePasser.Message) string {
  **/
 func receiveFromUI(conn net.Conn) {
     for {
-        deCoder := gob.NewDecoder(conn)
-        message := &messagePasser.Message{}
-        deCoder.Decode(message)
-        if (*message != messagePasser.Message{}) {
-            fmt.Printf("Message received from UI: %+v\n", *message)
-            messagePasser.Send(*message)
+        messageString, _ := bufio.NewReader(conn).ReadString('\n')
+        if(len(messageString) > 0) {
+            fmt.Printf("Message received from UI: %s\n", messageString[0:len(messageString) - 1])
+            messagePasser.Send(decodeMessage(messageString[0:len(messageString) - 1]))
         }
     }
 }
@@ -69,15 +67,14 @@ func sendToUI(conn net.Conn) {
     for {
         var message messagePasser.Message = messagePasser.BlockReceive()
         if(message != messagePasser.Message{}) {
-            fmt.Printf("Message sent to UI: %+v\n", message)
-            encoder := gob.NewEncoder(conn)
-            encoder.Encode(&message)
+            fmt.Printf("Message sent to UI: %s\n", encodeMessage(message))
+            conn.Write([]byte(encodeMessage(message) + "\n"))
         }
     }
 }
 
 func main() {
-    messagePasser.InitMessagePasser()
+    messagePasser.InitMessagePasser("localConfig", "lunwen")
 
     ln, err := net.Listen("tcp", port)
     if(err != nil) {
