@@ -2,13 +2,6 @@ package messagePasser
 
 import "testing"
 
-// type Message struct {
-// 	Source      string // the DNS name of sending node
-// 	Destination string // the DNS name of receiving node
-// 	Content     string // the Content of message
-// 	Kind        string // the Kind of messages
-// 	SeqNum      int
-// }
 func TestPush(t *testing.T) {
 	msg0 := Message{"Lunwen", "Armin", "Hi Armin!", "Regular", 1}
 	msg1 := Message{"Armin", "Lunwen", "Hi Lunwen!", "Regular", 1}
@@ -51,11 +44,24 @@ func TestInsert(t *testing.T) {
 	msg0 := Message{"Lunwen", "Armin", "Hi Armin!", "Regular", 1}
 	msg1 := Message{"Armin", "Lunwen", "Hi Lunwen!", "Regular", 1}
 	msg2 := Message{"Daniel", "", "Hi All!", "Multicast", 1}
-	queue := make([]Message, 3, 5)
-	queue[0], queue[1] = msg0, msg1
+	msg3 := Message{"Garrett", "", "Heeey!!", "Multicast", 1}
+
+	queue := make([]Message, 1, 4)
+	queue[0] = msg0
+
+	queue = *(Insert(&queue, msg1, 0))
+	if queue[0] != msg1 {
+		t.Errorf("Message was not inserted at beginning.\nQueue:%+v\nMessage:%+v", queue, msg1)
+	}
 
 	queue = *(Insert(&queue, msg2, 1))
 	if queue[1] != msg2 {
-		t.Errorf("Message was not inserted.\nQueue:%+v\nMessage:%+v", queue, msg2)
+		t.Errorf("Message was not inserted in middle.\nQueue:%+v\nMessage:%+v", queue, msg2)
 	}
+
+	queue = *(Insert(&queue, msg3, 3))
+	if queue[3] != msg3 {
+		t.Errorf("Message was not inserted at end of queue.\nQueue:%+v\nMessage:%+v", queue, msg3)
+	}
+
 }

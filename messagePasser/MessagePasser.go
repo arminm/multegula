@@ -271,7 +271,7 @@ func receiveMessageFromConn(conn net.Conn) {
 			 * there are delayed messages in receiveDelayedQueue
 			 * get one and put it into receivedQueue
 			 */
-			if len(receiveDelayedQueue) > 0 {
+			for len(receiveDelayedQueue) > 0 {
 				delayedMessage := <-receiveDelayedQueue
 				go putMessageToReceivedQueue(delayedMessage)
 			}
@@ -354,13 +354,7 @@ func Send(message Message) {
  *			in receiveChannel; otherwise, return an empty message
  **/
 func Receive() Message {
-	var message Message = Message{}
-	if len(receiveQueue) > 0 {
-		message = receiveQueue[0]
-		// TODO: implement a queue.pop()!
-		// popMessage(receiveQueue[0])
-	}
-	return message
+	return Pop(&receiveQueue)
 }
 
 /*

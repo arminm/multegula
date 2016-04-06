@@ -5,13 +5,18 @@ func Push(queue *[]Message, message Message) {
 }
 
 func Pop(queue *[]Message) Message {
+	if len(*queue) == 0 {
+		return Message{}
+	}
 	message := (*queue)[0]
 	*queue = (*queue)[1:]
 	return message
 }
 
 func Delete(queue *[]Message, index int) {
-	*queue = append((*queue)[:index], (*queue)[index+1:]...)
+	if index < len(*queue) {
+		*queue = append((*queue)[:index], (*queue)[index+1:]...)
+	}
 }
 
 func Insert(queue *[]Message, message Message, index int) *[]Message {
