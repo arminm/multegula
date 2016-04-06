@@ -4,7 +4,7 @@
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-package Bridges
+package bridges
 
 import (
     "fmt"
