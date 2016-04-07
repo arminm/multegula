@@ -1,10 +1,10 @@
 //////////////////////////////////////////////////////////
-//Multegula - PythonBridge.go 
+//Multegula - PyBridge.go 
 //Server for interacting with UI written in Python
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-package main
+package bridges
 
 import (
     "fmt"
