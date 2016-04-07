@@ -16,6 +16,7 @@ BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
 DELIMITER = "##"
 LOCALHOST_IP = '127.0.0.1'
 DEFAULT_SRC = 'UNSET'
+MULTICAST_DEST = "ER'BODY"
 TCP_PORT = 44444
 ##########################
 
@@ -59,7 +60,7 @@ class GoBridge :
 		if self.src == DEFAULT_SRC:
 			print(self.getPrettyTime() + " Source name not set. Cannot send message.")
 		else:
-			message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind
+			message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + "\n"
 			try:	
 				self.GoSocket.send(message.encode(encoding='utf-8'))
 			except: 
@@ -75,4 +76,4 @@ class GoBridge :
 		return receivedData
 
 	def multicast(self, content, kind):
-		self.sendMessage(self.src, "ER'BODY", content, kind)
+		self.sendMessage(self.src, MULTICAST_DEST, content, kind)
