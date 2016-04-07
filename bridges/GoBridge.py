@@ -35,6 +35,9 @@ class GoBridge :
 		#Disable Nagle's Algorithm to decrease latency.
 		#TCP_NODELAY sends packets immediately.
 		GoSocket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+		#Disable blocking so our receive thread can continue.
+		#Currently blocking - I think this is okay. -Garrett
+		#GoSocket.setblocking(0)
 		
 		try:
 			#Try to open connection to local Go Bridge
@@ -80,23 +83,13 @@ class GoBridge :
 	## Receive Thread
 	## # this function receives a message from the receive buffer
 	## # and adds it to a receive queue for pickup by other functions.
+	## # CURRENTLY BLOCKS, SO ITERATOR DOES NOT WORK - I think this is okay. -Garrett
 	def receiveThread(self):
 		i = 0;
 		while True:
 			print(i)
 			i += 1
-			try:
-				receivedData = self.GoSocket.recv(BUFFER_SIZE)
-			except socket.error as e:
-				err = e.args[0]
-				if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
-					print('No data available')
-					continue
-				else:
-					#A REAL error occurred
-					print(e)
-					continue
-
+			receivedData = self.GoSocket.recv(BUFFER_SIZE)
 			if not receivedData:
 				break
 			self.q.put(receivedData)
