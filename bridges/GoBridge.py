@@ -86,4 +86,14 @@ class GoBridge :
 			if not receivedData:
 				break
 			self.q.put(receivedData)
+
+	## Receive Message
+	## # this function pulls a message from the receive queue
+	def receiveMessage():
+    while True:
+        message = q.get()
+        #Lets Python know that work on this element is done.
+        self.q.task_done()
+        return message
+			
 			
