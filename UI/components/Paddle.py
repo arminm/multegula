@@ -16,7 +16,7 @@ class Paddle :
     def __init__(self, orientation, state) :
         # CONSTANT fields   
         self.ORIENTATION = orientation
-        self.COLORS = ["red", "green", "blue", "purple", "orange", "yellow", "black", "white"]
+        self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'black', 'white']
 
         # dynamic fields
         self.state = state
@@ -24,7 +24,7 @@ class Paddle :
         self.direction = Direction.DIR_STOP
         self.center = X_CENTER
         self.width = PADDLE_WIDTH_INIT
-        self.color = "black"
+        self.color = 'black'
         self.randomColor()
         self.redraw = False
         self.first = True
@@ -85,13 +85,13 @@ class Paddle :
             canvas.delete(self.p)
             self.setPaddle(canvas)
             self.redraw = False
-            print("sending an update");
-            canvas.data["bridge"].multicast((str(self.center) + "|" + str(self.width)), "MSG_PADDLE");
+            print('sending an update');
+            canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
         elif(self.first) :
             self.setPaddle(canvas)
             self.first = False
-            print("sending an update");
-            canvas.data["bridge"].multicast((str(self.center) + "|" + str(self.width)), "MSG_PADDLE");
+            print('sending an update');
+            canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
 
 
     ### update - update the paddle location (that is, 'move' if applicable) and draw

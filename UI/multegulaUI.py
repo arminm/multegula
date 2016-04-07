@@ -27,187 +27,187 @@ from bridges.GoBridge import * #This is our GoBridge
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
     canvas = event.widget.canvas
-    currentScreen = canvas.data["currentScreen"]
+    currentScreen = canvas.data['currentScreen']
 
     # handle splash screen events - entering a name
     if(currentScreen == Screens.SCRN_SPLASH) :
         # add new characters
-        if "!" <= event.char <= "z" :
-            canvas.data["splashTextField"].addChar(event.char)            
+        if '!' <= event.char <= 'z' :
+            canvas.data['splashTextField'].addChar(event.char)            
         # remove characters
-        elif event.keysym == "BackSpace" :
-            canvas.data["splashTextField"].deleteChar()            
+        elif event.keysym == 'BackSpace' :
+            canvas.data['splashTextField'].deleteChar()            
         # addd space 
-        elif event.keysym == "space" :
-            canvas.data["splashTextField"].addChar(" ")            
+        elif event.keysym == 'space' :
+            canvas.data['splashTextField'].addChar(' ')            
         # enter the name
-        elif (event.keysym == "Return") and canvas.data["splashTextField"].changed :
-            canvas.data["currentScreen"] = Screens.SCRN_MENU
+        elif (event.keysym == 'Return') and canvas.data['splashTextField'].changed :
+            canvas.data['currentScreen'] = Screens.SCRN_MENU
             # set name
-            canvas.data["Player_01"].name = canvas.data["splashTextField"].text
+            canvas.data['Player_01'].name = canvas.data['splashTextField'].text
 
             #### TODO: MAKE SURE THE INSTANTIATION OF THIS MAKES SENSE HERE #####
             # get the GoBridge
-            canvas.data["bridge"] = GoBridge(canvas.data["splashTextField"].text);
+            canvas.data['bridge'] = GoBridge(canvas.data['splashTextField'].text);
 
     # pause screen / gameplay keyPressed events - move the paddle
     elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
-        if (event.keysym == "Left") or (event.keysym == "a") or (event.keysym == "A") :
-            canvas.data["Player_01"].paddle.direction = Direction.DIR_LEFT
-        elif (event.keysym == "Right") or (event.keysym == "d") or (event.keysym == "D") :
-            canvas.data["Player_01"].paddle.direction = Direction.DIR_RIGHT
+        if (event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') :
+            canvas.data['Player_01'].paddle.direction = Direction.DIR_LEFT
+        elif (event.keysym == 'Right') or (event.keysym == 'd') or (event.keysym == 'D') :
+            canvas.data['Player_01'].paddle.direction = Direction.DIR_RIGHT
 
 ### keyReleased - handle key release events
 def keyReleased(event) :
     canvas = event.widget.canvas
-    currentScreen = canvas.data["currentScreen"]
+    currentScreen = canvas.data['currentScreen']
 
     # pause screen / gameplay keyReleased events - stop paddle motion
     if (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
-        if((event.keysym == "Left") or (event.keysym == "a") or (event.keysym == "A") or 
-            (event.keysym == "Right") or (event.keysym == "d") or (event.keysym == "D")) :
-            canvas.data["Player_01"].paddle.direction = Direction.DIR_STOP
+        if((event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') or 
+            (event.keysym == 'Right') or (event.keysym == 'd') or (event.keysym == 'D')) :
+            canvas.data['Player_01'].paddle.direction = Direction.DIR_STOP
 
 ### mousePressed - handle mouse press events
 def mousePressed(event) :
     canvas = event.widget.canvas
 
     # main screen mouse pressed events - button clicks
-    if canvas.data["currentScreen"] == Screens.SCRN_MENU : 
-        if canvas.data["soloButton"].clicked(event.x, event.y) :
-            canvas.data["currentScreen"] = Screens.SCRN_PAUSE
-            canvas.data["nextScreen"] = Screens.SCRN_GAME
-            canvas.data["ball"].reset()
+    if canvas.data['currentScreen'] == Screens.SCRN_MENU : 
+        if canvas.data['soloButton'].clicked(event.x, event.y) :
+            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+            canvas.data['nextScreen'] = Screens.SCRN_GAME
+            canvas.data['ball'].reset()
             canvas.delete(ALL)
-        elif canvas.data["joinButton"].clicked(event.x, event.y) :
-            canvas.data["currentScreen"] = Screens.SCRN_GAME
-            canvas.data["ball"].reset()
+        elif canvas.data['joinButton'].clicked(event.x, event.y) :
+            canvas.data['currentScreen'] = Screens.SCRN_GAME
+            canvas.data['ball'].reset()
             canvas.delete(ALL)
 
     # game over screen mouse pressed events - start over
-    elif canvas.data["currentScreen"] == Screens.SCRN_GAME_OVER :
+    elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER :
         init(canvas);
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
-    Y_LOC_TOP_BUTTON = canvas.data["Y_LOC_TOP_BUTTON"]
+    Y_LOC_TOP_BUTTON = canvas.data['Y_LOC_TOP_BUTTON']
     X_CENTER  = CANVAS_WIDTH // 2
 
     ### SPLASH SCREEN
-    if canvas.data["currentScreen"] == Screens.SCRN_SPLASH :
-        canvas.data["splashScreen"].drawBackground(canvas)
-        canvas.data["ball"].updateMenu(canvas)
-        canvas.data["splashScreen"].drawText(canvas)
-        canvas.data["splashTextField"].draw(canvas)        
+    if canvas.data['currentScreen'] == Screens.SCRN_SPLASH :
+        canvas.data['splashScreen'].drawBackground(canvas)
+        canvas.data['ball'].updateMenu(canvas)
+        canvas.data['splashScreen'].drawText(canvas)
+        canvas.data['splashTextField'].draw(canvas)        
 
     ### MAIN SCREEN 
-    elif canvas.data["currentScreen"] == Screens.SCRN_MENU :
-        canvas.data["menuScreen"].drawBackground(canvas)
-        canvas.data["ball"].updateMenu(canvas)
-        canvas.data["menuScreen"].drawText(canvas)
-        canvas.data["soloButton"].draw(canvas)
-        canvas.data["joinButton"].draw(canvas)
+    elif canvas.data['currentScreen'] == Screens.SCRN_MENU :
+        canvas.data['menuScreen'].drawBackground(canvas)
+        canvas.data['ball'].updateMenu(canvas)
+        canvas.data['menuScreen'].drawText(canvas)
+        canvas.data['soloButton'].draw(canvas)
+        canvas.data['joinButton'].draw(canvas)
 
     ### PAUSE SCREEN
-    elif canvas.data["currentScreen"] == Screens.SCRN_PAUSE :
-        canvas.data["gameScreen"].draw(canvas)
-        canvas.data["ball"].draw(canvas)
-        canvas.data["Player_01"].update(canvas)
-        canvas.data["Player_02"].update(canvas)
-        canvas.data["Player_03"].update(canvas)
-        canvas.data["Player_04"].update(canvas)
-        canvas.data["pauseScreen"].draw(canvas)
+    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE :
+        canvas.data['gameScreen'].draw(canvas)
+        canvas.data['ball'].draw(canvas)
+        canvas.data['Player_01'].update(canvas)
+        canvas.data['Player_02'].update(canvas)
+        canvas.data['Player_03'].update(canvas)
+        canvas.data['Player_04'].update(canvas)
+        canvas.data['pauseScreen'].draw(canvas)
 
     ### GAME SCREEN
-    elif canvas.data["currentScreen"] == Screens.SCRN_GAME and canvas.data["mid_demo"] == False:
-        canvas.data["gameScreen"].draw(canvas)
-        canvas.data["Player_01"].update(canvas)
-        canvas.data["Player_02"].update(canvas)
-        canvas.data["Player_03"].update(canvas)
-        canvas.data["Player_04"].update(canvas)
-        canvas.data["level"].update(canvas)
-        canvas.data["ball"].updateGame(canvas)
+    elif canvas.data['currentScreen'] == Screens.SCRN_GAME and canvas.data['mid_demo'] == False:
+        canvas.data['gameScreen'].draw(canvas)
+        canvas.data['Player_01'].update(canvas)
+        canvas.data['Player_02'].update(canvas)
+        canvas.data['Player_03'].update(canvas)
+        canvas.data['Player_04'].update(canvas)
+        canvas.data['level'].update(canvas)
+        canvas.data['ball'].updateGame(canvas)
 
-    elif canvas.data["currentScreen"] == Screens.SCRN_GAME and canvas.data["mid_demo"] == True:
-        canvas.data["gameScreen"].draw(canvas)
-        canvas.data["Player_01"].update(canvas)
-        canvas.data["Player_02"].update(canvas)
-        canvas.data["Player_03"].update(canvas)
-        canvas.data["Player_04"].update(canvas)
-        canvas.data["level"].update(canvas)
+    elif canvas.data['currentScreen'] == Screens.SCRN_GAME and canvas.data['mid_demo'] == True:
+        canvas.data['gameScreen'].draw(canvas)
+        canvas.data['Player_01'].update(canvas)
+        canvas.data['Player_02'].update(canvas)
+        canvas.data['Player_03'].update(canvas)
+        canvas.data['Player_04'].update(canvas)
+        canvas.data['level'].update(canvas)
 
     # GAME OVER SCREEN
-    elif canvas.data["currentScreen"] == Screens.SCRN_GAME_OVER : 
-        canvas.data["gameOverScreen"].draw(canvas);
+    elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER : 
+        canvas.data['gameOverScreen'].draw(canvas);
 
 
 
     #  redraw after delay
-    canvas.after(canvas.data["delay"], redrawAll, canvas)
+    canvas.after(canvas.data['delay'], redrawAll, canvas)
 
 
 ### init - initialize dictionary
 def init(canvas) :
     # location constants
-    canvas.data["Y_LOC_TOP_BUTTON"] = 0.70*CANVAS_HEIGHT
-    canvas.data["Y_LOC_BOTTOM_BUTTON"] = 0.85*CANVAS_HEIGHT
-    Y_LOC_TOP_BUTTON = canvas.data["Y_LOC_TOP_BUTTON"]
-    Y_LOC_BOTTOM_BUTTON = canvas.data["Y_LOC_BOTTOM_BUTTON"]
+    canvas.data['Y_LOC_TOP_BUTTON'] = 0.70*CANVAS_HEIGHT
+    canvas.data['Y_LOC_BOTTOM_BUTTON'] = 0.85*CANVAS_HEIGHT
+    Y_LOC_TOP_BUTTON = canvas.data['Y_LOC_TOP_BUTTON']
+    Y_LOC_BOTTOM_BUTTON = canvas.data['Y_LOC_BOTTOM_BUTTON']
 
     X_MARGIN = CANVAS_WIDTH // 30
     Y_MARGIN = CANVAS_HEIGHT // 30
 
     # current screen
-    canvas.data["currentScreen"] = Screens.SCRN_SPLASH
-    canvas.data["nextScreen"] = Screens.SCRN_NONE
+    canvas.data['currentScreen'] = Screens.SCRN_SPLASH
+    canvas.data['nextScreen'] = Screens.SCRN_NONE
 
     # misc
-    canvas.data["delay"] = 10
-    canvas.data["playerName"] = "Type name..."
+    canvas.data['delay'] = 10
+    canvas.data['playerName'] = 'Type name...'
 
     ### COMPONENETS
     # buttons
-    canvas.data["soloButton"] = Button(X_CENTER, Y_LOC_TOP_BUTTON, "Solo Game", True)
-    canvas.data["joinButton"] = Button(X_CENTER, Y_LOC_BOTTOM_BUTTON, "Join Game", True)
+    canvas.data['soloButton'] = Button(X_CENTER, Y_LOC_TOP_BUTTON, 'Solo Game', True)
+    canvas.data['joinButton'] = Button(X_CENTER, Y_LOC_BOTTOM_BUTTON, 'Join Game', True)
 
     # ball
-    canvas.data["ball"] = Ball()
+    canvas.data['ball'] = Ball()
 
     # screens
-    canvas.data["gameScreen"]   = GameScreen()
-    canvas.data["menuScreen"]   = MenuScreen()
-    canvas.data["pauseScreen"]  = PauseScreen()
-    canvas.data["splashScreen"] = SplashScreen()
-    canvas.data["gameOverScreen"] = GameOver()
+    canvas.data['gameScreen']   = GameScreen()
+    canvas.data['menuScreen']   = MenuScreen()
+    canvas.data['pauseScreen']  = PauseScreen()
+    canvas.data['splashScreen'] = SplashScreen()
+    canvas.data['gameOverScreen'] = GameOver()
 
     # players
     #### TODO: move player intantiation somewhere smarter --  i.e. after the menu screen button press ####
-    if(canvas.data["mid_demo"] == False): 
-        canvas.data["Player_01"] = Player(Orientation.DIR_SOUTH, PlayerState.USER, "TO CHANGE")
-        canvas.data["Player_02"] = Player(Orientation.DIR_NORTH, PlayerState.AI, "NoRTH")
-        canvas.data["Player_03"] = Player(Orientation.DIR_EAST, PlayerState.AI, "eaST")
-        canvas.data["Player_04"] = Player(Orientation.DIR_WEST, PlayerState.AI, "WeST")
-    elif(canvas.data["mid_demo"] == True):
-        canvas.data["Player_01"] = Player(Orientation.DIR_SOUTH, PlayerState.USER, "TO CHANGE")
-        canvas.data["Player_02"] = Player(Orientation.DIR_NORTH, PlayerState.COMP, "NoRTH")
-        canvas.data["Player_03"] = Player(Orientation.DIR_EAST, PlayerState.COMP, "eaST")
-        canvas.data["Player_04"] = Player(Orientation.DIR_WEST, PlayerState.COMP, "WeST")        
+    if(canvas.data['mid_demo'] == False): 
+        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, 'TO CHANGE')
+        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH')
+        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST')
+        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST')
+    elif(canvas.data['mid_demo'] == True):
+        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, 'TO CHANGE')
+        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH')
+        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST')
+        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST')        
 
-    canvas.data["splashTextField"] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, "Type name...", L_TEXT_SIZE)
-    canvas.data["level"] = Level()
+    canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
+    canvas.data['level'] = Level()
 
 ### run - run the program
 def runUI(cmd_line_args) :
     # initialize canvas
     root = Tk()
-    canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background="white")
+    canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background='white')
     canvas.pack()
 
     # make it so the window is not resizable
     root.resizable(height = 0, width = 0)
 
     # give the canvas a title
-    root.title("Multegula")
+    root.title('Multegula')
 
     # Store canvas in root and in canvas itself for callbacks
     root.canvas = canvas.canvas = canvas
@@ -217,15 +217,15 @@ def runUI(cmd_line_args) :
 
     # act on command line arguments
     if (len(cmd_line_args) > 1) and (cmd_line_args[1] == '-mid'):
-        canvas.data["mid_demo"] = True;
+        canvas.data['mid_demo'] = True;
     else:
-        canvas.data["mid_demo"] = False;
+        canvas.data['mid_demo'] = False;
 
     # sets up events
-    #root.bind("<Key>", keyPressed)
-    root.bind("<Button-1>", mousePressed)
-    root.bind("<Key>", keyPressed)
-    root.bind("<KeyRelease>", keyReleased)
+    #root.bind('<Key>', keyPressed)
+    root.bind('<Button-1>', mousePressed)
+    root.bind('<Key>', keyPressed)
+    root.bind('<KeyRelease>', keyReleased)
 
     # let the games begin
     init(canvas)
