@@ -343,8 +343,16 @@ func putMessageToSendQueue(message Message) {
  *			message to be sent
  **/
 func Send(message Message) {
-	updateSeqNum(&message)
-	go putMessageToSendQueue(message)
+    if(message == Message{}) {
+        fmt.Println("Empty message, it is dropped!")
+    } else {
+        if _, ok := connections[message.Destination]; ok {
+    	    updateSeqNum(&message)
+        	go putMessageToSendQueue(message)
+        } else {
+            fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
+        }
+    }
 }
 
 /*
@@ -410,7 +418,7 @@ func getLocalName() string {
     for err != nil {
         fmt.Println("Error: cannot find or open the config file, please set config file again.")
         configName = getConfigName()
-        filePath = "./messagePasser/" + configName + "./json"
+        filePath = "./messagePasser/" + configName + ".json"
         file, err = os.Open(filePath)
     }
     return file
@@ -434,13 +442,25 @@ func getLocalName() string {
  }
 
  /*
+  * print out all nodes' name
+  */
+func printNodesName(nodes []Node) {
+    fmt.Println("Possiable node names are: ")
+	for _, node := range nodes {
+        fmt.Printf("\t%s\n", node.Name)
+	}
+}
+
+ /*
   * find the localName from config file
   * @param localName the name of local node
   */
   func findNodeFromConf(localName string) {
-      localNode, err := FindNodeByName(config.Nodes, localName)
+      var err error
+      localNode, err = FindNodeByName(config.Nodes, localName)
       for err != nil {
           fmt.Println("Error: cannot find the local node's name in config file, please set the local name again.")
+          printNodesName(config.Nodes)
           localName = getLocalName()
           localNode, err = FindNodeByName(config.Nodes, localName)
       }
