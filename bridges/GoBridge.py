@@ -8,7 +8,6 @@
 import socket #Needed for network communications
 import time #Needed for labeling date/time
 import datetime #Needed for labeling date/time
-import base64 #Needed for encoding network messages
 #####################
 
 ########PARAMETERS########
@@ -16,7 +15,7 @@ BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
 DELIMITER = "##"
 LOCALHOST_IP = '127.0.0.1'
 DEFAULT_SRC = 'UNSET'
-MULTICAST_DEST = "ER'BODY"
+MULTICAST_DEST = "EVERYBODY"
 TCP_PORT = 44444
 ##########################
 
@@ -46,7 +45,8 @@ class GoBridge :
 		#And declare GoBridge
 		self.GoSocket = GoSocket
 
-
+	## Get Pretty Time
+	## # Get pretty time for printing in error logs.
 	def getPrettyTime(self): 
 		#Get Time
 		timestamp = int(time.time())
@@ -56,7 +56,7 @@ class GoBridge :
 	## Build and Send Message
 	## # this function builds and sends a message.
 	## # Explicit encoding declaration became necessary in Python 3.
-	def sendMessage(self, src, dest, content, kind ):
+	def sendMessage(self, src, dest, content, kind):
 		if self.src == DEFAULT_SRC:
 			print(self.getPrettyTime() + " Source name not set. Cannot send message.")
 		else:
@@ -64,8 +64,6 @@ class GoBridge :
 			try:	
 				self.GoSocket.send(message.encode(encoding='utf-8'))
 			except: 
-				timestamp = int(time.time())
-				prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 				print(self.getPrettyTime() + " Error sending on GoSocket:")
 				print("\t" + message);
 
@@ -75,5 +73,8 @@ class GoBridge :
 		receivedData = self.GoSocket.recv(BUFFER_SIZE)
 		return receivedData
 
+	## Multicast Message
+	## # This function is used to multicast a message, call when we want
+	## # a message multicasted versus a regular send.
 	def multicast(self, content, kind):
 		self.sendMessage(self.src, MULTICAST_DEST, content, kind)
