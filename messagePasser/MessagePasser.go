@@ -372,21 +372,87 @@ func BlockReceive() Message {
 }
 
 /*
+ * Prompts the user for the configuration file's name
+ * @return configuration file's name string
+ */
+func getConfigName() string {
+	var configName string
+	fmt.Println("What's the config file's name? (ex. config)")
+	fmt.Scanf("%s", &configName)
+	if len(configName) == 0 {
+		configName = "config" // default name
+	}
+	return configName
+}
+
+/*
+ * Prompts the user for the local Node's name
+ * @return local Node's name string
+ */
+func getLocalName() string {
+	var localName string
+	fmt.Println("Who are you? (ex. armin)")
+	fmt.Scanf("%s", &localName)
+	if len(localName) == 0 {
+		localName = "unknown" // default name
+	}
+	return localName
+}
+
+/*
+ * open config file
+ * @param configName the name of config file
+ * @return the handler of config file
+ */
+ func openConfigFile(configName string) *os.File {
+	filePath := "./messagePasser/" + configName + ".json"
+    file, err := os.Open(filePath)
+    for err != nil {
+        fmt.Println("Error: cannot find or open the config file, please set config file again.")
+        configName = getConfigName()
+        filePath = "./messagePasser/" + configName + "./json"
+        file, err = os.Open(filePath)
+    }
+    return file
+ }
+
+ /*
+  * decode the config file
+  * @param configName the name of config file
+  */
+ func decodeConfigFile(configName string) {
+     file := openConfigFile(configName)
+     decoder := json.NewDecoder(file)
+     err := decoder.Decode(&config)
+     for err != nil {
+         fmt.Println("Error: cannot decode the config file, please make sure it's a correct cofig file.")
+         configName = getConfigName()
+         file = openConfigFile(configName)
+         decoder = json.NewDecoder(file)
+         err = decoder.Decode(&config)
+     }
+ }
+
+ /*
+  * find the localName from config file
+  * @param localName the name of local node
+  */
+  func findNodeFromConf(localName string) {
+      localNode, err := FindNodeByName(config.Nodes, localName)
+      for err != nil {
+          fmt.Println("Error: cannot find the local node's name in config file, please set the local name again.")
+          localName = getLocalName()
+          localNode, err = FindNodeByName(config.Nodes, localName)
+      }
+  }
+
+/*
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser(configName string, localName string) {
-	filePath := "./messagePasser/" + configName + ".json"
-	file, _ := os.Open(filePath)
-	decoder := json.NewDecoder(file)
-	err := decoder.Decode(&config)
-    
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	localNode, err := FindNodeByName(config.Nodes, localName)
-	if err != nil {
-		panic(err)
-	}
+    decodeConfigFile(configName)
+    findNodeFromConf(localName)
+
 	/* keep track of group seqNum for multicasting */
 	seqNums[config.Group[0]] = 0
 
