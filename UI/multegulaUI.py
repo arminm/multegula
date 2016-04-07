@@ -172,9 +172,6 @@ def initPlayers(canvas):
 
 ### init - initialize dictionary
 def init(canvas) :
-    #### TODO: MAKE SURE THE INSTANTIATION OF THIS MAKES SENSE HERE #####
-    # get the GoBridge
-    canvas.data['bridge'] = GoBridge();
 
     # location constants
     canvas.data['Y_LOC_TOP_BUTTON'] = 0.70*CANVAS_HEIGHT
@@ -215,10 +212,6 @@ def init(canvas) :
 ### run - run the program
 def runUI(cmd_line_args) :
 
-    # Set up for ReceiveThread
-    Process = threading.Thread(target=GoBridge.receiveThread)
-    Process.start()
-
     # initialize canvas
     root = Tk()
     canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background='white')
@@ -247,6 +240,13 @@ def runUI(cmd_line_args) :
     root.bind('<Button-1>', mousePressed)
     root.bind('<Key>', keyPressed)
     root.bind('<KeyRelease>', keyReleased)
+
+    # get the GoBridge
+    canvas.data['bridge'] = GoBridge();
+    
+    # Set up for ReceiveThread
+    Process = threading.Thread(target=canvas.data['bridge'].receiveThread)
+    Process.start()
 
     # let the games begin
     init(canvas)

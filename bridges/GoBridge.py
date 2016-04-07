@@ -80,22 +80,31 @@ class GoBridge :
 	## Receive Thread
 	## # this function receives a message from the receive buffer
 	## # and adds it to a receive queue for pickup by other functions.
-	def receiveThread():
+	def receiveThread(self):
 		i = 0;
 		while True:
 			print(i)
 			i += 1
-			receivedData = self.GoSocket.recv(BUFFER_SIZE)
+			try:
+				receivedData = self.GoSocket.recv(BUFFER_SIZE)
+			except socket.error as e:
+				err = e.args[0]
+				if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
+					print('No data available')
+					continue
+				else:
+					#A REAL error occurred
+					print(e)
+					continue
+
 			if not receivedData:
 				break
 			self.q.put(receivedData)
 
 	## Receive Message
 	## # this function pulls a message from the receive queue
-	def receiveMessage():
+	def receiveMessage(self):
 		message = self.q.get()
 		#Lets Python know that work on this element is done.
 		self.q.task_done()
 		return message
-			
-			
