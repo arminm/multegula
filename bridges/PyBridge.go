@@ -73,8 +73,8 @@ func sendToUI(conn net.Conn) {
     }
 }
 
-func main() {
-    messagePasser.InitMessagePasser("../messagePasser/config.json", "lunwen")
+func InitPyBridge(configFile string, localName string) {
+    messagePasser.InitMessagePasser(configFile, localName)
 
     ln, err := net.Listen("tcp", port)
     if(err != nil) {

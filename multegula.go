@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"github.com/arminm/multegula/messagePasser"
+	"github.com/arminm/multegula/bridges"
 )
 
 /*
@@ -130,7 +131,8 @@ func main() {
 		localNodeName = getLocalName()
 	}
 	fmt.Println("Local Node Name:", localNodeName)
-	messagePasser.InitMessagePasser(configName, localNodeName)
+    bridges.InitPyBridge(configName, localNodeName)
+/*	messagePasser.InitMessagePasser(configName, localNodeName)
 
 	fmt.Print("--------------------------------\n")
 
@@ -159,5 +161,5 @@ func main() {
 		} else {
 			fmt.Println("Operation not recognized. Please try again.")
 		}
-	}
+	}*/
 }
