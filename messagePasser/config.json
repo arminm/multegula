@@ -2,12 +2,12 @@
 	"BootstrapServer": ["multegula.dyndns.org"],
 	"Nodes": [
 	    {
-	      "name": "lunwen",
+	      "name": "bob",
 	      "ip": "127.0.0.1",
 	      "port": 1111,
 	      "dns": "none"
 	    }
 	  ],
-	"LocalName": ["lunwen"],
+	"LocalName": ["bob"],
 	"Group": ["localhost"]
 }
