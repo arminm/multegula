@@ -45,10 +45,7 @@ def keyPressed(event) :
             canvas.data['currentScreen'] = Screens.SCRN_MENU
             # set name
             canvas.data['Player_01'].name = canvas.data['splashTextField'].text
-
-            #### TODO: MAKE SURE THE INSTANTIATION OF THIS MAKES SENSE HERE #####
-            # get the GoBridge
-            canvas.data['bridge'] = GoBridge(canvas.data['splashTextField'].text);
+            canvas.data['bridge'].src = canvas.data['splashTextField'].text
 
     # pause screen / gameplay keyPressed events - move the paddle
     elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
@@ -148,6 +145,10 @@ def redrawAll(canvas) :
 
 ### init - initialize dictionary
 def init(canvas) :
+    #### TODO: MAKE SURE THE INSTANTIATION OF THIS MAKES SENSE HERE #####
+    # get the GoBridge
+    canvas.data['bridge'] = GoBridge();
+
     # location constants
     canvas.data['Y_LOC_TOP_BUTTON'] = 0.70*CANVAS_HEIGHT
     canvas.data['Y_LOC_BOTTOM_BUTTON'] = 0.85*CANVAS_HEIGHT
