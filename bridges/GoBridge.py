@@ -81,7 +81,10 @@ class GoBridge :
 	## # this function receives a message from the receive buffer
 	## # and adds it to a receive queue for pickup by other functions.
 	def receiveThread():
+		i = 0;
 		while True:
+			print(i)
+			i += 1
 			receivedData = self.GoSocket.recv(BUFFER_SIZE)
 			if not receivedData:
 				break

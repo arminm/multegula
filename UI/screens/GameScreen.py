@@ -3,7 +3,7 @@
 # GameScreen.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
-from UI.components.ComponentDefs import *
+from UI.typedefs import *
 
 # GameScreen - the paddles, ball, bricks, an status info will be superimposed on this
 #   screen during gameplay.

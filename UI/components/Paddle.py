@@ -6,14 +6,14 @@
 # imports
 import random
 from enum import Enum
-from UI.components.ComponentDefs import *
+from UI.typedefs import *
 
 # PADDLE class
 class Paddle :
     ### __init__ - initialize and return a paddle
     ##  @param orientation - location on the screen of this padde (DIR_NORTH/DIR_SOUTH/...)
     ##  @param state - current control state of the player (USER/AI/COMP)
-    def __init__(self, orientation, state) :
+    def __init__(self, orientation, state, gameType) :
         # CONSTANT fields   
         self.ORIENTATION = orientation
         self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'black', 'white']
@@ -28,6 +28,7 @@ class Paddle :
         self.randomColor()
         self.redraw = False
         self.first = True
+        self.gameType = gameType;
 
     ### increase/decrease speed methods
     def increaseSpeed(self) :
@@ -85,13 +86,15 @@ class Paddle :
             canvas.delete(self.p)
             self.setPaddle(canvas)
             self.redraw = False
-            print('sending an update');
-            canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
+            if self.gameType == GameType.MULTI_PLAYER:
+                print('sending an update');
+                canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
         elif(self.first) :
             self.setPaddle(canvas)
             self.first = False
-            print('sending an update');
-            canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
+            if self.gameType == GameType.MULTI_PLAYER:
+                print('sending an update');
+                canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
 
 
     ### update - update the paddle location (that is, 'move' if applicable) and draw

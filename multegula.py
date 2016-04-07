@@ -17,7 +17,7 @@ PyBridge = subprocess.Popen(['go', 'run', 'multegula.go', 'config', 'bob'], stdo
 time.sleep(1)
 
 #Start UI
-runUI(sys.argv)
+#runUI(sys.argv)
 
 #Start both functions simultaneously
 p1 = Process(target=runUI(sys.argv))

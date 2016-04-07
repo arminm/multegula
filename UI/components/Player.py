@@ -7,24 +7,24 @@
 import random
 from enum import Enum
 from UI.components.Paddle import *
-from UI.components.ComponentDefs import *
-from UI.screens.ScreenEnum import *
+from UI.typedefs import *
 
 # PLAYER class
 class Player :
     ### __init__  - initialize and return Player
     ##  @param orientation - location on the screen of this padde (DIR_NORTH/DIR_SOUTH/...)
     ##  @param state - current control state of the player (USER/AI/COMP)
-    def __init__(self, orientation, state, name) :
+    def __init__(self, orientation, state, name, gameType) :
         self.ORIENTATION = orientation
         self.state = state
         self.score = 0
         self.lives = 5
         self.power = PowerUps.PWR_NONE
-        self.paddle = Paddle(orientation, state)
+        self.paddle = Paddle(orientation, state, gameType)
         self.first = True
         self.statusUpdate = False
         self.name = name
+        self.gameType = gameType
 
     ### AI method -
     ##  This method moves the paddles automatically to contact the ball. There are some

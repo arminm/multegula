@@ -4,7 +4,7 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-from UI.components.ComponentDefs import *
+from UI.typedefs import *
 
 # GAMEOVER class
 class GameOver :
