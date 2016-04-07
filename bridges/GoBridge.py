@@ -47,7 +47,7 @@ class GoBridge :
 		self.GoSocket = GoSocket
 
 		#Establish a queue for received messages
-		q = Queue()
+		self.q = queue.Queue()
 
 	## Get Pretty Time
 	## # Get pretty time for printing in error logs.
@@ -90,10 +90,9 @@ class GoBridge :
 	## Receive Message
 	## # this function pulls a message from the receive queue
 	def receiveMessage():
-    while True:
-        message = q.get()
-        #Lets Python know that work on this element is done.
-        self.q.task_done()
-        return message
+		message = self.q.get()
+		#Lets Python know that work on this element is done.
+		self.q.task_done()
+		return message
 			
 			
