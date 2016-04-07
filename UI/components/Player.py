@@ -6,9 +6,9 @@
 # imports
 import random
 from enum import Enum
-from components.Paddle import *
-from components.ComponentDefs import *
-from screens.ScreenEnum import *
+from UI.components.Paddle import *
+from UI.components.ComponentDefs import *
+from UI.screens.ScreenEnum import *
 
 # PLAYER class
 class Player :

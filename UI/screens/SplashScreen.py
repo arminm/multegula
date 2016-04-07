@@ -4,7 +4,7 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-from components.ComponentDefs import *
+from UI.components.ComponentDefs import *
 
 # SplashScreen - first thing visible to a user. A name prompt is to be superimposed
 #   over top of this class.
