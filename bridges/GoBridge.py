@@ -8,12 +8,13 @@
 import socket #Needed for network communications
 import time #Needed for labeling date/time
 import datetime #Needed for labeling date/time
+import queue #Needed for receive queue
 #####################
 
 ########PARAMETERS########
 BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
 DELIMITER = "##"
-LOCALHOST_IP = '127.0.0.1'
+LOCALHOST_IP = 'localhost'
 DEFAULT_SRC = 'UNSET'
 MULTICAST_DEST = "EVERYBODY"
 TCP_PORT = 44444
@@ -25,7 +26,7 @@ class GoBridge :
     ## # this function starts the GoBridge running
 	## # Returns a connected socket object GoBridge
 	def __init__(self, src = DEFAULT_SRC) :
-		# set the 
+		# set the self src
 		self.src = src;
 		
 		#Set up the connection
@@ -44,6 +45,9 @@ class GoBridge :
 
 		#And declare GoBridge
 		self.GoSocket = GoSocket
+
+		#Establish a queue for received messages
+		q = Queue()
 
 	## Get Pretty Time
 	## # Get pretty time for printing in error logs.
@@ -67,14 +71,19 @@ class GoBridge :
 				print(self.getPrettyTime() + " Error sending on GoSocket:")
 				print("\t" + message);
 
-	## Receive Message
-	## # this function receives a message from the receive buffer
-	def receiveMessage():
-		receivedData = self.GoSocket.recv(BUFFER_SIZE)
-		return receivedData
-
 	## Multicast Message
 	## # This function is used to multicast a message, call when we want
 	## # a message multicasted versus a regular send.
 	def multicast(self, content, kind):
 		self.sendMessage(self.src, MULTICAST_DEST, content, kind)
+
+	## Receive Thread
+	## # this function receives a message from the receive buffer
+	## # and adds it to a receive queue for pickup by other functions.
+	def receiveThread():
+		while True:
+			receivedData = self.GoSocket.recv(BUFFER_SIZE)
+			if not receivedData:
+				break
+			self.q.put(receivedData)
+			
