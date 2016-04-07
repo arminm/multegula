@@ -174,7 +174,7 @@ def init(canvas) :
     canvas.data["level"] = Level()
 
 ### run - run the program
-def runUI() :
+def runUI(cmd_line_args) :
     # initialize canvas
     root = Tk()
     canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background="white")
@@ -191,6 +191,12 @@ def runUI() :
 
     # set up dicitonary
     canvas.data = {}
+
+    # act on command line arguments
+    if (len(cmd_line_args) > 1) and (cmd_line_args[1] == '-mid'):
+        canvas.data["mid_demo"] = True;
+    else:
+        canvas.data["mid_demo"] = False;
 
     # sets up events
     #root.bind("<Key>", keyPressed)
