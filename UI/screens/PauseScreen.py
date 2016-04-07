@@ -4,8 +4,8 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-from components.ComponentDefs import *
-from screens.ScreenEnum import *
+from UI.components.ComponentDefs import *
+from UI.screens.ScreenEnum import *
 
 # PausedScreen - this will be placed over top of a game screen
 class PauseScreen :

@@ -18,41 +18,54 @@ LOCALHOST_IP = '127.0.0.1'
 TCP_PORT = 44444
 ##########################
 
-# BALL class
+# GoBridge class
 class GoBridge :
     ### __init___ - initialize and return GoBridge
     ## # this function starts the GoBridge running
 	## # Returns a connected socket object GoBridge
-	def __init__(self) :
+	def __init__(self, src) :
+		# set the 
+		self.src = src;
+
 		#Get Time
 		timestamp = int(time.time())
 		prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 		
 		#Set up the connection
-		GoBridge = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		GoSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		
 		#Disable Nagle's Algorithm to decrease latency.
 		#TCP_NODELAY sends packets immediately.
-		GoBridge.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+		GoSocket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 		
 		try:
 			#Try to open connection to local Go Bridge
-			GoBridge.connect((LOCALHOST_IP, TCP_PORT))
+			GoSocket.connect((LOCALHOST_IP, TCP_PORT))
 		except:
+			#NOTE: this is mostly useful for debugging, but in reality the game couldn't run without this.
 			print("[" + prettytime + "] Can't connect. Is GoBridge up?")
 
 		#And declare GoBridge
-		self.GoBridge = GoBridge
+		self.GoSocket = GoSocket
 
 	## Build and Send Message
 	## # this function builds and sends a message.
 	## # Explicit encoding declaration became necessary in Python 3.
-	def sendMessage(src, dest, content, kind, multicastFlag):
-		message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + DELIMITER + multicastFlag
-		GoBridge.send(message.encode(encoding='utf-8'))
+	def sendMessage(self, src, dest, content, kind ):
+		message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind
+		try:	
+			self.GoSocket.send(message.encode(encoding='utf-8'))
+		except: 
+			timestamp = int(time.time())
+			prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+			print("[" + prettytime + "] Error sending on GoSocket:")
+			print("\t" + message);
 
 	## Receive Message
 	## # this function receives a message from the receive buffer
 	def receiveMessage():
-		receivedData = GoBridge.recv(BUFFER_SIZE)
+		receivedData = self.GoSocket.recv(BUFFER_SIZE)
 		return receivedData
+
+	def multicast(self, content, kind):
+		self.sendMessage(self.src, "ER'BODY", content, kind)

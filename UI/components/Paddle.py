@@ -6,7 +6,7 @@
 # imports
 import random
 from enum import Enum
-from components.ComponentDefs import *
+from UI.components.ComponentDefs import *
 
 # PADDLE class
 class Paddle :
@@ -85,9 +85,14 @@ class Paddle :
             canvas.delete(self.p)
             self.setPaddle(canvas)
             self.redraw = False
+            print("sending an update");
+            canvas.data["bridge"].multicast((str(self.center) + "|" + str(self.width)), "MSG_PADDLE");
         elif(self.first) :
             self.setPaddle(canvas)
             self.first = False
+            print("sending an update");
+            canvas.data["bridge"].multicast((str(self.center) + "|" + str(self.width)), "MSG_PADDLE");
+
 
     ### update - update the paddle location (that is, 'move' if applicable) and draw
     def update(self, canvas) :

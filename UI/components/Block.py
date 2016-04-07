@@ -5,7 +5,7 @@
 
 # imports
 from enum import Enum
-from components.ComponentDefs import *
+from UI.components.ComponentDefs import *
 
 # BLOCK class
 class Block :
