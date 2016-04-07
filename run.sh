@@ -1,6 +1,6 @@
 #!/bin/bash
 ###########################################################
-#Multegula - run.sh                                 #
+#Multegula - run.sh                                       #
 #Main Driver/Startup Script for Multegula                 #
 #Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He#
 ###########################################################

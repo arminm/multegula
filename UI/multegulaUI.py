@@ -12,6 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.par
 
 # import stuff from our package
 from bridges.GoBridge import * #This is our GoBridge
+import threading #To run receiveThread
 from UI.components.Ball import *
 from UI.components.Block import *
 from UI.components.Button import *
@@ -25,6 +26,7 @@ from UI.screens.GameOver import *
 from UI.screens.GameScreen import *
 from UI.levels.Level import *
 from UI.typedefs import *
+
 
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
@@ -212,6 +214,11 @@ def init(canvas) :
 
 ### run - run the program
 def runUI(cmd_line_args) :
+
+    # Set up for ReceiveThread
+    Process = threading.Thread(target=GoBridge.receiveThread)
+    Process.start()
+
     # initialize canvas
     root = Tk()
     canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background='white')
@@ -245,6 +252,9 @@ def runUI(cmd_line_args) :
     init(canvas)
     redrawAll(canvas)
     root.mainloop()
+
+    #Properly close receiveThread
+    Process.join()
 
 #Start UI
 runUI(sys.argv)
