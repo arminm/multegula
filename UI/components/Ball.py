@@ -13,17 +13,17 @@ class Ball :
     ### __init___ - initialize and return ball
     def __init__(self) :
         # constant fields
-        self.COLORS = ["red", "green", "blue", "purple", "orange", "yellow"]
+        self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow']
 
         # dynamic fields
         self.xCenter = CANVAS_WIDTH // 2
         self.yCenter = CANVAS_HEIGHT // 2
         self.radius = CANVAS_WIDTH // 50
-        self.color = "green"
+        self.color = 'green'
         self.xVelocity = 0
         self.yVelocity = CANVAS_WIDTH // 110
         self.first = True
-        self.lastToTouch = ""
+        self.lastToTouch = ''
 
     ### reset - reset dynamic ball location/speed properties 
     def reset(self) :
@@ -32,7 +32,7 @@ class Ball :
         self.xCenter = CANVAS_WIDTH // 2
         self.yCenter = CANVAS_HEIGHT // 2
         self.randomColor()
-        self.lastToTouch = "";
+        self.lastToTouch = '';
 
     ### getEdges - get the edges of the ball
     def getEdges(self) :

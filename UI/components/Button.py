@@ -19,10 +19,10 @@ class Button :
         self.yCenter = yCenter
         self.text = text
         if active == True :
-            self.color = "white"
+            self.color = 'white'
             self.active = True
         else :
-            self.color = "grey"
+            self.color = 'grey'
             self.active = False
         self.first = True
 
@@ -36,11 +36,11 @@ class Button :
 
     ### set/get activity methods
     def makeActive(self) :
-        self.color = "white"
+        self.color = 'white'
         self.active = True
 
     def makeInactive(self) :
-        self.color = "grey"
+        self.color = 'grey'
         self.active = False
 
     def setButton(self, canvas) :
@@ -55,7 +55,7 @@ class Button :
                                                     yCenter - BUTTON_Y_SIZE,
                                                     xCenter + BUTTON_X_SIZE,
                                                     yCenter + BUTTON_Y_SIZE, 
-                                                    fill = "black")
+                                                    fill = 'black')
 
         # create button's clickable region
         self.foreground = canvas.create_rectangle(xCenter - BUTTON_X_SIZE + BUTTON_MARGIN,
@@ -66,7 +66,7 @@ class Button :
 
         # set button text
         self.t = canvas.create_text(xCenter, yCenter, text = label,
-                                    font = ("Courier", S_TEXT_SIZE))  
+                                    font = ('Courier', S_TEXT_SIZE))  
                
     ### draw - draw the button
     def draw(self, canvas) :

@@ -375,10 +375,11 @@ func BlockReceive() Message {
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser(configName string, localName string) {
-	filePath := "./messagePasser/" + configName + ".json"
-	file, _ := os.Open(filePath)
+	//filePath := "./messagePasser/" + configName + ".json"
+	file, _ := os.Open(configName)
 	decoder := json.NewDecoder(file)
 	err := decoder.Decode(&config)
+    
 	if err != nil {
 		fmt.Println("error:", err)
 	}
