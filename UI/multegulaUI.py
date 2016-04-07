@@ -6,6 +6,9 @@
 # imports
 from tkinter import *
 import random
+#Lets us look back a directory for functions
+import os.path, sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 
 # import stuff from our package
 from bridges.GoBridge import * #This is our GoBridge
@@ -242,3 +245,6 @@ def runUI(cmd_line_args) :
     init(canvas)
     redrawAll(canvas)
     root.mainloop()
+
+#Start UI
+runUI(sys.argv)
