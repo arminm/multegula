@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 multegula.py
+python3 multegula.py -mid

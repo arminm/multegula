@@ -20,4 +20,4 @@ PyBridge = subprocess.Popen(['go', 'run', 'Bridges/PyBridge.go'], stdout=subproc
 time.sleep(1)
 
 #Start UI
-runUI()
+runUI(sys.argv)
