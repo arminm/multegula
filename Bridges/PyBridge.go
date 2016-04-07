@@ -74,7 +74,7 @@ func sendToUI(conn net.Conn) {
 }
 
 func main() {
-    messagePasser.InitMessagePasser("localConfig", "lunwen")
+    messagePasser.InitMessagePasser("../messagePasser/config.json", "lunwen")
 
     ln, err := net.Listen("tcp", port)
     if(err != nil) {
