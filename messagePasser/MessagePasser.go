@@ -54,6 +54,7 @@ type Message struct {
 	Content     string // the Content of message
 	Kind        string // the Kind of messages
 	SeqNum      int
+	// Timestamp   []int
 }
 
 /* InitMessagePasser has to wait for all work to be done before exiting */
@@ -69,10 +70,11 @@ func Config() Configuration {
 }
 
 /* map stores connections to each node
- * <key, value> = <dns, connection>
+ * <key, value> = <name, connection>
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
 var seqNums map[string]int = make(map[string]int)
+var vectorTimeStamp []int
 
 /*
  * connection for localhost, this is the receive side,
@@ -344,16 +346,16 @@ func putMessageToSendQueue(message Message) {
  *			message to be sent
  **/
 func Send(message Message) {
-    if(message == Message{}) {
-        fmt.Println("Empty message, it is dropped!")
-    } else {
-        if _, ok := connections[message.Destination]; ok {
-    	    updateSeqNum(&message)
-        	go putMessageToSendQueue(message)
-        } else {
-            fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
-        }
-    }
+	if (message == Message{}) {
+		fmt.Println("Empty message, it is dropped!")
+	} else {
+		if _, ok := connections[message.Destination]; ok {
+			updateSeqNum(&message)
+			go putMessageToSendQueue(message)
+		} else {
+			fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
+		}
+	}
 }
 
 /*
@@ -372,8 +374,10 @@ func Receive() Message {
  *			in receivedQueue; otherwise, return an empty message
  **/
 func BlockReceive() Message {
-	message := <-receivedQueue
+	message := <-receiveChannel
 	return message
+}
+
 /*
  * Receives a message from the receive channel and inserts it into the queue.
  */
@@ -429,66 +433,66 @@ func getLocalName() string {
  * @param configName the name of config file
  * @return the handler of config file
  */
- func openConfigFile(configName string) *os.File {
+func openConfigFile(configName string) *os.File {
 	filePath := "./messagePasser/" + configName + ".json"
-    file, err := os.Open(filePath)
-    for err != nil {
-        fmt.Println("Error: cannot find or open the config file, please set config file again.")
-        configName = getConfigName()
-        filePath = "./messagePasser/" + configName + ".json"
-        file, err = os.Open(filePath)
-    }
-    return file
- }
+	file, err := os.Open(filePath)
+	for err != nil {
+		fmt.Println("Error: cannot find or open the config file, please set config file again.")
+		configName = getConfigName()
+		filePath = "./messagePasser/" + configName + ".json"
+		file, err = os.Open(filePath)
+	}
+	return file
+}
 
- /*
-  * decode the config file
-  * @param configName the name of config file
-  */
- func decodeConfigFile(configName string) {
-     file := openConfigFile(configName)
-     decoder := json.NewDecoder(file)
-     err := decoder.Decode(&config)
-     for err != nil {
-         fmt.Println("Error: cannot decode the config file, please make sure it's a correct cofig file.")
-         configName = getConfigName()
-         file = openConfigFile(configName)
-         decoder = json.NewDecoder(file)
-         err = decoder.Decode(&config)
-     }
- }
-
- /*
-  * print out all nodes' name
-  */
-func printNodesName(nodes []Node) {
-    fmt.Println("Possiable node names are: ")
-	for _, node := range nodes {
-        fmt.Printf("\t%s\n", node.Name)
+/*
+ * decode the config file
+ * @param configName the name of config file
+ */
+func decodeConfigFile(configName string) {
+	file := openConfigFile(configName)
+	decoder := json.NewDecoder(file)
+	err := decoder.Decode(&config)
+	for err != nil {
+		fmt.Println("Error: cannot decode the config file, please make sure it's a correct cofig file.")
+		configName = getConfigName()
+		file = openConfigFile(configName)
+		decoder = json.NewDecoder(file)
+		err = decoder.Decode(&config)
 	}
 }
 
- /*
-  * find the localName from config file
-  * @param localName the name of local node
-  */
-  func findNodeFromConf(localName string) {
-      var err error
-      localNode, err = FindNodeByName(config.Nodes, localName)
-      for err != nil {
-          fmt.Println("Error: cannot find the local node's name in config file, please set the local name again.")
-          printNodesName(config.Nodes)
-          localName = getLocalName()
-          localNode, err = FindNodeByName(config.Nodes, localName)
-      }
-  }
+/*
+ * print out all nodes' name
+ */
+func printNodesName(nodes []Node) {
+	fmt.Println("Possiable node names are: ")
+	for _, node := range nodes {
+		fmt.Printf("\t%s\n", node.Name)
+	}
+}
+
+/*
+ * find the localName from config file
+ * @param localName the name of local node
+ */
+func findNodeFromConf(localName string) {
+	var err error
+	localNode, err = FindNodeByName(config.Nodes, localName)
+	for err != nil {
+		fmt.Println("Error: cannot find the local node's name in config file, please set the local name again.")
+		printNodesName(config.Nodes)
+		localName = getLocalName()
+		localNode, err = FindNodeByName(config.Nodes, localName)
+	}
+}
 
 /*
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser(configName string, localName string) {
-    decodeConfigFile(configName)
-    findNodeFromConf(localName)
+	decodeConfigFile(configName)
+	findNodeFromConf(localName)
 
 	/* keep track of group seqNum for multicasting */
 	seqNums[config.Group[0]] = 0
@@ -502,6 +506,9 @@ func InitMessagePasser(configName string, localName string) {
 	go acceptConnection(frontNodes, localNode)
 	go sendConnection(latterNodes, localNode)
 	wg.Wait()
+
+	/* initialize the vectorTimeStamp */
+	vectorTimeStamp = make([]int, len(connections))
 
 	/* start routines listening on each connection to receive messages */
 	startReceiveRoutine()
