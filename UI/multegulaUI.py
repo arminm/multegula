@@ -20,11 +20,11 @@ from UI.components.gameplay.Block import *
 from UI.components.gameplay.Paddle import *
 from UI.components.directive.Button import *
 from UI.components.directive.TextField import *
-from UI.screens.SplashScreen import *
-from UI.screens.MenuScreen import *
-from UI.screens.PauseScreen import *
-from UI.screens.GameOver import *
-from UI.screens.GameScreen import *
+from UI.components.screens.SplashScreen import *
+from UI.components.screens.MenuScreen import *
+from UI.components.screens.PauseScreen import *
+from UI.components.screens.GameOver import *
+from UI.components.screens.GameScreen import *
 from UI.typedefs import *
 
 
