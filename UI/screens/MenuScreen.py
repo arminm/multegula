@@ -4,7 +4,7 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-from UI.components.ComponentDefs import *
+from UI.typedefs import *
 
 # Menu Screen - buttons will be superimpsed on top of this screen to allow the user to
 #   either start a solo game or join a network game.

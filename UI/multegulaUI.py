@@ -6,23 +6,27 @@
 # imports
 from tkinter import *
 import random
+#Lets us look back a directory for functions
+import os.path, sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 
 # import stuff from our package
+from bridges.GoBridge import * #This is our GoBridge
+import threading #To run receiveThread
 from UI.components.Ball import *
 from UI.components.Block import *
 from UI.components.Button import *
 from UI.components.Paddle import *
 from UI.components.Player import *
 from UI.components.TextField import *
-from UI.components.ComponentDefs import *
 from UI.screens.SplashScreen import *
 from UI.screens.MenuScreen import *
 from UI.screens.PauseScreen import *
-from UI.screens.ScreenEnum import *
 from UI.screens.GameOver import *
 from UI.screens.GameScreen import *
 from UI.levels.Level import *
-from bridges.GoBridge import * #This is our GoBridge
+from UI.typedefs import *
+
 
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
@@ -44,7 +48,7 @@ def keyPressed(event) :
         elif (event.keysym == 'Return') and canvas.data['splashTextField'].changed :
             canvas.data['currentScreen'] = Screens.SCRN_MENU
             # set name
-            canvas.data['Player_01'].name = canvas.data['splashTextField'].text
+            canvas.data['playerName'] = canvas.data['splashTextField'].text
             canvas.data['bridge'].src = canvas.data['splashTextField'].text
 
     # pause screen / gameplay keyPressed events - move the paddle
@@ -71,12 +75,26 @@ def mousePressed(event) :
 
     # main screen mouse pressed events - button clicks
     if canvas.data['currentScreen'] == Screens.SCRN_MENU : 
+        # check solo button pressed
         if canvas.data['soloButton'].clicked(event.x, event.y) :
+            # initialize players
+            canvas.data['gameType'] = GameType.SINGLE_PLAYER
+            initPlayers(canvas)
+
+            # initialize game
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
             canvas.data['nextScreen'] = Screens.SCRN_GAME
+
+            # initialize ball
             canvas.data['ball'].reset()
             canvas.delete(ALL)
+        # check joine button pressed
         elif canvas.data['joinButton'].clicked(event.x, event.y) :
+            # initialize players
+            canvas.data['gameType'] = GameType.MULTI_PLAYER
+            initPlayers(canvas)
+
+            # initialize game
             canvas.data['currentScreen'] = Screens.SCRN_GAME
             canvas.data['ball'].reset()
             canvas.delete(ALL)
@@ -116,7 +134,7 @@ def redrawAll(canvas) :
         canvas.data['pauseScreen'].draw(canvas)
 
     ### GAME SCREEN
-    elif canvas.data['currentScreen'] == Screens.SCRN_GAME and canvas.data['mid_demo'] == False:
+    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.SINGLE_PLAYER):
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['Player_01'].update(canvas)
         canvas.data['Player_02'].update(canvas)
@@ -125,7 +143,7 @@ def redrawAll(canvas) :
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
 
-    elif canvas.data['currentScreen'] == Screens.SCRN_GAME and canvas.data['mid_demo'] == True:
+    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.MULTI_PLAYER):
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['Player_01'].update(canvas)
         canvas.data['Player_02'].update(canvas)
@@ -137,17 +155,23 @@ def redrawAll(canvas) :
     elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER : 
         canvas.data['gameOverScreen'].draw(canvas);
 
-
-
     #  redraw after delay
     canvas.after(canvas.data['delay'], redrawAll, canvas)
 
+def initPlayers(canvas):
+    if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
+        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['playerName'], GameType.SINGLE_PLAYER)
+        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH', GameType.SINGLE_PLAYER)
+        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST', GameType.SINGLE_PLAYER)
+        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST', GameType.SINGLE_PLAYER)
+    elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
+        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['playerName'], GameType.MULTI_PLAYER)
+        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH', GameType.MULTI_PLAYER)
+        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST', GameType.MULTI_PLAYER)
+        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST', GameType.MULTI_PLAYER)      
 
 ### init - initialize dictionary
 def init(canvas) :
-    #### TODO: MAKE SURE THE INSTANTIATION OF THIS MAKES SENSE HERE #####
-    # get the GoBridge
-    canvas.data['bridge'] = GoBridge();
 
     # location constants
     canvas.data['Y_LOC_TOP_BUTTON'] = 0.70*CANVAS_HEIGHT
@@ -179,26 +203,15 @@ def init(canvas) :
     canvas.data['menuScreen']   = MenuScreen()
     canvas.data['pauseScreen']  = PauseScreen()
     canvas.data['splashScreen'] = SplashScreen()
-    canvas.data['gameOverScreen'] = GameOver()
+    canvas.data['gameOverScreen'] = GameOver()  
 
-    # players
-    #### TODO: move player intantiation somewhere smarter --  i.e. after the menu screen button press ####
-    if(canvas.data['mid_demo'] == False): 
-        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, 'TO CHANGE')
-        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH')
-        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST')
-        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST')
-    elif(canvas.data['mid_demo'] == True):
-        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, 'TO CHANGE')
-        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH')
-        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST')
-        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST')        
-
+    # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
     canvas.data['level'] = Level()
 
 ### run - run the program
 def runUI(cmd_line_args) :
+
     # initialize canvas
     root = Tk()
     canvas = Canvas(root, width=CANVAS_WIDTH, height= CANVAS_HEIGHT, background='white')
@@ -228,7 +241,20 @@ def runUI(cmd_line_args) :
     root.bind('<Key>', keyPressed)
     root.bind('<KeyRelease>', keyReleased)
 
+    # get the GoBridge
+    canvas.data['bridge'] = GoBridge();
+    
+    # Set up for ReceiveThread
+    Process = threading.Thread(target=canvas.data['bridge'].receiveThread)
+    Process.start()
+
     # let the games begin
     init(canvas)
     redrawAll(canvas)
     root.mainloop()
+
+    #Properly close receiveThread
+    Process.join()
+
+#Start UI
+runUI(sys.argv)

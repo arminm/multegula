@@ -69,7 +69,7 @@ class Direction(Enum) :
     DIR_UP      = 3
     DIR_DOWN    = 4
 
-### PowerUps - TODO : define powers ups here
+### PowerUps 
 class PowerUps(Enum) :
     PWR_NONE            = 0 # no power up
     PWR_INC_PADDLE_W    = 1 # increase paddle width
@@ -85,11 +85,25 @@ class PowerUps(Enum) :
     PWR_MOMENTUM        = 10 # ball momentum
     PWR_HOLD            = 11 # ball hold
 
+### Screens - enumerate different screens
+class Screens(Enum) :
+  SCRN_NONE = 0
+  SCRN_SPLASH = 1
+  SCRN_MENU = 2
+  SCRN_PAUSE = 3
+  SCRN_GAME = 4
+  SCRN_GAME_OVER = 5
+
 ### PlayerState - define different player states
 class PlayerState(Enum) :
     USER        = 0 # controlled by this player
     AI          = 1 # controlling it self
     COMP        = 2 # controlled by a COMPetitor
+
+### GameType - define the two game types
+class GameType(Enum) :
+    SINGLE_PLAYER   = 0
+    MULTI_PLAYER    = 1
 
 ### Tilt - defines the tilt of a block, either vertical or horizontal
 class Tilt(Enum) :

@@ -5,9 +5,8 @@
 
 # imports
 import random
-from UI.components.ComponentDefs import *
+from UI.typedefs import *
 from UI.components.Block import *
-from UI.screens.ScreenEnum import *
 import queue
 
 ### LEVEL class

@@ -6,7 +6,7 @@
 # imports
 import random
 from enum import Enum
-from UI.components.ComponentDefs import *
+from UI.typedefs import *
 
 # BALL class
 class Ball :
