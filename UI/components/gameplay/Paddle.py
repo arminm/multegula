@@ -4,19 +4,19 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-import random
 from enum import Enum
-from components.ComponentDefs import *
+import random
+from UI.typedefs import *
 
 # PADDLE class
 class Paddle :
     ### __init__ - initialize and return a paddle
     ##  @param orientation - location on the screen of this padde (DIR_NORTH/DIR_SOUTH/...)
     ##  @param state - current control state of the player (USER/AI/COMP)
-    def __init__(self, orientation, state) :
+    def __init__(self, orientation, state, gameType) :
         # CONSTANT fields   
         self.ORIENTATION = orientation
-        self.COLORS = ["red", "green", "blue", "purple", "orange", "yellow", "black", "white"]
+        self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'black', 'white']
 
         # dynamic fields
         self.state = state
@@ -24,10 +24,11 @@ class Paddle :
         self.direction = Direction.DIR_STOP
         self.center = X_CENTER
         self.width = PADDLE_WIDTH_INIT
-        self.color = "black"
+        self.color = 'black'
         self.randomColor()
         self.redraw = False
         self.first = True
+        self.gameType = gameType;
 
     ### increase/decrease speed methods
     def increaseSpeed(self) :
@@ -85,9 +86,16 @@ class Paddle :
             canvas.delete(self.p)
             self.setPaddle(canvas)
             self.redraw = False
+            if self.gameType == GameType.MULTI_PLAYER:
+                print('sending an update');
+                canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
         elif(self.first) :
             self.setPaddle(canvas)
             self.first = False
+            if self.gameType == GameType.MULTI_PLAYER:
+                print('sending an update');
+                canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
+
 
     ### update - update the paddle location (that is, 'move' if applicable) and draw
     def update(self, canvas) :

@@ -12,12 +12,13 @@ Dependencies Required:
 * python3-tk
 * git (for installation)
 
-#### OS X (using Homebrew):  
+#### OS X 10.10 or Newer (using Homebrew):  
 ```bash
 brew install python3 golang git  
 mkdir -p ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
-git clone https://github.com/arminm/multegula.git  
+git clone https://github.com/arminm/multegula.git
+export GOPATH=$HOME/go  
 cd multegula/
 ```
 
@@ -27,6 +28,7 @@ sudo apt-get install python3-tk golang git
 mkdir -p ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git  
+export GOPATH=$HOME/go
 cd multegula/
 ```
 

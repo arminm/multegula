@@ -3,7 +3,8 @@
 # GameScreen.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
-from components.ComponentDefs import *
+# imports
+from UI.typedefs import *
 
 # GameScreen - the paddles, ball, bricks, an status info will be superimposed on this
 #   screen during gameplay.
@@ -14,10 +15,10 @@ class GameScreen :
 
     ### set - sets the screen in the canvas
     def set(self, canvas) :
-        self.background = canvas.create_rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, fill = "black", width = 0)
+        self.background = canvas.create_rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, fill = 'black', width = 0)
 
         self.foreground = canvas.create_rectangle(X_MARGIN, Y_MARGIN, CANVAS_WIDTH - X_MARGIN,
-                                                    CANVAS_HEIGHT - Y_MARGIN, fill = "white", width = 0)
+                                                    CANVAS_HEIGHT - Y_MARGIN, fill = 'white', width = 0)
     ### draw - manages drawing the screen
     def draw(self, canvas) :
         if(self.first) :
