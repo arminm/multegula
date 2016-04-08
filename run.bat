@@ -1,8 +1,8 @@
 @echo off
-call "cmd /c go run multegula.go config bob"
+START /B CMD /C CALL "go run multegula.go config bob"
 
-rem de-facto sleep.  Ping an address that doesn't exist and wait 2000ms.
-ping 192.0.2.2 -n 1 -w 2000 > nul
+rem de-facto sleep.  Ping localhost and wait 2s.
+ping 127.0.0.1 -n 2 > nul
 
-call "cmd /c python3 UI/multegulaUI.py -mid"
+START /B CMD /C CALL "python3 UI/multegulaUI.py -mid"
 pause
