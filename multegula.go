@@ -118,6 +118,22 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 	return messagePasser.Message{Source: localNodeName, Destination: dest, Content: content, Kind: kind}
 }
 
+/* receive message from PyBridge and send to messagePasser */
+func sendToMessagePasser() {
+    for {
+        message := bridges.ReceiveFromPyBridge()
+        messagePasser.Send(message)
+    } 
+}
+
+/* receive message from MessagePasser and send to PyBridge */
+func receiveFromMessagePasser() {
+    for {
+        message := messagePasser.BlockReceive()
+        bridges.SendToPyBridge(message)
+    }
+}
+
 func main() {
 	// Read command-line arguments and prompt the user if not provided
 	args := os.Args[1:]
@@ -137,7 +153,14 @@ func main() {
 		localNodeName = getLocalName()
 	}
 	fmt.Println("Local Node Name:", localNodeName)
-    bridges.InitPyBridge(configName, localNodeName)
+    
+    messagePasser.InitMessagePasser(configName, localNodeName)
+    
+    bridges.InitPyBridge()
+
+    go sendToMessagePasser()
+    receiveFromMessagePasser()
+
 /*	messagePasser.InitMessagePasser(configName, localNodeName)
 
 	fmt.Print("--------------------------------\n")

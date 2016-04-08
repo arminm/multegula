@@ -20,6 +20,12 @@ const port string = ":44444"
 /* delimiter for formating message */
 const delimiter string = "##"
 
+/* the queue for messages to be sent to multegula */
+var sendQueue chan messagePasser.Message = make(chan messagePasser.Message, messagePasser.QUEUE_SIZE)
+
+/* the queue for messages received from multegula */
+var receivedQueue chan messagePasser.Message = make(chan messagePasser.Message, messagePasser.QUEUE_SIZE)
+
 /*
  * construct message from it's string format
  * @param	messageString
@@ -43,6 +49,40 @@ func encodeMessage(message messagePasser.Message) string {
 	return message.Source + delimiter + message.Destination + delimiter + message.Content + delimiter + message.Kind
 }
 
+/* 
+ * go routine for putting message to sendQueue
+ * @param message - message to be put into sendQueue
+ */
+func putMessageToSendQueue(message messagePasser.Message) {
+    sendQueue <- message
+}
+/* 
+ * go routine for putting message to receivedQueue
+ * @param message - message to be put into receivedQueue
+ */
+func putMessageToReceivedQueue(message messagePasser.Message) {
+    receivedQueue <- message
+}
+
+/*
+ * receive a message from PyBridge, this method will be called by multegula
+ * if there is no message in the sendQueue, it will block
+ * @return the message received from PyBridge
+ */
+func ReceiveFromPyBridge() messagePasser.Message {
+    message := <- sendQueue
+    return message
+}
+
+/* 
+ * send a message to PyBridge, this method will be called by multegula
+ * @param message
+ *        the message to be sent to PyBridge
+ */
+func SendToPyBridge(message messagePasser.Message) {
+    go putMessageToReceivedQueue(message)
+}
+
 /**
  * receive messages from UI and send to message passer
  * @param conn
@@ -53,7 +93,7 @@ func receiveFromUI(conn net.Conn) {
         messageString, _ := bufio.NewReader(conn).ReadString('\n')
         if(len(messageString) > 0) {
             fmt.Printf("Message received from UI: %s\n", messageString[0:len(messageString) - 1])
-            messagePasser.Send(decodeMessage(messageString[0:len(messageString) - 1]))
+            go putMessageToSendQueue(decodeMessage(messageString[0:len(messageString) - 1]))
         }
     }
 }
@@ -65,7 +105,7 @@ func receiveFromUI(conn net.Conn) {
  **/
 func sendToUI(conn net.Conn) {
     for {
-        var message messagePasser.Message = messagePasser.BlockReceive()
+        var message messagePasser.Message = <- receivedQueue
         if(message != messagePasser.Message{}) {
             fmt.Printf("Message sent to UI: %s\n", encodeMessage(message))
             conn.Write([]byte(encodeMessage(message) + "\n"))
@@ -73,9 +113,7 @@ func sendToUI(conn net.Conn) {
     }
 }
 
-func InitPyBridge(configFile string, localName string) {
-    messagePasser.InitMessagePasser(configFile, localName)
-
+func InitPyBridge() {
     ln, err := net.Listen("tcp", port)
     if(err != nil) {
         fmt.Println(err)
@@ -86,5 +124,6 @@ func InitPyBridge(configFile string, localName string) {
     /* start a new routine to receive messages from UI */
     go receiveFromUI(conn)
 
-    sendToUI(conn)
+    /* start a new routine to send message to UI */
+    go sendToUI(conn)
 }
