@@ -4,8 +4,8 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-import random
 from enum import Enum
+import random
 from UI.typedefs import *
 
 # PADDLE class

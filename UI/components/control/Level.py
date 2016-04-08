@@ -4,10 +4,10 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
+import queue
 import random
 from UI.typedefs import *
-from UI.components.Block import *
-import queue
+from UI.components.gameplay.Block import *
 
 ### LEVEL class
 class Level :
