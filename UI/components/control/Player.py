@@ -4,10 +4,10 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-import random
 from enum import Enum
-from UI.components.Paddle import *
+import random
 from UI.typedefs import *
+from UI.components.gameplay.Paddle import *
 
 # PLAYER class
 class Player :

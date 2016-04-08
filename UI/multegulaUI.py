@@ -13,18 +13,18 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.par
 # import stuff from our package
 from bridges.GoBridge import * #This is our GoBridge
 import threading #To run receiveThread
-from UI.components.Ball import *
-from UI.components.Block import *
-from UI.components.Button import *
-from UI.components.Paddle import *
-from UI.components.Player import *
-from UI.components.TextField import *
+from UI.components.control.Level import *
+from UI.components.control.Player import *
+from UI.components.gameplay.Ball import *
+from UI.components.gameplay.Block import *
+from UI.components.gameplay.Paddle import *
+from UI.components.directive.Button import *
+from UI.components.directive.TextField import *
 from UI.screens.SplashScreen import *
 from UI.screens.MenuScreen import *
 from UI.screens.PauseScreen import *
 from UI.screens.GameOver import *
 from UI.screens.GameScreen import *
-from UI.levels.Level import *
 from UI.typedefs import *
 
 
