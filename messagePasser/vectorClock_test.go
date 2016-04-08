@@ -2,6 +2,16 @@ package messagePasser
 
 import "testing"
 
+func TestGetNewTimestamp(t *testing.T) {
+	testTimestamp := []int{2, 0, 1, 5, 12}
+	expectedTimestamp := []int{2, 1, 1, 5, 12}
+	newTimestamp := GetNewTimestamp(&testTimestamp, 1)
+	if !CompareTimestampsSame(newTimestamp, &expectedTimestamp) || !CompareTimestampsSame(&testTimestamp, &expectedTimestamp) {
+		t.Errorf("Failed to get new timestamp.\ntestTimestamp:%+v\nnewTimestamp:%+v\nexpected:%+v\n",
+			testTimestamp, newTimestamp, expectedTimestamp)
+	}
+}
+
 func TestUpdateTimestamp(t *testing.T) {
 	testTimestamp := []int{2, 0, 1, 5, 12}
 	newTimestamp := []int{3, 0, 0, 4, 20}
@@ -20,7 +30,6 @@ func TestIncrementTimestamp(t *testing.T) {
 	if !CompareTimestampsSame(&testTimestamp, &expectedTimestamp) {
 		t.Errorf("Failed to increment timestamp.\n")
 	}
-
 }
 
 func TestCompareTimestampsSame(t *testing.T) {

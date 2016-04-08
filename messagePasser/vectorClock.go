@@ -3,6 +3,16 @@ package messagePasser
 import "fmt"
 
 /*
+ * initializes a new timestamp by incrementing and copying the current timestamp
+ */
+func GetNewTimestamp(currentTimestamp *[]int, localIndex int) *[]int {
+	IncrementTimestamp(currentTimestamp, localIndex)
+	newTimestamp := make([]int, len(*currentTimestamp))
+	copy(newTimestamp, *currentTimestamp)
+	return &newTimestamp
+}
+
+/*
  * updates a vector timestamp using a new timestamp.
  */
 func UpdateTimestamp(currentTimestamp *[]int, newTimestamp *[]int) error {
@@ -20,11 +30,11 @@ func UpdateTimestamp(currentTimestamp *[]int, newTimestamp *[]int) error {
 }
 
 /*
- * increments a timestamp at a certain index
+ * increments a timestamp at a certain local index for the local node
  */
-func IncrementTimestamp(v1 *[]int, index int) {
-	if index >= 0 && index < len(*v1) {
-		(*v1)[index] = (*v1)[index] + 1
+func IncrementTimestamp(v1 *[]int, localIndex int) {
+	if localIndex >= 0 && localIndex < len(*v1) {
+		(*v1)[localIndex] = (*v1)[localIndex] + 1
 	}
 }
 
