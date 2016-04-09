@@ -9,9 +9,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
+
 	"github.com/arminm/multegula/messagePasser"
-	"github.com/arminm/multegula/bridges"
 )
 
 /*
@@ -55,7 +56,7 @@ func getDest(nodes []messagePasser.Node) string {
 	// else input must be a name
 	var destNode messagePasser.Node
 	for len(destName) > 0 {
-		destNode, err = messagePasser.FindNodeByName(nodes, destName)
+		_, destNode, err = messagePasser.FindNodeByName(nodes, destName)
 		if err == nil {
 			break
 		}
@@ -118,11 +119,10 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 	return messagePasser.Message{Source: localNodeName, Destination: dest, Content: content, Kind: kind}
 }
 
-func main() {
-	// Read command-line arguments and prompt the user if not provided
-	args := os.Args[1:]
-
-	var configName string
+/*
+ * parses main arguments passed in through command-line
+ */
+func parseMainArguments(args []string) (configName string, localNodeName string) {
 	if len(args) > 0 {
 		configName = args[0]
 	} else {
@@ -130,15 +130,23 @@ func main() {
 	}
 	fmt.Println("Config Name:", configName)
 
-	var localNodeName string
 	if len(args) > 1 {
 		localNodeName = args[1]
 	} else {
 		localNodeName = getLocalName()
 	}
 	fmt.Println("Local Node Name:", localNodeName)
-    bridges.InitPyBridge(configName, localNodeName)
-/*	messagePasser.InitMessagePasser(configName, localNodeName)
+	return configName, localNodeName
+}
+
+/* the Main function of the Multegula application */
+func main() {
+	// Read command-line arguments and prompt the user if not provided
+	args := os.Args[1:]
+	configName, localNodeName := parseMainArguments(args)
+	//FIXME: Uncomment the following line when done testing
+	// bridges.InitPyBridge(configName, localNodeName)
+	messagePasser.InitMessagePasser(configName, localNodeName)
 
 	fmt.Print("--------------------------------\n")
 
@@ -156,7 +164,7 @@ func main() {
 			messagePasser.Send(message)
 		} else if operation == 1 {
 			var message messagePasser.Message = messagePasser.Receive()
-			if (message == messagePasser.Message{}) {
+			if (reflect.DeepEqual(message, messagePasser.Message{})) {
 				fmt.Print("No messages received.\n\n")
 			} else {
 				fmt.Printf("Received: %+v\n\n", message)
@@ -167,5 +175,5 @@ func main() {
 		} else {
 			fmt.Println("Operation not recognized. Please try again.")
 		}
-	}*/
+	}
 }
