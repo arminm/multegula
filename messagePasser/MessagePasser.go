@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"reflect"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -35,6 +37,21 @@ type Node struct {
 	DNS  string
 }
 
+// required functions to implement the sort.Interface for sorting Nodes
+type Nodes []Node
+
+func (slice Nodes) Len() int {
+	return len(slice)
+}
+
+func (slice Nodes) Less(i, j int) bool {
+	return slice[i].Name < slice[j].Name
+}
+
+func (slice Nodes) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
 /* DNS Configuration */
 type Configuration struct {
 	BootstrapServer []string //BootstrapServer DNS
@@ -54,7 +71,7 @@ type Message struct {
 	Content     string // the Content of message
 	Kind        string // the Kind of messages
 	SeqNum      int
-	// Timestamp   []int
+	Timestamp   []int
 }
 
 /* InitMessagePasser has to wait for all work to be done before exiting */
@@ -73,6 +90,16 @@ func Config() Configuration {
  * <key, value> = <name, connection>
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
+
+func getConnectionName(connection net.Conn) (string, error) {
+	for name, conn := range connections {
+		if conn == connection {
+			return name, nil
+		}
+	}
+	return "Not Found", fmt.Errorf("Connection not found:%v", connection)
+}
+
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
 
@@ -86,13 +113,14 @@ var localConn net.Conn
  * The local node's information.
  */
 var localNode Node
+var localIndex int
 
 /* the queue for messages to be sent */
 var sendChannel chan Message = make(chan Message, 100)
 
 /* the queue for received messages */
 var receiveChannel chan Message = make(chan Message, 100)
-var receiveQueue []Message = make([]Message, 10, 10)
+var receiveQueue []Message = []Message{}
 
 func updateSeqNum(message *Message) {
 	seqNum := seqNums[message.Destination] + 1
@@ -116,12 +144,15 @@ func sendMessageTCP(nodeName string, message *Message) {
  *
  * @return	message
  **/
-func receiveMessageTCP(conn net.Conn) Message {
+func receiveMessageTCP(conn net.Conn) (Message, error) {
 	dec := gob.NewDecoder(conn)
 	msg := &Message{}
-	dec.Decode(msg)
+	err := dec.Decode(msg)
+	if err != nil {
+		return *msg, err
+	}
 	// fmt.Printf("Received : %+v\n", msg)
-	return *msg
+	return *msg, nil
 }
 
 /*
@@ -134,6 +165,7 @@ func Multicast(message *Message) {
 	if message.Kind != KIND_REMULTICAST {
 		message.Kind = KIND_MULTICAST
 		updateSeqNum(message)
+		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 	}
 
 	for _, node := range config.Nodes {
@@ -144,13 +176,13 @@ func Multicast(message *Message) {
 /*
  * finds a node within an array of nodes by Name
  */
-func FindNodeByName(nodes []Node, name string) (Node, error) {
-	for _, node := range nodes {
+func FindNodeByName(nodes []Node, name string) (int, Node, error) {
+	for i, node := range nodes {
 		if node.Name == name {
-			return node, nil
+			return i, node, nil
 		}
 	}
-	return Node{}, errors.New("Node not found: " + name)
+	return -1, Node{}, errors.New("Node not found: " + name)
 }
 
 /*
@@ -203,7 +235,7 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 		 * send it's DNS name so that another node can know it's name
 		 **/
 		conn, _ := ln.Accept()
-		msg := receiveMessageTCP(conn)
+		msg, _ := receiveMessageTCP(conn)
 		// remove the connected node from the frontNodes
 		delete(frontNodes, msg.Source)
 		if msg.Source == localNode.Name {
@@ -236,7 +268,7 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 		seqNums[node.Name] = 0
 
 		/* send an initial ping message to other side of the connection */
-		msg := Message{localNode.Name, node.Name, "ping", "ping", 0}
+		msg := Message{localNode.Name, node.Name, "ping", "ping", 0, vectorTimeStamp}
 		sendMessageTCP(node.Name, &msg)
 	}
 	fmt.Println()
@@ -260,7 +292,12 @@ func putMessageToReceivedQueue(message Message) {
  **/
 func receiveMessageFromConn(conn net.Conn) {
 	for {
-		msg := receiveMessageTCP(conn)
+		msg, err := receiveMessageTCP(conn)
+		if err != nil {
+			name, _ := getConnectionName(conn)
+			fmt.Println("Lost Connection To:", name)
+			break
+		}
 		if msg.Kind == KIND_MULTICAST {
 			msg.Kind = KIND_REMULTICAST
 			go Multicast(&msg)
@@ -268,6 +305,8 @@ func receiveMessageFromConn(conn net.Conn) {
 		rule := matchReceiveRule(msg)
 		/* no rule matched, put it into receivedQueue */
 		if (rule == Rule{}) {
+			// fmt.Printf("No rules for Message: %+v\n", msg)
+
 			go putMessageToReceivedQueue(msg)
 			/*
 			 * there are delayed messages in receiveDelayedQueue
@@ -284,6 +323,7 @@ func receiveMessageFromConn(conn net.Conn) {
 			 * this message
 			 */
 			if rule.Kind == "delay" {
+				fmt.Printf("Delaying Message: %+v\n", msg)
 				go putMessageToReceiveDelayedQueue(msg)
 			}
 		}
@@ -346,11 +386,12 @@ func putMessageToSendQueue(message Message) {
  *			message to be sent
  **/
 func Send(message Message) {
-	if (message == Message{}) {
+	if (reflect.DeepEqual(message, Message{})) {
 		fmt.Println("Empty message, it is dropped!")
 	} else {
 		if _, ok := connections[message.Destination]; ok {
 			updateSeqNum(&message)
+			message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 			go putMessageToSendQueue(message)
 		} else {
 			fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
@@ -384,18 +425,36 @@ func BlockReceive() Message {
 func receiveQueueRoutine() {
 	for {
 		message := <-receiveChannel
+		/* update local timestamp */
+		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
+		// fmt.Printf("Received Message: %+v\n", message)
+		shouldPushToQueue := true
 		for i, msg := range receiveQueue {
-			if msg.Source == message.Source {
-				if msg.SeqNum == message.SeqNum {
-					break
-				} else if msg.SeqNum > message.SeqNum {
-					receiveQueue = *Insert(&receiveQueue, message, i)
-					break
-				}
-			} else if i == len(receiveQueue) {
-				Push(&receiveQueue, message)
+			// fmt.Printf("Index: %d\n", i)
+			if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
+				shouldPushToQueue = false
 				break
 			}
+			earlier, _, _ := CompareTimestamps(&msg.Timestamp, &message.Timestamp)
+			if reflect.DeepEqual(message.Timestamp, *earlier) {
+				receiveQueue = *Insert(&receiveQueue, message, i)
+				shouldPushToQueue = false
+				break
+			}
+			// if msg.Source == message.Source {
+			// 	if msg.SeqNum == message.SeqNum {
+			// 		shouldPushToQueue = false
+			// 		break
+			// 	} else if msg.SeqNum > message.SeqNum {
+			// 		receiveQueue = *Insert(&receiveQueue, message, i)
+			// 		shouldPushToQueue = false
+			// 		break
+			// 	}
+			// }
+		}
+
+		if shouldPushToQueue {
+			Push(&receiveQueue, message)
 		}
 	}
 }
@@ -450,15 +509,18 @@ func openConfigFile(configName string) *os.File {
  * @param configName the name of config file
  */
 func decodeConfigFile(configName string) {
-	file := openConfigFile(configName)
-	decoder := json.NewDecoder(file)
-	err := decoder.Decode(&config)
-	for err != nil {
+
+	for {
+		file := openConfigFile(configName)
+		decoder := json.NewDecoder(file)
+		err := decoder.Decode(&config)
+		if err == nil {
+			var nodes Nodes = config.Nodes
+			sort.Sort(nodes)
+			break
+		}
 		fmt.Println("Error: cannot decode the config file, please make sure it's a correct cofig file.")
 		configName = getConfigName()
-		file = openConfigFile(configName)
-		decoder = json.NewDecoder(file)
-		err = decoder.Decode(&config)
 	}
 }
 
@@ -476,14 +538,16 @@ func printNodesName(nodes []Node) {
  * find the localName from config file
  * @param localName the name of local node
  */
-func findNodeFromConf(localName string) {
-	var err error
-	localNode, err = FindNodeByName(config.Nodes, localName)
-	for err != nil {
+func findLocalNodeFromConfig(localName string) {
+	for {
+		var err error
+		localIndex, localNode, err = FindNodeByName(config.Nodes, localName)
+		if err == nil {
+			break
+		}
 		fmt.Println("Error: cannot find the local node's name in config file, please set the local name again.")
 		printNodesName(config.Nodes)
 		localName = getLocalName()
-		localNode, err = FindNodeByName(config.Nodes, localName)
 	}
 }
 
@@ -492,10 +556,12 @@ func findNodeFromConf(localName string) {
  **/
 func InitMessagePasser(configName string, localName string) {
 	decodeConfigFile(configName)
-	findNodeFromConf(localName)
+	findLocalNodeFromConfig(localName)
 
 	/* keep track of group seqNum for multicasting */
 	seqNums[config.Group[0]] = 0
+	/* initialize the vectorTimeStamp */
+	vectorTimeStamp = make([]int, len(config.Nodes))
 
 	/* separate Node names */
 	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
@@ -507,12 +573,11 @@ func InitMessagePasser(configName string, localName string) {
 	go sendConnection(latterNodes, localNode)
 	wg.Wait()
 
-	/* initialize the vectorTimeStamp */
-	vectorTimeStamp = make([]int, len(connections))
-
 	/* start routines listening on each connection to receive messages */
 	startReceiveRoutine()
 
+	/* start a routine to put messages in receiveQueue */
+	go receiveQueueRoutine()
 	/* start routine to send message */
 	go sendMessageToConn()
 }

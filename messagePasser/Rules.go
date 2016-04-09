@@ -17,17 +17,17 @@ import (
  * rule struct
  **/
 type Rule struct {
-    /* action of this rule
-     * possible values are:
-     * drop: drop message
-     * dropAfter: drop message if SeqNum of message greater that SeqNum
-     * delay: delay message until next send of message
-     */
-    Action string
-    Src string // the source of this rule
-    Dest string // the destionation of this rule
-    Kind string // the kind of message
-    SeqNum int // the sequence number of message
+	/* action of this rule
+	 * possible values are:
+	 * drop: drop message
+	 * dropAfter: drop message if SeqNum of message greater that SeqNum
+	 * delay: delay message until next send of message
+	 */
+	Action string
+	Src    string // the source of this rule
+	Dest   string // the destionation of this rule
+	Kind   string // the kind of message
+	SeqNum int    // the sequence number of message
 }
 
 /* this struct stores all send and receive rules */
@@ -44,7 +44,6 @@ var sendDelayedQueue chan Message = make(chan Message, QUEUE_SIZE)
 
 /* the queue for delayed receive messages */
 var receiveDelayedQueue chan Message = make(chan Message, QUEUE_SIZE)
-
 
 /* init function, decode rules from rules.json */
 func InitRules() {
@@ -104,12 +103,12 @@ func matchRule(message Message, rule Rule) bool {
  *        empty rule
  **/
 func matchSendRule(message Message) Rule {
-    for _, rule := range rules.SendRules {
-        if matchRule(message, rule) {
-            return rule
-        }
-    }
-    return Rule{}
+	for _, rule := range rules.SendRules {
+		if matchRule(message, rule) {
+			return rule
+		}
+	}
+	return Rule{}
 }
 
 /**
@@ -122,12 +121,12 @@ func matchSendRule(message Message) Rule {
  *        empty rule
  **/
 func matchReceiveRule(message Message) Rule {
-    for _, rule := range rules.ReceiveRules {
-        if matchRule(message, rule) {
-            return rule
-        }
-    }
-    return Rule{}
+	for _, rule := range rules.ReceiveRules {
+		if matchRule(message, rule) {
+			return rule
+		}
+	}
+	return Rule{}
 }
 
 /*
@@ -136,7 +135,7 @@ func matchReceiveRule(message Message) Rule {
  *       the message to be put into sendDelayedQueue
  **/
 func putMessageToSendDelayedQueue(message Message) {
-    sendDelayedQueue <- message
+	sendDelayedQueue <- message
 }
 
 /*
@@ -145,5 +144,5 @@ func putMessageToSendDelayedQueue(message Message) {
  *       the message to be put into receiveDelayedQueue
  **/
 func putMessageToReceiveDelayedQueue(message Message) {
-    receiveDelayedQueue <- message
+	receiveDelayedQueue <- message
 }

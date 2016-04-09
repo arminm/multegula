@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 
 	"github.com/arminm/multegula/messagePasser"
@@ -55,7 +56,7 @@ func getDest(nodes []messagePasser.Node) string {
 	// else input must be a name
 	var destNode messagePasser.Node
 	for len(destName) > 0 {
-		destNode, err = messagePasser.FindNodeByName(nodes, destName)
+		_, destNode, err = messagePasser.FindNodeByName(nodes, destName)
 		if err == nil {
 			break
 		}
@@ -163,7 +164,7 @@ func main() {
 			messagePasser.Send(message)
 		} else if operation == 1 {
 			var message messagePasser.Message = messagePasser.Receive()
-			if (message == messagePasser.Message{}) {
+			if (reflect.DeepEqual(message, messagePasser.Message{})) {
 				fmt.Print("No messages received.\n\n")
 			} else {
 				fmt.Printf("Received: %+v\n\n", message)
