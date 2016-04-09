@@ -13,12 +13,34 @@ import queue #Needed for receive queue
 
 ########PARAMETERS########
 BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
-DELIMITER = "##"
+DELIMITER = '##'
+PAYLOAD_DELIMITER = '|'
 LOCALHOST_IP = 'localhost'
 DEFAULT_SRC = 'UNSET'
-MULTICAST_DEST = "EVERYBODY"
+MULTICAST_DEST = 'EVERYBODY'
+MULTEGULA_DEST = 'MULTEGULA'
 TCP_PORT = 44444
 ##########################
+
+class PyMessage :
+	kind = ''
+	src = ''
+	dest = ''
+	content = None
+	multicast = False
+
+	def crack(self, received):
+		receivedArray = received.split(DELIMITER)
+		self.src = receivedArray[0]
+		self.dest = receivedArray[1]
+		self.content = receivedArray[2].split(PAYLOAD_DELIMITER)
+		self.kind = receivedArray[3].replace('\n', '')
+
+	def assemble(self):
+		return self.src + DELIMITER + self.dest + DELIMITER + self.content + DELIMITER + self.kind + '\n'
+
+	def printMessage(self):
+		print('source: ' + self.src + ', type: ' + self.kind + ', content: ' + str(self.content))
 
 # GoBridge class
 class GoBridge :
@@ -50,7 +72,7 @@ class GoBridge :
 		self.GoSocket = GoSocket
 
 		#Establish a queue for received messages
-		self.q = queue.Queue()
+		self.receiveQueue = queue.Queue()
 
 	## Get Pretty Time
 	## # Get pretty time for printing in error logs.
@@ -58,46 +80,52 @@ class GoBridge :
 		#Get Time
 		timestamp = int(time.time())
 		prettytime = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-		return 	"[" + prettytime + "]"
+		return 	'[' + prettytime + ']'
 			
 	## Build and Send Message
 	## # this function builds and sends a message.
 	## # Explicit encoding declaration became necessary in Python 3.
-	def sendMessage(self, src, dest, content, kind):
-		if self.src == DEFAULT_SRC:
-			print(self.getPrettyTime() + " Source name not set. Cannot send message.")
+	def sendMessage(self, pyMessage):
+		if pyMessage.src == DEFAULT_SRC:
+			print('GoBridge: ' + self.getPrettyTime() + ' Source name not set. Cannot send message.')
 		else:
-			message = src + DELIMITER + dest + DELIMITER + content + DELIMITER + kind + "\n"
-			try:	
-				self.GoSocket.send(message.encode(encoding='utf-8'))
-			except: 
-				print(self.getPrettyTime() + " Error sending on GoSocket:")
-				print("\t" + message);
+			# determine if this is a multicast message
+			if(pyMessage.multicast == True):
+				pyMessage.dest = MULTICAST_DEST
+			else:
+				pyMessage.dest = MULTEGULA_DEST	
 
-	## Multicast Message
-	## # This function is used to multicast a message, call when we want
-	## # a message multicasted versus a regular send.
-	def multicast(self, content, kind):
-		self.sendMessage(self.src, MULTICAST_DEST, content, kind)
+			# assemble the string version of the message
+			toSend = pyMessage.assemble()
+
+			try:	
+				self.GoSocket.send(toSend.encode(encoding='utf-8'))
+			except: 
+				print('GoBridge: ' + self.getPrettyTime() + ' Error sending on GoSocket:')
+				print('   ' + message);
 
 	## Receive Thread
 	## # this function receives a message from the receive buffer
 	## # and adds it to a receive queue for pickup by other functions.
-	## # CURRENTLY BLOCKS, SO ITERATOR DOES NOT WORK - I think this is okay. -Garrett
 	def receiveThread(self):
-		i = 0;
 		while True:
-			print(i)
-			i += 1
 			receivedData = self.GoSocket.recv(BUFFER_SIZE)
 			if not receivedData:
-				break
-			self.q.put(receivedData)
+				pass
+			else:
+				self.receiveQueue.put(receivedData)
 
 	## Receive Message
 	## # this function pulls a message from the receive queue
 	def receiveMessage(self):
-		message = self.q.get()
-		#Lets Python know that work on this element is done.
-		self.q.task_done()
+		message = PyMessage()
+		# only try and get a message if there is something in the queue.
+		if not(self.receiveQueue.empty()):
+			try:
+				received = self.receiveQueue.get(block = False)
+				message.crack(received)
+			except:
+				pass
+
 		return message
+

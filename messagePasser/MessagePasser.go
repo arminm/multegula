@@ -344,13 +344,13 @@ func putMessageToSendQueue(message Message) {
  **/
 func Send(message Message) {
     if(message == Message{}) {
-        fmt.Println("Empty message, it is dropped!")
+        fmt.Println("MessagePasser: Empty message, it is dropped!")
     } else {
         if _, ok := connections[message.Destination]; ok {
     	    updateSeqNum(&message)
         	go putMessageToSendQueue(message)
         } else {
-            fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
+            fmt.Printf("MessagePasser: Message's destination %s is not found, it is dropped!\n", message.Destination)
         }
     }
 }
