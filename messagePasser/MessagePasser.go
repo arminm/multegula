@@ -97,7 +97,7 @@ func getConnectionName(connection net.Conn) (string, error) {
 			return name, nil
 		}
 	}
-	return "Not Found", fmt.Errorf("Connection not found:%v", connection)
+	return "Not Found", fmt.Errorf("Connection not found:%v\n", connection)
 }
 
 var seqNums map[string]int = make(map[string]int)
