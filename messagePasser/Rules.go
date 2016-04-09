@@ -47,8 +47,8 @@ var receiveDelayedQueue chan Message = make(chan Message, QUEUE_SIZE)
 
 
 /* init function, decode rules from rules.json */
-func InitRules() {
-    file, errOpenFile := os.Open("./rules.json")
+func initRules() {
+    file, errOpenFile := os.Open("./messagePasser/rules.json")
     if errOpenFile != nil {
         fmt.Println("error when open file: ", errOpenFile)
     }

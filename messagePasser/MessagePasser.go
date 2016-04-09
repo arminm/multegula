@@ -85,7 +85,6 @@ func receiveMessageTCP(conn net.Conn) Message {
 	dec := gob.NewDecoder(conn)
 	msg := &Message{}
 	dec.Decode(msg)
-	// fmt.Printf("Received : %+v\n", msg)
 	return *msg
 }
 
@@ -280,9 +279,9 @@ func receiveMessageFromConn(conn net.Conn) {
 			 * check "delay" rule, since other rule will drop
 			 * this message
 			 */
-			if rule.Kind == "delay" {
+			if rule.Action == "delay" {
 				go putMessageToReceiveDelayedQueue(msg)
-			}
+            }
 		}
 	}
 }
@@ -311,7 +310,7 @@ func sendMessageToConn() {
 			sendMessageTCP(message.Destination, &message)
 			/* there are delayed messages, send one */
 			if len(sendDelayedQueue) > 0 {
-				delayedMessage := <-sendDelayedQueue
+                delayedMessage := <-sendDelayedQueue
 				sendMessageTCP(delayedMessage.Destination, &delayedMessage)
 			}
 		} else {
@@ -319,9 +318,9 @@ func sendMessageToConn() {
 			 * rule matched, only check delay rule, because other rules
 			 * will drop this message
 			 */
-			if rule.Kind == "delay" {
+			if rule.Action == "delay" {
 				go putMessageToSendDelayedQueue(message)
-			}
+            } 
 		}
 	}
 }
@@ -472,6 +471,8 @@ func printNodesName(nodes []Node) {
 func InitMessagePasser(configName string, localName string) {
     decodeConfigFile(configName)
     findNodeFromConf(localName)
+
+    initRules()
 
 	/* keep track of group seqNum for multicasting */
 	seqNums[config.Group[0]] = 0
