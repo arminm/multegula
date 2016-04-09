@@ -18,14 +18,14 @@
     ],
 
     "ReceiveRules": [
-    	{	
+    	{
             "Action": "delay",
-            "Src": "B",
-            "Dest": "C",
-            "Kind": "Ack",
-            "SeqNum": 4
+            "Src": "armin",
+            "Dest": "",
+            "Kind": "",
+            "SeqNum": 2
 	    },
-	
+
     	{
             "Action": "dropAfter",
             "Src": "C",
