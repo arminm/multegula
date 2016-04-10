@@ -162,12 +162,18 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
  * checks to see if a message is has been received before.
  */
 func messageHasBeenReceived(message Message) bool {
+	/* check if message has been delivered already */
 	for i, val := range message.Timestamp {
 		if val <= vectorTimeStamp[i] {
 			return true
 		}
 	}
-	// TODO: check if message is in holdbackQueue
+	/* check if message is in holdbackQueue */
+	for _, msg := range holdbackQueue {
+		if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
+			return true
+		}
+	}
 	return false
 }
 
