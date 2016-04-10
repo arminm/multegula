@@ -20,10 +20,6 @@ import (
 	"time"
 )
 
-// Constants
-const KIND_MULTICAST string = "multicast"
-const KIND_REMULTICAST string = "remulticast"
-
 /* the size of queue: sendQueue, receivedQueue,
  * sendDelayedQueue and receiveDelayedQueue
  **/
@@ -102,6 +98,7 @@ func getConnectionName(connection net.Conn) (string, error) {
 
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
+var multicastDestStr = "EVERYONE"
 
 /*
  * connection for localhost, this is the receive side,
@@ -162,10 +159,8 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
  */
 func messageHasBeenReceived(message Message) bool {
 	/* check if message has been delivered already */
-	for i, val := range message.Timestamp {
-		if val <= vectorTimeStamp[i] {
-			return true
-		}
+	if CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
+		return true
 	}
 	/* check if message is in holdbackQueue */
 	for _, msg := range holdbackQueue {
@@ -207,11 +202,8 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
  * basic multicasts a message to all nodes
  */
 func Multicast(message *Message) {
-	if len(message.Destination) == 0 {
-		message.Destination = config.Group[0]
-	}
-	if message.Kind != KIND_REMULTICAST {
-		message.Kind = KIND_MULTICAST
+	if message.Source == localNode.Name {
+		message.Destination = multicastDestStr
 		updateSeqNum(message)
 		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 	}
@@ -384,19 +376,24 @@ func deliverMessage(message Message) {
 	if messageHasBeenReceived(message) {
 		return
 	}
-
-	if isMessageReady(message, &vectorTimeStamp) {
-		go addMessageToReceiveChannel(message)
-		checkHoldbackQueue()
+	if message.Destination == multicastDestStr {
+		if isMessageReady(message, &vectorTimeStamp) {
+			go addMessageToReceiveChannel(message)
+			checkHoldbackQueue()
+		} else {
+			Push(&holdbackQueue, message)
+		}
+		/* Once a message has been inspected locally, check to see if it should be
+		 * re-multicasted to other nodes
+		 */
+		if message.Source != localNode.Name {
+			go Multicast(&message)
+		}
 	} else {
-		Push(&holdbackQueue, message)
+		// TODO: Handle direct messages with wrong order
+		go addMessageToReceiveChannel(message)
 	}
-	/* Once a message has been inspected locally, check to see if it should be
-	 * re-multicasted to other nodes
-	 */
-	if message.Destination == "EVERYONE" && message.Source != localNode.Name {
-		go Multicast(&message)
-	}
+
 }
 
 /*
@@ -476,10 +473,11 @@ func putMessageToSendQueue(message Message) {
 func Send(message Message) {
 	if (reflect.DeepEqual(message, Message{})) {
 		fmt.Println("Empty message, it is dropped!")
+	} else if message.Destination == multicastDestStr {
+		Multicast(&message)
 	} else {
 		if _, ok := connections[message.Destination]; ok {
 			updateSeqNum(&message)
-			message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 			go putMessageToSendQueue(message)
 		} else {
 			fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
