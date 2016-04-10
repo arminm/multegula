@@ -194,7 +194,6 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
 	if err != nil {
 		return *msg, err
 	}
-	// fmt.Printf("Received : %+v\n", msg)
 	return *msg, nil
 }
 
@@ -359,10 +358,9 @@ func receiveMessageFromConn(conn net.Conn) {
 			 * check "delay" rule, since other rule will drop
 			 * this message
 			 */
-			if rule.Kind == "delay" {
-				fmt.Printf("Delaying Message: %+v\n", msg)
+			if rule.Action == "delay" {
 				go putMessageToReceiveDelayedQueue(msg)
-			}
+            }
 		}
 	}
 }
@@ -439,7 +437,7 @@ func sendMessageToConn() {
 			sendMessageTCP(message.Destination, &message)
 			/* there are delayed messages, send one */
 			if len(sendDelayedQueue) > 0 {
-				delayedMessage := <-sendDelayedQueue
+                delayedMessage := <-sendDelayedQueue
 				sendMessageTCP(delayedMessage.Destination, &delayedMessage)
 			}
 		} else {
@@ -447,9 +445,9 @@ func sendMessageToConn() {
 			 * rule matched, only check delay rule, because other rules
 			 * will drop this message
 			 */
-			if rule.Kind == "delay" {
+			if rule.Action == "delay" {
 				go putMessageToSendDelayedQueue(message)
-			}
+            } 
 		}
 	}
 }
@@ -461,7 +459,7 @@ func sendMessageToConn() {
  * @param	message
  *			the message to be put into sendChannel
  **/
-func putMessageToSendQueue(message Message) {
+func putMessageToSendChannel(message Message) {
 	sendChannel <- message
 }
 
@@ -478,12 +476,13 @@ func Send(message Message) {
 	} else {
 		if _, ok := connections[message.Destination]; ok {
 			updateSeqNum(&message)
-			go putMessageToSendQueue(message)
+			go putMessageToSendChannel(message)
 		} else {
 			fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
 		}
 	}
 }
+
 
 /*
  * a public method that returns a message from receiveChannel
@@ -591,6 +590,8 @@ func findLocalNodeFromConfig(localName string) {
 func InitMessagePasser(configName string, localName string) {
 	decodeConfigFile(configName)
 	findLocalNodeFromConfig(localName)
+
+    initRules()
 
 	/* keep track of group seqNum for multicasting */
 	seqNums[config.Group[0]] = 0
