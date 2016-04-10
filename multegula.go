@@ -12,8 +12,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/messagePasser"
+	"github.com/arminm/multegula/bridges"
 )
 
 /*
@@ -120,6 +120,22 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 	return messagePasser.Message{Source: localNodeName, Destination: dest, Content: content, Kind: kind}
 }
 
+/* receive message from PyBridge and send to messagePasser */
+func sendToMessagePasser() {
+    for {
+        message := bridges.ReceiveFromPyBridge()
+        messagePasser.Send(message)
+    } 
+}
+
+/* receive message from MessagePasser and send to PyBridge */
+func receiveFromMessagePasser() {
+    for {
+        message := messagePasser.Receive()
+        bridges.SendToPyBridge(message)
+    }
+}
+
 /*
  * parses main arguments passed in through command-line
  */
@@ -149,6 +165,22 @@ func parseMainArguments(args []string) (configName string, localNodeName string,
 	}
 	return configName, localNodeName, manualTestMode
 }
+
+/* the Main function of the Multegula application */
+/*func main() {
+	args := os.Args[1:]
+
+	// Read command-line arguments and prompt the user if not provided
+	configName, localNodeName := parseMainArguments(args)
+    
+    messagePasser.InitMessagePasser(configName, localNodeName)
+    
+    bridges.InitPyBridge()
+
+    go sendToMessagePasser()
+    receiveFromMessagePasser()
+
+}*/
 
 /* the Main function of the Multegula application */
 func main() {
