@@ -159,6 +159,19 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
 }
 
 /*
+ * checks to see if a message is has been received before.
+ */
+func messageHasBeenReceived(message Message) bool {
+	for i, val := range message.Timestamp {
+		if val <= vectorTimeStamp[i] {
+			return true
+		}
+	}
+	// TODO: check if message is in holdbackQueue
+	return false
+}
+
+/*
  * send TCP messages
  * @param	conn – connection to send message over
  * @param	message – message to be sent
@@ -311,7 +324,8 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  * @param	message
  *			the message to be put into receiveQueue
  **/
-func putMessageToReceivedQueue(message Message) {
+func addMessageToReceiveChannel(message Message) {
+	UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
 	receiveChannel <- message
 }
 
@@ -328,28 +342,19 @@ func receiveMessageFromConn(conn net.Conn) {
 			fmt.Println("Lost Connection To:", name)
 			break
 		}
-		if msg.Kind == KIND_MULTICAST {
-			msg.Kind = KIND_REMULTICAST
-			go Multicast(&msg)
-		}
+
 		rule := matchReceiveRule(msg)
 		/* no rule matched, put it into receivedQueue */
 		if (rule == Rule{}) {
 			// fmt.Printf("No rules for Message: %+v\n", msg)
-			if isMessageReady(msg, &vectorTimeStamp) {
-				UpdateTimestamp(&vectorTimeStamp, &msg.Timestamp)
-				go putMessageToReceivedQueue(msg)
-			}
+			deliverMessage(msg)
 			/*
 			 * there are delayed messages in receiveDelayedQueue
 			 * get one and put it into receivedQueue
 			 */
 			for len(receiveDelayedQueue) > 0 {
 				delayedMessage := <-receiveDelayedQueue
-				if isMessageReady(delayedMessage, &vectorTimeStamp) {
-					UpdateTimestamp(&vectorTimeStamp, &msg.Timestamp)
-					go putMessageToReceivedQueue(delayedMessage)
-				}
+				deliverMessage(delayedMessage)
 			}
 		} else {
 			/*
@@ -362,6 +367,49 @@ func receiveMessageFromConn(conn net.Conn) {
 				go putMessageToReceiveDelayedQueue(msg)
 			}
 		}
+	}
+}
+
+/*
+ * inspects a message and delivers to application (using receive channel) if
+ * the message is ready. It will also check the holdbackQueue for other potential
+ * messages that might be ready now.
+ */
+func deliverMessage(message Message) {
+	if messageHasBeenReceived(message) {
+		return
+	}
+
+	if isMessageReady(message, &vectorTimeStamp) {
+		go addMessageToReceiveChannel(message)
+		checkHoldbackQueue()
+	} else {
+		Push(&holdbackQueue, message)
+	}
+	/* Once a message has been inspected locally, check to see if it should be
+	 * re-multicasted to other nodes
+	 */
+	if message.Destination == "EVERYONE" && message.Source != localNode.Name {
+		go Multicast(&message)
+	}
+}
+
+/*
+ * a recursive call that checks the holdbackQueue for any message that is ready
+ * to be delivered.
+ */
+func checkHoldbackQueue() {
+	var messageToDeliver *Message
+	for i, msg := range holdbackQueue {
+		if isMessageReady(msg, &vectorTimeStamp) {
+			messageToDeliver = &msg
+			Delete(&holdbackQueue, i)
+			break
+		}
+	}
+	if messageToDeliver != nil {
+		go addMessageToReceiveChannel(*messageToDeliver)
+		checkHoldbackQueue()
 	}
 }
 
@@ -440,7 +488,7 @@ func Send(message Message) {
  *			in receiveQueue; otherwise, return an empty message
  **/
 func Receive() Message {
-	return Pop(&receiveQueue)
+	return <-receiveChannel
 }
 
 /*
@@ -452,47 +500,6 @@ func Receive() Message {
 func BlockReceive() Message {
 	message := <-receiveChannel
 	return message
-}
-
-/*
- * Receives a message from the receive channel and inserts it into the queue.
- */
-func receiveQueueRoutine() {
-	for {
-		message := <-receiveChannel
-		/* update local timestamp */
-		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
-		// fmt.Printf("Received Message: %+v\n", message)
-		shouldPushToQueue := true
-		for i, msg := range receiveQueue {
-			// fmt.Printf("Index: %d\n", i)
-			if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
-				shouldPushToQueue = false
-				break
-			}
-			earlier, _, _ := CompareTimestamps(&msg.Timestamp, &message.Timestamp)
-			if reflect.DeepEqual(message.Timestamp, *earlier) {
-				receiveQueue = *Insert(&receiveQueue, message, i)
-				shouldPushToQueue = false
-				break
-			}
-		}
-
-		if shouldPushToQueue {
-			Push(&receiveQueue, message)
-		}
-
-		// if msg.Source == message.Source {
-		// 	if msg.SeqNum == message.SeqNum {
-		// 		shouldPushToQueue = false
-		// 		break
-		// 	} else if msg.SeqNum > message.SeqNum {
-		// 		receiveQueue = *Insert(&receiveQueue, message, i)
-		// 		shouldPushToQueue = false
-		// 		break
-		// 	}
-		// }
-	}
 }
 
 /*
@@ -612,8 +619,6 @@ func InitMessagePasser(configName string, localName string) {
 	/* start routines listening on each connection to receive messages */
 	startReceiveRoutine()
 
-	/* start a routine to put messages in receiveQueue */
-	go receiveQueueRoutine()
 	/* start routine to send message */
 	go sendMessageToConn()
 }
