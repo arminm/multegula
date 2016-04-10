@@ -121,11 +121,41 @@ var sendChannel chan Message = make(chan Message, 100)
 /* the queue for received messages */
 var receiveChannel chan Message = make(chan Message, 100)
 var receiveQueue []Message = []Message{}
+var holdbackQueue []Message = []Message{}
 
 func updateSeqNum(message *Message) {
 	seqNum := seqNums[message.Destination] + 1
 	seqNums[message.Destination] = seqNum
 	message.SeqNum = seqNum
+}
+
+/*
+ * detects if a message is the next message to be put in the receive channel
+ * or not. The criteria is that the message's timestamp should have only 1 value
+ * that is +1 on only 1 index of vectorTimeStamp. if there are multiple values
+ * that are +1 of their respective indexes in vectorTimeStamp that means we have
+ * yet not received a message that the sender of this message has received.
+ *
+ * Example: If we're node 0, and vectorTimeStamp = [1,2,3], and new message comes
+ * in from node 1 with [1,3,4], we have missed a message from node 2 ([1,2,4])
+ * that was received by node 1 before it multicasts [1,3,4]. Thus this message
+ * is not ready yet, and we have to receive [1,2,4] first.
+ */
+func isMessageReady(message Message, localTimeStamp *[]int) bool {
+	foundPotential := false
+	for i, val := range message.Timestamp {
+		localValue := (*localTimeStamp)[i]
+		if val < localValue {
+			return false
+		} else if val == localValue+1 {
+			if foundPotential == false {
+				foundPotential = true
+			} else {
+				return false
+			}
+		}
+	}
+	return foundPotential
 }
 
 /*
@@ -441,21 +471,22 @@ func receiveQueueRoutine() {
 				shouldPushToQueue = false
 				break
 			}
-			// if msg.Source == message.Source {
-			// 	if msg.SeqNum == message.SeqNum {
-			// 		shouldPushToQueue = false
-			// 		break
-			// 	} else if msg.SeqNum > message.SeqNum {
-			// 		receiveQueue = *Insert(&receiveQueue, message, i)
-			// 		shouldPushToQueue = false
-			// 		break
-			// 	}
-			// }
 		}
 
 		if shouldPushToQueue {
 			Push(&receiveQueue, message)
 		}
+
+		// if msg.Source == message.Source {
+		// 	if msg.SeqNum == message.SeqNum {
+		// 		shouldPushToQueue = false
+		// 		break
+		// 	} else if msg.SeqNum > message.SeqNum {
+		// 		receiveQueue = *Insert(&receiveQueue, message, i)
+		// 		shouldPushToQueue = false
+		// 		break
+		// 	}
+		// }
 	}
 }
 
