@@ -9,8 +9,9 @@ package main
 import (
 	"fmt"
 	"os"
-//	"reflect"
+	"reflect"
 	"strconv"
+	"strings"
 	"github.com/arminm/multegula/messagePasser"
 	"github.com/arminm/multegula/bridges"
 )
@@ -138,11 +139,14 @@ func receiveFromMessagePasser() {
 /*
  * parses main arguments passed in through command-line
  */
-func parseMainArguments(args []string) (configName string, localNodeName string) {
+func parseMainArguments(args []string) (configName string, localNodeName string, manualTestMode bool) {
+	manualTestMode = false
+
 	if len(args) > 0 {
 		configName = args[0]
 	} else {
 		configName = getConfigName()
+		manualTestMode = true
 	}
 	fmt.Println("Config Name:", configName)
 
@@ -150,13 +154,20 @@ func parseMainArguments(args []string) (configName string, localNodeName string)
 		localNodeName = args[1]
 	} else {
 		localNodeName = getLocalName()
+		manualTestMode = true
 	}
 	fmt.Println("Local Node Name:", localNodeName)
-	return configName, localNodeName
+
+	if len(args) > 2 && manualTestMode == false {
+		manualTestMode = strings.EqualFold(args[2], "-t")
+	} else {
+		manualTestMode = false
+	}
+	return configName, localNodeName, manualTestMode
 }
 
 /* the Main function of the Multegula application */
-func main() {
+/*func main() {
 	args := os.Args[1:]
 
 	// Read command-line arguments and prompt the user if not provided
@@ -169,45 +180,55 @@ func main() {
     go sendToMessagePasser()
     receiveFromMessagePasser()
 
-}
+}*/
 
 /* the Main function of the Multegula application */
-/*func main() {
+func main() {
 	// Read command-line arguments and prompt the user if not provided
 	args := os.Args[1:]
-	configName, localNodeName := parseMainArguments(args)
+	configName, localNodeName, manualTestMode := parseMainArguments(args)
 	//FIXME: Uncomment the following line when done testing
-	// bridges.InitPyBridge(configName, localNodeName)
+	bridges.InitPyBridge(configName, localNodeName)
 	messagePasser.InitMessagePasser(configName, localNodeName)
 
-	fmt.Print("--------------------------------\n")
+	if manualTestMode {
+		fmt.Print("--------------------------------\n")
 
-	configuration := messagePasser.Config()
-	fmt.Println("Available Nodes:")
-	for id, node := range configuration.Nodes {
-		fmt.Printf("  ID:%d – %s\n", id, node.Name)
-	}
+		configuration := messagePasser.Config()
+		fmt.Println("Available Nodes:")
+		for id, node := range configuration.Nodes {
+			fmt.Printf("  ID:%d – %s\n", id, node.Name)
+		}
 
-	fmt.Println("Please select the operation you want to do:")
-	for {
-		fmt.Println("Getting operation")
-		operation := getOperation()
-		if operation == 0 {
-			message := getMessage(configuration.Nodes, localNodeName)
-			messagePasser.Send(message)
-		} else if operation == 1 {
+		fmt.Println("Please select the operation you want to do:")
+		for {
+			
+			fmt.Println("Getting operation")
+			operation := getOperation()
+			if operation == 0 {
+				message := getMessage(configuration.Nodes, localNodeName)
+				messagePasser.Send(message)
+			} else if operation == 1 {
+				var message messagePasser.Message = messagePasser.Receive()
+				if (reflect.DeepEqual(message, messagePasser.Message{})) {
+					fmt.Print("No messages received.\n\n")
+				} else {
+					fmt.Printf("Received: %+v\n\n", message)
+				}
+			} else if operation == 2 {
+				message := getMessage(configuration.Nodes, localNodeName)
+				messagePasser.Multicast(&message)
+				fmt.Println("Did multicast")
+			} else {
+				fmt.Println("Operation not recognized. Please try again.")
+			}
+			
 			var message messagePasser.Message = messagePasser.Receive()
 			if (reflect.DeepEqual(message, messagePasser.Message{})) {
 				fmt.Print("No messages received.\n\n")
 			} else {
 				fmt.Printf("Received: %+v\n\n", message)
 			}
-		} else if operation == 2 {
-			message := getMessage(configuration.Nodes, localNodeName)
-			messagePasser.Multicast(&message)
-			fmt.Println("Did multicast")
-		} else {
-			fmt.Println("Operation not recognized. Please try again.")
-		}
+		}	
 	}
-}*/
+}

@@ -66,7 +66,7 @@ class GoBridge :
 			GoSocket.connect((LOCALHOST_IP, TCP_PORT))
 		except:
 			#NOTE: this is mostly useful for debugging, but in reality the game couldn't run without this.
-			print(self.getPrettyTime() + " Can't connect. Is GoBridge up?")
+			print(self.getPrettyTime() + " Can't connect. Is PyBridge up?")
 
 		#And declare GoBridge
 		self.GoSocket = GoSocket
@@ -102,7 +102,7 @@ class GoBridge :
 				self.GoSocket.send(toSend.encode(encoding='utf-8'))
 			except: 
 				print('GoBridge: ' + self.getPrettyTime() + ' Error sending on GoSocket:')
-				print('   ' + message);
+				print('   ' + toSend);
 
 	## Receive Thread
 	## # this function receives a message from the receive buffer

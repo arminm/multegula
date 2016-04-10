@@ -13,4 +13,4 @@ sleep 1
 #Start PyBridge, and give it time to come up before continuing
 go run multegula.go config bob &
 sleep 2
-python3 UI/multegulaUI.py -mid
+python3 UI/multegulaUI.py
