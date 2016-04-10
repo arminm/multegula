@@ -158,6 +158,7 @@ func main() {
 
 	fmt.Println("Please select the operation you want to do:")
 	for {
+		fmt.Println("Getting operation")
 		operation := getOperation()
 		if operation == 0 {
 			message := getMessage(configuration.Nodes, localNodeName)
@@ -172,6 +173,7 @@ func main() {
 		} else if operation == 2 {
 			message := getMessage(configuration.Nodes, localNodeName)
 			messagePasser.Multicast(&message)
+			fmt.Println("Did multicast")
 		} else {
 			fmt.Println("Operation not recognized. Please try again.")
 		}
