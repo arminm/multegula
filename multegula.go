@@ -7,13 +7,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
-	"strings"
-	"github.com/arminm/multegula/messagePasser"
+
 	"github.com/arminm/multegula/bridges"
+	"github.com/arminm/multegula/messagePasser"
 )
 
 /*
@@ -122,31 +122,29 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 
 /* receive message from PyBridge and send to messagePasser */
 func sendToMessagePasser() {
-    for {
-        message := bridges.ReceiveFromPyBridge()
-        messagePasser.Send(message)
-    } 
+	for {
+		message := bridges.ReceiveFromPyBridge()
+		messagePasser.Send(message)
+	}
 }
 
 /* receive message from MessagePasser and send to PyBridge */
 func receiveFromMessagePasser() {
-    for {
-        message := messagePasser.Receive()
-        bridges.SendToPyBridge(message)
-    }
+	for {
+		message := messagePasser.Receive()
+		bridges.SendToPyBridge(message)
+	}
 }
 
 /*
  * parses main arguments passed in through command-line
  */
-func parseMainArguments(args []string) (configName string, localNodeName string, manualTestMode bool) {
-	manualTestMode = false
+func parseMainArguments(args []string) (configName string, localNodeName string) {
 
 	if len(args) > 0 {
 		configName = args[0]
 	} else {
 		configName = getConfigName()
-		manualTestMode = true
 	}
 	fmt.Println("Config Name:", configName)
 
@@ -154,16 +152,9 @@ func parseMainArguments(args []string) (configName string, localNodeName string,
 		localNodeName = args[1]
 	} else {
 		localNodeName = getLocalName()
-		manualTestMode = true
 	}
 	fmt.Println("Local Node Name:", localNodeName)
-
-	if len(args) > 2 && manualTestMode == false {
-		manualTestMode = strings.EqualFold(args[2], "-t")
-	} else {
-		manualTestMode = false
-	}
-	return configName, localNodeName, manualTestMode
+	return configName, localNodeName
 }
 
 /* the Main function of the Multegula application */
@@ -172,9 +163,9 @@ func parseMainArguments(args []string) (configName string, localNodeName string,
 
 	// Read command-line arguments and prompt the user if not provided
 	configName, localNodeName := parseMainArguments(args)
-    
+
     messagePasser.InitMessagePasser(configName, localNodeName)
-    
+
     bridges.InitPyBridge()
 
     go sendToMessagePasser()
@@ -184,14 +175,19 @@ func parseMainArguments(args []string) (configName string, localNodeName string,
 
 /* the Main function of the Multegula application */
 func main() {
+	testFlag := flag.Bool("test", false, "a bool")
+	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
-	args := os.Args[1:]
-	configName, localNodeName, manualTestMode := parseMainArguments(args)
+	args := flag.Args()
+	configName, localNodeName := parseMainArguments(args)
 	//FIXME: Uncomment the following line when done testing
-	bridges.InitPyBridge()
+	go bridges.InitPyBridge()
+
+	fmt.Println("Initing with localName:", localNodeName)
 	messagePasser.InitMessagePasser(configName, localNodeName)
 
-	if manualTestMode {
+	if *testFlag {
+
 		fmt.Print("--------------------------------\n")
 
 		configuration := messagePasser.Config()
@@ -202,7 +198,7 @@ func main() {
 
 		fmt.Println("Please select the operation you want to do:")
 		for {
-			
+
 			fmt.Println("Getting operation")
 			operation := getOperation()
 			if operation == 0 {
@@ -222,13 +218,13 @@ func main() {
 			} else {
 				fmt.Println("Operation not recognized. Please try again.")
 			}
-			
-			var message messagePasser.Message = messagePasser.Receive()
-			if (reflect.DeepEqual(message, messagePasser.Message{})) {
-				fmt.Print("No messages received.\n\n")
-			} else {
-				fmt.Printf("Received: %+v\n\n", message)
-			}
-		}	
+			//
+			// var message messagePasser.Message = messagePasser.Receive()
+			// if (reflect.DeepEqual(message, messagePasser.Message{})) {
+			// 	fmt.Print("No messages received.\n\n")
+			// } else {
+			// 	fmt.Printf("Received: %+v\n\n", message)
+			// }
+		}
 	}
 }
