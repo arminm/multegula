@@ -120,7 +120,6 @@ var sendChannel chan Message = make(chan Message, 100)
 
 /* the queue for received messages */
 var receiveChannel chan Message = make(chan Message, 100)
-var receiveQueue []Message = []Message{}
 var holdbackQueue []Message = []Message{}
 
 func updateSeqNum(message *Message) {
