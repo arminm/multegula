@@ -20,10 +20,6 @@ import (
 	"time"
 )
 
-// Constants
-const KIND_MULTICAST string = "multicast"
-const KIND_REMULTICAST string = "remulticast"
-
 /* the size of queue: sendQueue, receivedQueue,
  * sendDelayedQueue and receiveDelayedQueue
  **/
@@ -102,6 +98,7 @@ func getConnectionName(connection net.Conn) (string, error) {
 
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
+var multicastDestStr = "EVERYONE"
 
 /*
  * connection for localhost, this is the receive side,
@@ -120,12 +117,58 @@ var sendChannel chan Message = make(chan Message, 100)
 
 /* the queue for received messages */
 var receiveChannel chan Message = make(chan Message, 100)
-var receiveQueue []Message = []Message{}
+var holdbackQueue []Message = []Message{}
 
 func updateSeqNum(message *Message) {
 	seqNum := seqNums[message.Destination] + 1
 	seqNums[message.Destination] = seqNum
 	message.SeqNum = seqNum
+}
+
+/*
+ * detects if a message is the next message to be put in the receive channel
+ * or not. The criteria is that the message's timestamp should have only 1 value
+ * that is +1 on only 1 index of vectorTimeStamp. if there are multiple values
+ * that are +1 of their respective indexes in vectorTimeStamp that means we have
+ * yet not received a message that the sender of this message has received.
+ *
+ * Example: If we're node 0, and vectorTimeStamp = [1,2,3], and new message comes
+ * in from node 1 with [1,3,4], we have missed a message from node 2 ([1,2,4])
+ * that was received by node 1 before it multicasts [1,3,4]. Thus this message
+ * is not ready yet, and we have to receive [1,2,4] first.
+ */
+func isMessageReady(message Message, localTimeStamp *[]int) bool {
+	foundPotential := false
+	for i, val := range message.Timestamp {
+		localValue := (*localTimeStamp)[i]
+		if val < localValue {
+			return false
+		} else if val == localValue+1 {
+			if foundPotential == false {
+				foundPotential = true
+			} else {
+				return false
+			}
+		}
+	}
+	return foundPotential
+}
+
+/*
+ * checks to see if a message is has been received before.
+ */
+func messageHasBeenReceived(message Message) bool {
+	/* check if message has been delivered already */
+	if CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
+		return true
+	}
+	/* check if message is in holdbackQueue */
+	for _, msg := range holdbackQueue {
+		if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
+			return true
+		}
+	}
+	return false
 }
 
 /*
@@ -159,11 +202,8 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
  * basic multicasts a message to all nodes
  */
 func Multicast(message *Message) {
-	if len(message.Destination) == 0 {
-		message.Destination = config.Group[0]
-	}
-	if message.Kind != KIND_REMULTICAST {
-		message.Kind = KIND_MULTICAST
+	if message.Source == localNode.Name {
+		message.Destination = multicastDestStr
 		updateSeqNum(message)
 		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 	}
@@ -281,7 +321,8 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  * @param	message
  *			the message to be put into receiveQueue
  **/
-func putMessageToReceivedQueue(message Message) {
+func addMessageToReceiveChannel(message Message) {
+	UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
 	receiveChannel <- message
 }
 
@@ -298,23 +339,19 @@ func receiveMessageFromConn(conn net.Conn) {
 			fmt.Println("Lost Connection To:", name)
 			break
 		}
-		if msg.Kind == KIND_MULTICAST {
-			msg.Kind = KIND_REMULTICAST
-			go Multicast(&msg)
-		}
+
 		rule := matchReceiveRule(msg)
 		/* no rule matched, put it into receivedQueue */
 		if (rule == Rule{}) {
 			// fmt.Printf("No rules for Message: %+v\n", msg)
-
-			go putMessageToReceivedQueue(msg)
+			deliverMessage(msg)
 			/*
 			 * there are delayed messages in receiveDelayedQueue
 			 * get one and put it into receivedQueue
 			 */
 			for len(receiveDelayedQueue) > 0 {
 				delayedMessage := <-receiveDelayedQueue
-				go putMessageToReceivedQueue(delayedMessage)
+				deliverMessage(delayedMessage)
 			}
 		} else {
 			/*
@@ -331,11 +368,59 @@ func receiveMessageFromConn(conn net.Conn) {
 }
 
 /*
+ * inspects a message and delivers to application (using receive channel) if
+ * the message is ready. It will also check the holdbackQueue for other potential
+ * messages that might be ready now.
+ */
+func deliverMessage(message Message) {
+	if messageHasBeenReceived(message) {
+		return
+	}
+	if message.Destination == multicastDestStr {
+		if isMessageReady(message, &vectorTimeStamp) {
+			go addMessageToReceiveChannel(message)
+			checkHoldbackQueue()
+		} else {
+			Push(&holdbackQueue, message)
+		}
+		/* Once a message has been inspected locally, check to see if it should be
+		 * re-multicasted to other nodes
+		 */
+		if message.Source != localNode.Name {
+			go Multicast(&message)
+		}
+	} else {
+		// TODO: Handle direct messages with wrong order
+		go addMessageToReceiveChannel(message)
+	}
+
+}
+
+/*
+ * a recursive call that checks the holdbackQueue for any message that is ready
+ * to be delivered.
+ */
+func checkHoldbackQueue() {
+	var messageToDeliver *Message
+	for i, msg := range holdbackQueue {
+		if isMessageReady(msg, &vectorTimeStamp) {
+			messageToDeliver = &msg
+			Delete(&holdbackQueue, i)
+			break
+		}
+	}
+	if messageToDeliver != nil {
+		go addMessageToReceiveChannel(*messageToDeliver)
+		checkHoldbackQueue()
+	}
+}
+
+/*
  * for each TCP connection, start a new receiveMessageFromConn routine to
  * receive messages sent from that connection. A constraint for this mechanism
  * is that each routine waits in a infinite loop which makes code inefficient.
  **/
-func startReceiveRoutine() {
+func startReceiveRoutines() {
 	for _, conn := range connections {
 		go receiveMessageFromConn(conn)
 	}
@@ -388,10 +473,11 @@ func putMessageToSendQueue(message Message) {
 func Send(message Message) {
 	if (reflect.DeepEqual(message, Message{})) {
 		fmt.Println("Empty message, it is dropped!")
+	} else if message.Destination == multicastDestStr {
+		Multicast(&message)
 	} else {
 		if _, ok := connections[message.Destination]; ok {
 			updateSeqNum(&message)
-			message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 			go putMessageToSendQueue(message)
 		} else {
 			fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
@@ -400,63 +486,11 @@ func Send(message Message) {
 }
 
 /*
- * Delivers received messages from the receiveQueue
- * @return	if there are receivable messages in receiveQueue, return the first
- *			in receiveQueue; otherwise, return an empty message
- **/
-func Receive() Message {
-	return Pop(&receiveQueue)
-}
-
-/*
- * receive message, this is a public method and it will be blocked if there is
- * no message can be received right now
- * @return	if there are receivable messages in receivedQueue, return the first
- *			in receivedQueue; otherwise, return an empty message
- **/
-func BlockReceive() Message {
-	message := <-receiveChannel
-	return message
-}
-
-/*
- * Receives a message from the receive channel and inserts it into the queue.
+ * a public method that returns a message from receiveChannel
+ * this method is blocking if there are no messages.
  */
-func receiveQueueRoutine() {
-	for {
-		message := <-receiveChannel
-		/* update local timestamp */
-		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
-		// fmt.Printf("Received Message: %+v\n", message)
-		shouldPushToQueue := true
-		for i, msg := range receiveQueue {
-			// fmt.Printf("Index: %d\n", i)
-			if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
-				shouldPushToQueue = false
-				break
-			}
-			earlier, _, _ := CompareTimestamps(&msg.Timestamp, &message.Timestamp)
-			if reflect.DeepEqual(message.Timestamp, *earlier) {
-				receiveQueue = *Insert(&receiveQueue, message, i)
-				shouldPushToQueue = false
-				break
-			}
-			// if msg.Source == message.Source {
-			// 	if msg.SeqNum == message.SeqNum {
-			// 		shouldPushToQueue = false
-			// 		break
-			// 	} else if msg.SeqNum > message.SeqNum {
-			// 		receiveQueue = *Insert(&receiveQueue, message, i)
-			// 		shouldPushToQueue = false
-			// 		break
-			// 	}
-			// }
-		}
-
-		if shouldPushToQueue {
-			Push(&receiveQueue, message)
-		}
-	}
+func Receive() Message {
+	return <-receiveChannel
 }
 
 /*
@@ -566,6 +600,7 @@ func InitMessagePasser(configName string, localName string) {
 	/* separate Node names */
 	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
 
+	//TODO: Don't wait for connections
 	/* wait for connections setup before proceeding */
 	wg.Add(2)
 	/* setup TCP connections */
@@ -574,10 +609,8 @@ func InitMessagePasser(configName string, localName string) {
 	wg.Wait()
 
 	/* start routines listening on each connection to receive messages */
-	startReceiveRoutine()
+	startReceiveRoutines()
 
-	/* start a routine to put messages in receiveQueue */
-	go receiveQueueRoutine()
 	/* start routine to send message */
 	go sendMessageToConn()
 }

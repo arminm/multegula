@@ -67,7 +67,7 @@ func receiveFromUI(conn net.Conn) {
  **/
 func sendToUI(conn net.Conn) {
 	for {
-		var message messagePasser.Message = messagePasser.BlockReceive()
+		var message messagePasser.Message = messagePasser.Receive()
 		if !reflect.DeepEqual(message, messagePasser.Message{}) {
 			fmt.Printf("PyBridge: Message sent to UI: %s\n", encodeMessage(message))
 			conn.Write([]byte(encodeMessage(message) + "\n"))
