@@ -7,7 +7,7 @@ func TestIsMessageReady(t *testing.T) {
 	message := Message{"", "", "", "", 0, []int{1, 3, 4}}
 
 	t.Log("Testing timestamp with 1 incremented value...")
-	message.Timestamp = []int{1, 2, 3}
+	message.Timestamp = []int{1, 3, 3}
 	if !isMessageReady(message, &timestamp) {
 		t.Errorf("Message should be ready!\nMessage Timestamp: %v\nLocal Timestamp: %v\n",
 			message.Timestamp, timestamp)
