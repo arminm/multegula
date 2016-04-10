@@ -16,6 +16,11 @@ import (
 	"github.com/arminm/multegula/bridges"
 )
 
+// constants
+const UI_MULTICAST_DEST string = "EVERYBODY"
+const UI_MULTEGULA_DEST string = "MULTEGULA"
+const MSG_MYNAME string = "MSG_MYNAME"
+
 /*
  * get the operation, send or receive
  * @return if send, return 1; otherwise return 0
@@ -120,16 +125,35 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 	return messagePasser.Message{Source: localNodeName, Destination: dest, Content: content, Kind: kind}
 }
 
+/* 
+ * retreives local name from the UI
+ */
+func uiGetLocalName() (localName string){
+	for {
+		message := bridges.ReceiveFromPyBridge()
+		if strings.EqualFold(message.Kind, MSG_MYNAME) {
+			localName = message.Content
+			break
+		}
+	}
+	return localName
+}
+
 /* receive message from PyBridge and send to messagePasser */
-func sendToMessagePasser() {
-    for {
-        message := bridges.ReceiveFromPyBridge()
-        messagePasser.Send(message)
-    } 
+func uiReceiveAndReact(received messagePasser.Message, localName string) {
+	if strings.EqualFold(received.Destination, UI_MULTICAST_DEST) {
+		received.Source = localName
+		fmt.Println("Multegula: Multicasting message - ", received)
+		messagePasser.Multicast(&received)
+	} else if strings.EqualFold(received.Destination, UI_MULTEGULA_DEST) {
+		fmt.Println("TODO: Handle any messages meant only for Multegula.")
+	} else {
+		fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
+	}
 }
 
 /* receive message from MessagePasser and send to PyBridge */
-func receiveFromMessagePasser() {
+func pyBridgeSend() {
     for {
         message := messagePasser.Receive()
         bridges.SendToPyBridge(message)
@@ -189,9 +213,12 @@ func main() {
 	configName, localNodeName, manualTestMode := parseMainArguments(args)
 	//FIXME: Uncomment the following line when done testing
 	bridges.InitPyBridge()
-	messagePasser.InitMessagePasser(configName, localNodeName)
+
+	// NOTE: This line got moved based on the whether we are in a testing mode or not.
+	//messagePasser.InitMessagePasser(configName, localNodeName)
 
 	if manualTestMode {
+		messagePasser.InitMessagePasser(configName, localNodeName)
 		fmt.Print("--------------------------------\n")
 
 		configuration := messagePasser.Config()
@@ -230,5 +257,19 @@ func main() {
 				fmt.Printf("Received: %+v\n\n", message)
 			}
 		}	
-	}
+	} else {
+		// get the the local node name from the UI 
+		// NOTE: this will be required when we move to the bootstrap server method, for now
+		//	this must match the config file.
+		localNodeName = uiGetLocalName()
+		fmt.Println("GOT NAME FROM UI:", localNodeName)
+		messagePasser.InitMessagePasser(configName, localNodeName)
+
+		// main loop - this runs the Multegula in all it's glory
+	    for {
+	        message := bridges.ReceiveFromPyBridge()
+	        // TODO: we shouldn't have to send the localNodeName to uiReceiveAndReact so that it can multicast.
+	        uiReceiveAndReact(message, localNodeName)
+	    }
+   	}
 }
