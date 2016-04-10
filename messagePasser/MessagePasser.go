@@ -418,7 +418,7 @@ func checkHoldbackQueue() {
  * receive messages sent from that connection. A constraint for this mechanism
  * is that each routine waits in a infinite loop which makes code inefficient.
  **/
-func startReceiveRoutine() {
+func startReceiveRoutines() {
 	for _, conn := range connections {
 		go receiveMessageFromConn(conn)
 	}
@@ -483,23 +483,11 @@ func Send(message Message) {
 }
 
 /*
- * Delivers received messages from the receiveQueue
- * @return	if there are receivable messages in receiveQueue, return the first
- *			in receiveQueue; otherwise, return an empty message
- **/
+ * a public method that returns a message from receiveChannel
+ * this method is blocking if there are no messages.
+ */
 func Receive() Message {
 	return <-receiveChannel
-}
-
-/*
- * receive message, this is a public method and it will be blocked if there is
- * no message can be received right now
- * @return	if there are receivable messages in receivedQueue, return the first
- *			in receivedQueue; otherwise, return an empty message
- **/
-func BlockReceive() Message {
-	message := <-receiveChannel
-	return message
 }
 
 /*
@@ -609,6 +597,7 @@ func InitMessagePasser(configName string, localName string) {
 	/* separate Node names */
 	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
 
+	//TODO: Don't wait for connections
 	/* wait for connections setup before proceeding */
 	wg.Add(2)
 	/* setup TCP connections */
@@ -617,7 +606,7 @@ func InitMessagePasser(configName string, localName string) {
 	wg.Wait()
 
 	/* start routines listening on each connection to receive messages */
-	startReceiveRoutine()
+	startReceiveRoutines()
 
 	/* start routine to send message */
 	go sendMessageToConn()
