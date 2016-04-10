@@ -188,7 +188,7 @@ func main() {
 	args := os.Args[1:]
 	configName, localNodeName, manualTestMode := parseMainArguments(args)
 	//FIXME: Uncomment the following line when done testing
-	bridges.InitPyBridge(configName, localNodeName)
+	bridges.InitPyBridge()
 	messagePasser.InitMessagePasser(configName, localNodeName)
 
 	if manualTestMode {
