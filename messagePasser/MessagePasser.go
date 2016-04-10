@@ -360,7 +360,7 @@ func receiveMessageFromConn(conn net.Conn) {
 			 */
 			if rule.Action == "delay" {
 				go putMessageToReceiveDelayedQueue(msg)
-            }
+			}
 		}
 	}
 }
@@ -437,7 +437,7 @@ func sendMessageToConn() {
 			sendMessageTCP(message.Destination, &message)
 			/* there are delayed messages, send one */
 			if len(sendDelayedQueue) > 0 {
-                delayedMessage := <-sendDelayedQueue
+				delayedMessage := <-sendDelayedQueue
 				sendMessageTCP(delayedMessage.Destination, &delayedMessage)
 			}
 		} else {
@@ -447,7 +447,7 @@ func sendMessageToConn() {
 			 */
 			if rule.Action == "delay" {
 				go putMessageToSendDelayedQueue(message)
-            } 
+			}
 		}
 	}
 }
@@ -482,7 +482,6 @@ func Send(message Message) {
 		}
 	}
 }
-
 
 /*
  * a public method that returns a message from receiveChannel
@@ -591,7 +590,7 @@ func InitMessagePasser(configName string, localName string) {
 	decodeConfigFile(configName)
 	findLocalNodeFromConfig(localName)
 
-    initRules()
+	initRules()
 
 	/* keep track of group seqNum for multicasting */
 	seqNums[config.Group[0]] = 0
