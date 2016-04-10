@@ -336,15 +336,20 @@ func receiveMessageFromConn(conn net.Conn) {
 		/* no rule matched, put it into receivedQueue */
 		if (rule == Rule{}) {
 			// fmt.Printf("No rules for Message: %+v\n", msg)
-
-			go putMessageToReceivedQueue(msg)
+			if isMessageReady(msg, &vectorTimeStamp) {
+				UpdateTimestamp(&vectorTimeStamp, &msg.Timestamp)
+				go putMessageToReceivedQueue(msg)
+			}
 			/*
 			 * there are delayed messages in receiveDelayedQueue
 			 * get one and put it into receivedQueue
 			 */
 			for len(receiveDelayedQueue) > 0 {
 				delayedMessage := <-receiveDelayedQueue
-				go putMessageToReceivedQueue(delayedMessage)
+				if isMessageReady(delayedMessage, &vectorTimeStamp) {
+					UpdateTimestamp(&vectorTimeStamp, &msg.Timestamp)
+					go putMessageToReceivedQueue(delayedMessage)
+				}
 			}
 		} else {
 			/*

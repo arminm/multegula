@@ -6,9 +6,9 @@ import "fmt"
  * initializes a new timestamp by incrementing and copying the current timestamp
  */
 func GetNewTimestamp(currentTimestamp *[]int, localIndex int) *[]int {
-	IncrementTimestamp(currentTimestamp, localIndex)
 	newTimestamp := make([]int, len(*currentTimestamp))
 	copy(newTimestamp, *currentTimestamp)
+	IncrementTimestamp(&newTimestamp, localIndex)
 	return &newTimestamp
 }
 
