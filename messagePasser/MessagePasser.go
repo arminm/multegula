@@ -13,14 +13,12 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"reflect"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
 )
-
-// Constants
-const KIND_MULTICAST string = "multicast"
-const KIND_REMULTICAST string = "remulticast"
 
 /* the size of queue: sendQueue, receivedQueue,
  * sendDelayedQueue and receiveDelayedQueue
@@ -33,6 +31,21 @@ type Node struct {
 	IP   string
 	Port int
 	DNS  string
+}
+
+// required functions to implement the sort.Interface for sorting Nodes
+type Nodes []Node
+
+func (slice Nodes) Len() int {
+	return len(slice)
+}
+
+func (slice Nodes) Less(i, j int) bool {
+	return slice[i].Name < slice[j].Name
+}
+
+func (slice Nodes) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
 }
 
 /* DNS Configuration */
@@ -54,15 +67,108 @@ type Message struct {
 	Content     string // the Content of message
 	Kind        string // the Kind of messages
 	SeqNum      int
+	Timestamp   []int
 }
 
 /* InitMessagePasser has to wait for all work to be done before exiting */
 var wg sync.WaitGroup
 
+/*
+ * local instance holding the parsed config info.
+ */
+var config Configuration = Configuration{}
+
+func Config() Configuration {
+	return config
+}
+
+/* map stores connections to each node
+ * <key, value> = <name, connection>
+ **/
+var connections map[string]net.Conn = make(map[string]net.Conn)
+
+func getConnectionName(connection net.Conn) (string, error) {
+	for name, conn := range connections {
+		if conn == connection {
+			return name, nil
+		}
+	}
+	return "Not Found", fmt.Errorf("Connection not found:%v\n", connection)
+}
+
+var seqNums map[string]int = make(map[string]int)
+var vectorTimeStamp []int
+var multicastDestStr = "EVERYONE"
+
+/*
+ * connection for localhost, this is the receive side,
+ * the send side is stored in connections map
+ **/
+var localConn net.Conn
+
+/*
+ * The local node's information.
+ */
+var localNode Node
+var localIndex int
+
+/* the queue for messages to be sent */
+var sendChannel chan Message = make(chan Message, 100)
+
+/* the queue for received messages */
+var receiveChannel chan Message = make(chan Message, 100)
+var holdbackQueue []Message = []Message{}
+
 func updateSeqNum(message *Message) {
 	seqNum := seqNums[message.Destination] + 1
 	seqNums[message.Destination] = seqNum
 	message.SeqNum = seqNum
+}
+
+/*
+ * detects if a message is the next message to be put in the receive channel
+ * or not. The criteria is that the message's timestamp should have only 1 value
+ * that is +1 on only 1 index of vectorTimeStamp. if there are multiple values
+ * that are +1 of their respective indexes in vectorTimeStamp that means we have
+ * yet not received a message that the sender of this message has received.
+ *
+ * Example: If we're node 0, and vectorTimeStamp = [1,2,3], and new message comes
+ * in from node 1 with [1,3,4], we have missed a message from node 2 ([1,2,4])
+ * that was received by node 1 before it multicasts [1,3,4]. Thus this message
+ * is not ready yet, and we have to receive [1,2,4] first.
+ */
+func isMessageReady(message Message, localTimeStamp *[]int) bool {
+	foundPotential := false
+	for i, val := range message.Timestamp {
+		localValue := (*localTimeStamp)[i]
+		if val < localValue {
+			return false
+		} else if val == localValue+1 {
+			if foundPotential == false {
+				foundPotential = true
+			} else {
+				return false
+			}
+		}
+	}
+	return foundPotential
+}
+
+/*
+ * checks to see if a message is has been received before.
+ */
+func messageHasBeenReceived(message Message) bool {
+	/* check if message has been delivered already */
+	if CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
+		return true
+	}
+	/* check if message is in holdbackQueue */
+	for _, msg := range holdbackQueue {
+		if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
+			return true
+		}
+	}
+	return false
 }
 
 /*
@@ -81,23 +187,24 @@ func sendMessageTCP(nodeName string, message *Message) {
  *
  * @return	message
  **/
-func receiveMessageTCP(conn net.Conn) Message {
+func receiveMessageTCP(conn net.Conn) (Message, error) {
 	dec := gob.NewDecoder(conn)
 	msg := &Message{}
-	dec.Decode(msg)
-	return *msg
+	err := dec.Decode(msg)
+	if err != nil {
+		return *msg, err
+	}
+	return *msg, nil
 }
 
 /*
  * basic multicasts a message to all nodes
  */
 func Multicast(message *Message) {
-	if len(message.Destination) == 0 {
-		message.Destination = config.Group[0]
-	}
-	if message.Kind != KIND_REMULTICAST {
-		message.Kind = KIND_MULTICAST
+	if message.Source == localNode.Name {
+		message.Destination = multicastDestStr
 		updateSeqNum(message)
+		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 	}
 
 	for _, node := range config.Nodes {
@@ -106,47 +213,15 @@ func Multicast(message *Message) {
 }
 
 /*
- * local instance holding the parsed config info.
- */
-var config Configuration = Configuration{}
-
-func Config() Configuration {
-	return config
-}
-
-/* map stores connections to each node
- * <key, value> = <dns, connection>
- **/
-var connections map[string]net.Conn = make(map[string]net.Conn)
-var seqNums map[string]int = make(map[string]int)
-
-/*
- * connection for localhost, this is the receive side,
- * the send side is stored in connections map
- **/
-var localConn net.Conn
-
-/*
- * The local node's information.
- */
-var localNode Node
-
-/* the queue for messages to be sent */
-var sendQueue chan Message = make(chan Message, QUEUE_SIZE)
-
-/* the queue for received messages */
-var receivedQueue chan Message = make(chan Message, QUEUE_SIZE)
-
-/*
  * finds a node within an array of nodes by Name
  */
-func FindNodeByName(nodes []Node, name string) (Node, error) {
-	for _, node := range nodes {
+func FindNodeByName(nodes []Node, name string) (int, Node, error) {
+	for i, node := range nodes {
 		if node.Name == name {
-			return node, nil
+			return i, node, nil
 		}
 	}
-	return Node{}, errors.New("Node not found: " + name)
+	return -1, Node{}, errors.New("Node not found: " + name)
 }
 
 /*
@@ -199,7 +274,7 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 		 * send it's DNS name so that another node can know it's name
 		 **/
 		conn, _ := ln.Accept()
-		msg := receiveMessageTCP(conn)
+		msg, _ := receiveMessageTCP(conn)
 		// remove the connected node from the frontNodes
 		delete(frontNodes, msg.Source)
 		if msg.Source == localNode.Name {
@@ -232,7 +307,7 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 		seqNums[node.Name] = 0
 
 		/* send an initial ping message to other side of the connection */
-		msg := Message{localNode.Name, node.Name, "ping", "ping", 0}
+		msg := Message{localNode.Name, node.Name, "ping", "ping", 0, vectorTimeStamp}
 		sendMessageTCP(node.Name, &msg)
 	}
 	fmt.Println()
@@ -245,8 +320,9 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  * @param	message
  *			the message to be put into receiveQueue
  **/
-func putMessageToReceivedQueue(message Message) {
-	receivedQueue <- message
+func addMessageToReceiveChannel(message Message) {
+	UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
+	receiveChannel <- message
 }
 
 /*
@@ -256,22 +332,25 @@ func putMessageToReceivedQueue(message Message) {
  **/
 func receiveMessageFromConn(conn net.Conn) {
 	for {
-		msg := receiveMessageTCP(conn)
-		// if msg.Kind == KIND_MULTICAST {
-		// 	msg.Kind = KIND_REMULTICAST
-		// 	Multicast(&msg)
-		// }
+		msg, err := receiveMessageTCP(conn)
+		if err != nil {
+			name, _ := getConnectionName(conn)
+			fmt.Println("Lost Connection To:", name)
+			break
+		}
+
 		rule := matchReceiveRule(msg)
 		/* no rule matched, put it into receivedQueue */
 		if (rule == Rule{}) {
-			go putMessageToReceivedQueue(msg)
+			// fmt.Printf("No rules for Message: %+v\n", msg)
+			deliverMessage(msg)
 			/*
 			 * there are delayed messages in receiveDelayedQueue
 			 * get one and put it into receivedQueue
 			 */
-			if len(receiveDelayedQueue) > 0 {
+			for len(receiveDelayedQueue) > 0 {
 				delayedMessage := <-receiveDelayedQueue
-				go putMessageToReceivedQueue(delayedMessage)
+				deliverMessage(delayedMessage)
 			}
 		} else {
 			/*
@@ -287,11 +366,59 @@ func receiveMessageFromConn(conn net.Conn) {
 }
 
 /*
+ * inspects a message and delivers to application (using receive channel) if
+ * the message is ready. It will also check the holdbackQueue for other potential
+ * messages that might be ready now.
+ */
+func deliverMessage(message Message) {
+	if messageHasBeenReceived(message) {
+		return
+	}
+	if message.Destination == multicastDestStr {
+		if isMessageReady(message, &vectorTimeStamp) {
+			go addMessageToReceiveChannel(message)
+			checkHoldbackQueue()
+		} else {
+			Push(&holdbackQueue, message)
+		}
+		/* Once a message has been inspected locally, check to see if it should be
+		 * re-multicasted to other nodes
+		 */
+		if message.Source != localNode.Name {
+			go Multicast(&message)
+		}
+	} else {
+		// TODO: Handle direct messages with wrong order
+		go addMessageToReceiveChannel(message)
+	}
+
+}
+
+/*
+ * a recursive call that checks the holdbackQueue for any message that is ready
+ * to be delivered.
+ */
+func checkHoldbackQueue() {
+	var messageToDeliver *Message
+	for i, msg := range holdbackQueue {
+		if isMessageReady(msg, &vectorTimeStamp) {
+			messageToDeliver = &msg
+			Delete(&holdbackQueue, i)
+			break
+		}
+	}
+	if messageToDeliver != nil {
+		go addMessageToReceiveChannel(*messageToDeliver)
+		checkHoldbackQueue()
+	}
+}
+
+/*
  * for each TCP connection, start a new receiveMessageFromConn routine to
  * receive messages sent from that connection. A constraint for this mechanism
  * is that each routine waits in a infinite loop which makes code inefficient.
  **/
-func startReceiveRoutine() {
+func startReceiveRoutines() {
 	for _, conn := range connections {
 		go receiveMessageFromConn(conn)
 	}
@@ -299,11 +426,11 @@ func startReceiveRoutine() {
 }
 
 /*
- * whnever there are messages in sendQueue, send it out to TCP connection
+ * whnever there are messages in sendChannel, send it out to TCP connection
  **/
 func sendMessageToConn() {
 	for {
-		message := <-sendQueue
+		message := <-sendChannel
 		rule := matchSendRule(message)
 		/* no rules matched, send the message */
 		if (rule == Rule{}) {
@@ -326,14 +453,14 @@ func sendMessageToConn() {
 }
 
 /*
- * put message to sendQueue, since the chan <- maybe blocked if the channel is full,
+ * put message to sendChannel, since the chan <- maybe blocked if the channel is full,
  * in order to not block the void send(message Message) method, we creates a new routine
  * to do this
  * @param	message
- *			the message to be put into sendQueue
+ *			the message to be put into sendChannel
  **/
-func putMessageToSendQueue(message Message) {
-	sendQueue <- message
+func putMessageToSendChannel(message Message) {
+	sendChannel <- message
 }
 
 /*
@@ -342,40 +469,27 @@ func putMessageToSendQueue(message Message) {
  *			message to be sent
  **/
 func Send(message Message) {
-    if(message == Message{}) {
-        fmt.Println("Empty message, it is dropped!")
-    } else {
-        if _, ok := connections[message.Destination]; ok {
-    	    updateSeqNum(&message)
-        	go putMessageToSendQueue(message)
-        } else {
-            fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
-        }
-    }
-}
-
-/*
- * Delivers received messages from the receiveQueue
- * @return	if there are receivable messages in receivedQueue, return the first
- *			in receivedQueue; otherwise, return an empty message
- **/
-func Receive() Message {
-	var message Message = Message{}
-	if len(receivedQueue) > 0 {
-		message = <-receivedQueue
+	if (reflect.DeepEqual(message, Message{})) {
+		fmt.Println("Empty message, it is dropped!")
+	} else if message.Destination == multicastDestStr {
+		Multicast(&message)
+	} else {
+		if _, ok := connections[message.Destination]; ok {
+			updateSeqNum(&message)
+			go putMessageToSendChannel(message)
+		} else {
+			fmt.Printf("Message's destination %s is not found, it is dropped!\n", message.Destination)
+		}
 	}
-	return message
 }
 
+
 /*
- * receive message, this is a public method and it will be blocked if there is
- * no message can be received right now
- * @return	if there are receivable messages in receivedQueue, return the first
- *			in receivedQueue; otherwise, return an empty message
- **/
-func BlockReceive() Message {
-	message := <-receivedQueue
-	return message
+ * a public method that returns a message from receiveChannel
+ * this method is blocking if there are no messages.
+ */
+func Receive() Message {
+	return <-receiveChannel
 }
 
 /*
@@ -411,75 +525,83 @@ func getLocalName() string {
  * @param configName the name of config file
  * @return the handler of config file
  */
- func openConfigFile(configName string) *os.File {
+func openConfigFile(configName string) *os.File {
 	filePath := "./messagePasser/" + configName + ".json"
-    file, err := os.Open(filePath)
-    for err != nil {
-        fmt.Println("Error: cannot find or open the config file, please set config file again.")
-        configName = getConfigName()
-        filePath = "./messagePasser/" + configName + ".json"
-        file, err = os.Open(filePath)
-    }
-    return file
- }
+	file, err := os.Open(filePath)
+	for err != nil {
+		fmt.Println("Error: cannot find or open the config file, please set config file again.")
+		configName = getConfigName()
+		filePath = "./messagePasser/" + configName + ".json"
+		file, err = os.Open(filePath)
+	}
+	return file
+}
 
- /*
-  * decode the config file
-  * @param configName the name of config file
-  */
- func decodeConfigFile(configName string) {
-     file := openConfigFile(configName)
-     decoder := json.NewDecoder(file)
-     err := decoder.Decode(&config)
-     for err != nil {
-         fmt.Println("Error: cannot decode the config file, please make sure it's a correct cofig file.")
-         configName = getConfigName()
-         file = openConfigFile(configName)
-         decoder = json.NewDecoder(file)
-         err = decoder.Decode(&config)
-     }
- }
+/*
+ * decode the config file
+ * @param configName the name of config file
+ */
+func decodeConfigFile(configName string) {
 
- /*
-  * print out all nodes' name
-  */
-func printNodesName(nodes []Node) {
-    fmt.Println("Possiable node names are: ")
-	for _, node := range nodes {
-        fmt.Printf("\t%s\n", node.Name)
+	for {
+		file := openConfigFile(configName)
+		decoder := json.NewDecoder(file)
+		err := decoder.Decode(&config)
+		if err == nil {
+			var nodes Nodes = config.Nodes
+			sort.Sort(nodes)
+			break
+		}
+		fmt.Println("Error: cannot decode the config file, please make sure it's a correct cofig file.")
+		configName = getConfigName()
 	}
 }
 
- /*
-  * find the localName from config file
-  * @param localName the name of local node
-  */
-  func findNodeFromConf(localName string) {
-      var err error
-      localNode, err = FindNodeByName(config.Nodes, localName)
-      for err != nil {
-          fmt.Println("Error: cannot find the local node's name in config file, please set the local name again.")
-          printNodesName(config.Nodes)
-          localName = getLocalName()
-          localNode, err = FindNodeByName(config.Nodes, localName)
-      }
-  }
+/*
+ * print out all nodes' name
+ */
+func printNodesName(nodes []Node) {
+	fmt.Println("Possiable node names are: ")
+	for _, node := range nodes {
+		fmt.Printf("\t%s\n", node.Name)
+	}
+}
+
+/*
+ * find the localName from config file
+ * @param localName the name of local node
+ */
+func findLocalNodeFromConfig(localName string) {
+	for {
+		var err error
+		localIndex, localNode, err = FindNodeByName(config.Nodes, localName)
+		if err == nil {
+			break
+		}
+		fmt.Println("Error: cannot find the local node's name in config file, please set the local name again.")
+		printNodesName(config.Nodes)
+		localName = getLocalName()
+	}
+}
 
 /*
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser(configName string, localName string) {
-    decodeConfigFile(configName)
-    findNodeFromConf(localName)
+	decodeConfigFile(configName)
+	findLocalNodeFromConfig(localName)
 
     initRules()
 
 	/* keep track of group seqNum for multicasting */
 	seqNums[config.Group[0]] = 0
+	/* initialize the vectorTimeStamp */
+	vectorTimeStamp = make([]int, len(config.Nodes))
 
 	/* separate Node names */
 	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
 
+	//TODO: Don't wait for connections
 	/* wait for connections setup before proceeding */
 	wg.Add(2)
 	/* setup TCP connections */
@@ -488,7 +610,7 @@ func InitMessagePasser(configName string, localName string) {
 	wg.Wait()
 
 	/* start routines listening on each connection to receive messages */
-	startReceiveRoutine()
+	startReceiveRoutines()
 
 	/* start routine to send message */
 	go sendMessageToConn()

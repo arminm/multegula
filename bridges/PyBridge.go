@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-//Multegula - PyBridge.go 
+//Multegula - PyBridge.go
 //Server for interacting with UI written in Python
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
@@ -7,11 +7,12 @@
 package bridges
 
 import (
-    "fmt"
-    "net"
-    "bufio"
-    "github.com/arminm/multegula/messagePasser"
-    "strings"
+	"bufio"
+	"fmt"
+	"net"
+    "reflect"
+	"strings"
+	"github.com/arminm/multegula/messagePasser"
 )
 
 /* port number for local TCP connection */
@@ -38,7 +39,7 @@ func decodeMessage(messageString string) messagePasser.Message {
 	return messagePasser.Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
 }
 
-/* 
+/*
  * convert message to string
  * @param	message
  *			message to be converted
@@ -92,7 +93,7 @@ func receiveFromUI(conn net.Conn) {
     for {
         messageString, _ := bufio.NewReader(conn).ReadString('\n')
         if(len(messageString) > 0) {
-            fmt.Printf("Message received from UI: %s\n", messageString[0:len(messageString) - 1])
+            fmt.Printf("PyBridge: Message received from UI: %s\n", messageString[0:len(messageString) - 1])
             go putMessageToSendQueue(decodeMessage(messageString[0:len(messageString) - 1]))
         }
     }
@@ -106,23 +107,24 @@ func receiveFromUI(conn net.Conn) {
 func sendToUI(conn net.Conn) {
     for {
         var message messagePasser.Message = <- receivedQueue
-        if(message != messagePasser.Message{}) {
-            fmt.Printf("Message sent to UI: %s\n", encodeMessage(message))
+        if (!reflect.DeepEqual(message, messagePasser.Message{})) {
+            fmt.Printf("PyBridge: Message sent to UI: %s\n", encodeMessage(message))
             conn.Write([]byte(encodeMessage(message) + "\n"))
         }
     }
 }
 
 func InitPyBridge() {
-    ln, err := net.Listen("tcp", port)
-    if(err != nil) {
-        fmt.Println(err)
-    }
 
-    conn, _ := ln.Accept()
+	ln, err := net.Listen("tcp", port)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-    /* start a new routine to receive messages from UI */
-    go receiveFromUI(conn)
+	conn, _ := ln.Accept()
+
+	/* start a new routine to receive messages from UI */
+	go receiveFromUI(conn)
 
     /* start a new routine to send message to UI */
     go sendToUI(conn)

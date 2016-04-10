@@ -7,6 +7,7 @@
 from enum import Enum
 import random
 from UI.typedefs import *
+from bridges.GoBridge import PyMessage
 
 # PADDLE class
 class Paddle :
@@ -82,20 +83,36 @@ class Paddle :
                                             fill = self.color, width = BORDER_WIDTH)
     ### draw - draw the paddle
     def draw(self, canvas) : 
+        # if this is not the first draw and there has been an update
         if(not(self.first) and self.redraw) :
             canvas.delete(self.p)
             self.setPaddle(canvas)
             self.redraw = False
+
+            # if this is a multi-player game send an update
             if self.gameType == GameType.MULTI_PLAYER:
                 print('sending an update');
-                canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
+                toSend = PyMessage()
+                toSend.src = canvas.data['playerName']
+                toSend.kind = 'MSG_PADDLE'
+                toSend.content = str(self.center) + '|' + str(self.width)
+                toSend.multicast = True
+                canvas.data['bridge'].sendMessage(toSend)
+
+        # if this is the first time
         elif(self.first) :
             self.setPaddle(canvas)
             self.first = False
+
+            # if this is a multi-player game send an update
             if self.gameType == GameType.MULTI_PLAYER:
                 print('sending an update');
-                canvas.data['bridge'].multicast((str(self.center) + '|' + str(self.width)), 'MSG_PADDLE');
-
+                toSend = PyMessage()
+                toSend.src = canvas.data['playerName']
+                toSend.kind = 'MSG_PADDLE'
+                toSend.content = str(self.center) + '|' + str(self.width)
+                toSend.multicast = True
+                canvas.data['bridge'].sendMessage(toSend)
 
     ### update - update the paddle location (that is, 'move' if applicable) and draw
     def update(self, canvas) :

@@ -49,7 +49,6 @@ def keyPressed(event) :
             canvas.data['currentScreen'] = Screens.SCRN_MENU
             # set name
             canvas.data['playerName'] = canvas.data['splashTextField'].text
-            canvas.data['bridge'].src = canvas.data['splashTextField'].text
 
     # pause screen / gameplay keyPressed events - move the paddle
     elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
@@ -103,10 +102,22 @@ def mousePressed(event) :
     elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER :
         init(canvas);
 
+
+def receiveAndReact(canvas) :
+    bridge = canvas.data['bridge']
+
+    # this emulates a do-while loop
+    while True:
+        message = bridge.receiveMessage()
+
+        if message.src == '':
+            break
+        else:
+            print("UI: " + message.printMessage())
+
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
-    Y_LOC_TOP_BUTTON = canvas.data['Y_LOC_TOP_BUTTON']
-    X_CENTER  = CANVAS_WIDTH // 2
+    receiveAndReact(canvas)
 
     ### SPLASH SCREEN
     if canvas.data['currentScreen'] == Screens.SCRN_SPLASH :
@@ -156,32 +167,10 @@ def redrawAll(canvas) :
         canvas.data['gameOverScreen'].draw(canvas);
 
     #  redraw after delay
-    canvas.after(canvas.data['delay'], redrawAll, canvas)
-
-def initPlayers(canvas):
-    if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
-        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['playerName'], GameType.SINGLE_PLAYER)
-        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH', GameType.SINGLE_PLAYER)
-        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST', GameType.SINGLE_PLAYER)
-        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST', GameType.SINGLE_PLAYER)
-    elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
-        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['playerName'], GameType.MULTI_PLAYER)
-        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH', GameType.MULTI_PLAYER)
-        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST', GameType.MULTI_PLAYER)
-        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST', GameType.MULTI_PLAYER)      
+    canvas.after(canvas.data['delay'], redrawAll, canvas)     
 
 ### init - initialize dictionary
 def init(canvas) :
-
-    # location constants
-    canvas.data['Y_LOC_TOP_BUTTON'] = 0.70*CANVAS_HEIGHT
-    canvas.data['Y_LOC_BOTTOM_BUTTON'] = 0.85*CANVAS_HEIGHT
-    Y_LOC_TOP_BUTTON = canvas.data['Y_LOC_TOP_BUTTON']
-    Y_LOC_BOTTOM_BUTTON = canvas.data['Y_LOC_BOTTOM_BUTTON']
-
-    X_MARGIN = CANVAS_WIDTH // 30
-    Y_MARGIN = CANVAS_HEIGHT // 30
-
     # current screen
     canvas.data['currentScreen'] = Screens.SCRN_SPLASH
     canvas.data['nextScreen'] = Screens.SCRN_NONE
@@ -208,6 +197,19 @@ def init(canvas) :
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
     canvas.data['level'] = Level()
+
+def initPlayers(canvas):
+    if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
+        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['playerName'], GameType.SINGLE_PLAYER)
+        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH', GameType.SINGLE_PLAYER)
+        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST', GameType.SINGLE_PLAYER)
+        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST', GameType.SINGLE_PLAYER)
+    
+    elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
+        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['playerName'], GameType.MULTI_PLAYER)
+        canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH', GameType.MULTI_PLAYER)
+        canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST', GameType.MULTI_PLAYER)
+        canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST', GameType.MULTI_PLAYER) 
 
 ### run - run the program
 def runUI(cmd_line_args) :
