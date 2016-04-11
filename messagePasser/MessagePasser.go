@@ -154,7 +154,7 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
 		}
 	}
 	return foundPotential*/
-	
+	var sourceIndex int
 	sourceIndex, _, _ = FindNodeByName(config.Nodes, message.Source)
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
