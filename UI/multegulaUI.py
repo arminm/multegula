@@ -27,7 +27,6 @@ from UI.components.screens.GameOver import *
 from UI.components.screens.GameScreen import *
 from UI.typedefs import *
 
-
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
     canvas = event.widget.canvas
@@ -48,7 +47,17 @@ def keyPressed(event) :
         elif (event.keysym == 'Return') and canvas.data['splashTextField'].changed :
             canvas.data['currentScreen'] = Screens.SCRN_MENU
             # set name
-            canvas.data['playerName'] = canvas.data['splashTextField'].text
+            myName = canvas.data['splashTextField'].text
+            canvas.data['myName'] = myName
+
+            # send name up to Multegula!
+            print('UI: sending my name');
+            toSend = PyMessage()
+            toSend.src = myName
+            toSend.kind = 'MSG_MYNAME'
+            toSend.content = myName
+            toSend.multicast = False
+            canvas.data['bridge'].sendMessage(toSend)
 
     # pause screen / gameplay keyPressed events - move the paddle
     elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
@@ -177,7 +186,7 @@ def init(canvas) :
 
     # misc
     canvas.data['delay'] = 10
-    canvas.data['playerName'] = 'Type name...'
+    canvas.data['myName'] = 'Type name...'
 
     ### COMPONENETS
     # buttons
@@ -200,13 +209,13 @@ def init(canvas) :
 
 def initPlayers(canvas):
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
-        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['playerName'], GameType.SINGLE_PLAYER)
+        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['myName'], GameType.SINGLE_PLAYER)
         canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH', GameType.SINGLE_PLAYER)
         canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST', GameType.SINGLE_PLAYER)
         canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST', GameType.SINGLE_PLAYER)
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
-        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['playerName'], GameType.MULTI_PLAYER)
+        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['myName'], GameType.MULTI_PLAYER)
         canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH', GameType.MULTI_PLAYER)
         canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST', GameType.MULTI_PLAYER)
         canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST', GameType.MULTI_PLAYER) 
@@ -231,7 +240,7 @@ def runUI(cmd_line_args) :
     # set up dicitonary
     canvas.data = {}
 
-    # act on command line arguments
+    # act on command line arguments. Get TCP port here.
     if (len(cmd_line_args) > 1) and (cmd_line_args[1] == '-mid'):
         canvas.data['mid_demo'] = True;
     else:
@@ -244,7 +253,8 @@ def runUI(cmd_line_args) :
     root.bind('<KeyRelease>', keyReleased)
 
     # get the GoBridge
-    canvas.data['bridge'] = GoBridge();
+    #TODO: MAKE THIS MORE ROBUST.  CHECK TO ENSURE A PORT AND NOT "-mid" WAS PASSED IN.
+    canvas.data['bridge'] = GoBridge(cmd_line_args[1]);
     
     # Set up for ReceiveThread
     Process = threading.Thread(target=canvas.data['bridge'].receiveThread)

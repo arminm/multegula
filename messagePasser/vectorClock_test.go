@@ -4,8 +4,8 @@ import "testing"
 
 func TestGetNewTimestamp(t *testing.T) {
 	testTimestamp := []int{2, 0, 1, 5, 12}
-	expectedTimestamp := []int{2, 1, 1, 5, 12}
-	newTimestamp := GetNewTimestamp(&testTimestamp, 1)
+	expectedTimestamp := []int{2, 5, 1, 5, 12}
+	newTimestamp := GetNewTimestamp(&testTimestamp, 1, 5)
 	if !CompareTimestampsSame(newTimestamp, &expectedTimestamp) {
 		t.Errorf("Failed to get new timestamp.\ntestTimestamp:%+v\nnewTimestamp:%+v\nexpected:%+v\n",
 			testTimestamp, newTimestamp, expectedTimestamp)

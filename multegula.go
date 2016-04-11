@@ -7,14 +7,20 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
-	"github.com/arminm/multegula/messagePasser"
+
 	"github.com/arminm/multegula/bridges"
+	"github.com/arminm/multegula/messagePasser"
 )
+
+// constants
+const UI_MULTICAST_DEST string = "EVERYBODY"
+const UI_MULTEGULA_DEST string = "MULTEGULA"
+const MSG_MYNAME string = "MSG_MYNAME"
 
 /*
  * get the operation, send or receive
@@ -120,33 +126,50 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 	return messagePasser.Message{Source: localNodeName, Destination: dest, Content: content, Kind: kind}
 }
 
+/*
+ * retreives local name from the UI
+ */
+func uiGetLocalName() (localName string) {
+	for {
+		message := bridges.ReceiveFromPyBridge()
+		if strings.EqualFold(message.Kind, MSG_MYNAME) {
+			localName = message.Content
+			break
+		}
+	}
+	return localName
+}
+
 /* receive message from PyBridge and send to messagePasser */
-func sendToMessagePasser() {
-    for {
-        message := bridges.ReceiveFromPyBridge()
-        messagePasser.Send(message)
-    } 
+func uiReceiveAndReact(received messagePasser.Message, localName string) {
+	if strings.EqualFold(received.Destination, UI_MULTICAST_DEST) {
+		received.Source = localName
+		fmt.Println("Multegula: Multicasting message - ", received)
+		messagePasser.Multicast(&received)
+	} else if strings.EqualFold(received.Destination, UI_MULTEGULA_DEST) {
+		fmt.Println("TODO: Handle any messages meant only for Multegula.")
+	} else {
+		fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
+	}
 }
 
 /* receive message from MessagePasser and send to PyBridge */
-func receiveFromMessagePasser() {
-    for {
-        message := messagePasser.Receive()
-        bridges.SendToPyBridge(message)
-    }
+func pyBridgeSend() {
+	for {
+		message := messagePasser.Receive()
+		bridges.SendToPyBridge(message)
+	}
 }
 
 /*
  * parses main arguments passed in through command-line
  */
-func parseMainArguments(args []string) (configName string, localNodeName string, manualTestMode bool) {
-	manualTestMode = false
+func parseMainArguments(args []string) (configName string, localNodeName string) {
 
 	if len(args) > 0 {
 		configName = args[0]
 	} else {
 		configName = getConfigName()
-		manualTestMode = true
 	}
 	fmt.Println("Config Name:", configName)
 
@@ -154,16 +177,9 @@ func parseMainArguments(args []string) (configName string, localNodeName string,
 		localNodeName = args[1]
 	} else {
 		localNodeName = getLocalName()
-		manualTestMode = true
 	}
 	fmt.Println("Local Node Name:", localNodeName)
-
-	if len(args) > 2 && manualTestMode == false {
-		manualTestMode = strings.EqualFold(args[2], "-t")
-	} else {
-		manualTestMode = false
-	}
-	return configName, localNodeName, manualTestMode
+	return configName, localNodeName
 }
 
 /* the Main function of the Multegula application */
@@ -172,9 +188,9 @@ func parseMainArguments(args []string) (configName string, localNodeName string,
 
 	// Read command-line arguments and prompt the user if not provided
 	configName, localNodeName := parseMainArguments(args)
-    
+
     messagePasser.InitMessagePasser(configName, localNodeName)
-    
+
     bridges.InitPyBridge()
 
     go sendToMessagePasser()
@@ -184,32 +200,36 @@ func parseMainArguments(args []string) (configName string, localNodeName string,
 
 /* the Main function of the Multegula application */
 func main() {
+	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	portFlag := flag.Int("port", 44444, "Local port number for Python-Go bridge.")
+	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
-	args := os.Args[1:]
-	configName, localNodeName, manualTestMode := parseMainArguments(args)
+	args := flag.Args()
+	configName, localNodeName := parseMainArguments(args)
 	//FIXME: Uncomment the following line when done testing
-	bridges.InitPyBridge()
-	messagePasser.InitMessagePasser(configName, localNodeName)
 
-	if manualTestMode {
+	if *testFlag {
 		fmt.Print("--------------------------------\n")
+		fmt.Println("Initing with localName:", localNodeName)
+		messagePasser.InitMessagePasser(configName, localNodeName)
 
 		configuration := messagePasser.Config()
 		fmt.Println("Available Nodes:")
 		for id, node := range configuration.Nodes {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
+		/* start a receiveRoutine to be able to use nonBlockingReceive */
+		go receiveRoutine()
 
 		fmt.Println("Please select the operation you want to do:")
 		for {
-			
 			fmt.Println("Getting operation")
 			operation := getOperation()
 			if operation == 0 {
 				message := getMessage(configuration.Nodes, localNodeName)
 				messagePasser.Send(message)
 			} else if operation == 1 {
-				var message messagePasser.Message = messagePasser.Receive()
+				var message messagePasser.Message = nonBlockingReceive()
 				if (reflect.DeepEqual(message, messagePasser.Message{})) {
 					fmt.Print("No messages received.\n\n")
 				} else {
@@ -222,13 +242,35 @@ func main() {
 			} else {
 				fmt.Println("Operation not recognized. Please try again.")
 			}
-			
-			var message messagePasser.Message = messagePasser.Receive()
-			if (reflect.DeepEqual(message, messagePasser.Message{})) {
-				fmt.Print("No messages received.\n\n")
-			} else {
-				fmt.Printf("Received: %+v\n\n", message)
-			}
-		}	
+		}
+	} else {
+		// get the the local node name from the UI
+		// NOTE: this will be required when we move to the bootstrap server method, for now
+		//	this must match the config file.
+		fmt.Printf("Port is:%d\n", *portFlag)
+		bridges.InitPyBridge(*portFlag)
+		localNodeName = uiGetLocalName()
+		fmt.Println("Multegula: GOT NAME FROM UI:", localNodeName)
+		messagePasser.InitMessagePasser(configName, localNodeName)
+
+		// main loop - this runs the Multegula in all it's glory
+		for {
+			message := bridges.ReceiveFromPyBridge()
+			// TODO: we shouldn't have to send the localNodeName to uiReceiveAndReact so that it can multicast.
+			uiReceiveAndReact(message, localNodeName)
+		}
 	}
+}
+
+/* testing functions */
+var receiveQueue = []messagePasser.Message{}
+
+func receiveRoutine() {
+	for {
+		messagePasser.Push(&receiveQueue, messagePasser.Receive())
+	}
+}
+
+func nonBlockingReceive() messagePasser.Message {
+	return messagePasser.Pop(&receiveQueue)
 }

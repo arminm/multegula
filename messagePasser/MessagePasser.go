@@ -96,9 +96,11 @@ func getConnectionName(connection net.Conn) (string, error) {
 	return "Not Found", fmt.Errorf("Connection not found:%v\n", connection)
 }
 
+const multicastDestStr = "EVERYBODY"
+
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
-var multicastDestStr = "EVERYONE"
+var multicastSeqNum = 0
 
 /*
  * connection for localhost, this is the receive side,
@@ -152,6 +154,17 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
 		}
 	}
 	return foundPotential
+	// var sourceIndex int
+	// sourceIndex, _, _ = FindNodeByName(config.Nodes, message.Source)
+	// for i, val := range message.Timestamp {
+	// 	localValue := (*localTimeStamp)[i]
+	// 	if i == sourceIndex && val != localValue+1 {
+	// 		return false
+	// 	} else if val > localValue {
+	// 		return false
+	// 	}
+	// }
+	// return true
 }
 
 /*
@@ -204,7 +217,8 @@ func Multicast(message *Message) {
 	if message.Source == localNode.Name {
 		message.Destination = multicastDestStr
 		updateSeqNum(message)
-		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
+		multicastSeqNum += 1
+		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex, multicastSeqNum)
 	}
 
 	for _, node := range config.Nodes {
@@ -335,14 +349,18 @@ func receiveMessageFromConn(conn net.Conn) {
 		msg, err := receiveMessageTCP(conn)
 		if err != nil {
 			name, _ := getConnectionName(conn)
-			fmt.Println("Lost Connection To:", name)
-			break
+			if err.Error() == "EOF" {
+				fmt.Println("Lost connection to:", name)
+				break
+			} else {
+				fmt.Printf("Error from connection:%v, Error:%v\n", name, err.Error())
+				continue
+			}
 		}
 
 		rule := matchReceiveRule(msg)
 		/* no rule matched, put it into receivedQueue */
 		if (rule == Rule{}) {
-			// fmt.Printf("No rules for Message: %+v\n", msg)
 			deliverMessage(msg)
 			/*
 			 * there are delayed messages in receiveDelayedQueue
@@ -360,7 +378,9 @@ func receiveMessageFromConn(conn net.Conn) {
 			 */
 			if rule.Action == "delay" {
 				go putMessageToReceiveDelayedQueue(msg)
-            }
+			} else {
+				fmt.Printf("DROPPING Message: %+v\n", msg)
+			}
 		}
 	}
 }
@@ -376,7 +396,7 @@ func deliverMessage(message Message) {
 	}
 	if message.Destination == multicastDestStr {
 		if isMessageReady(message, &vectorTimeStamp) {
-			go addMessageToReceiveChannel(message)
+			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
 		} else {
 			Push(&holdbackQueue, message)
@@ -389,7 +409,7 @@ func deliverMessage(message Message) {
 		}
 	} else {
 		// TODO: Handle direct messages with wrong order
-		go addMessageToReceiveChannel(message)
+		addMessageToReceiveChannel(message)
 	}
 
 }
@@ -408,7 +428,7 @@ func checkHoldbackQueue() {
 		}
 	}
 	if messageToDeliver != nil {
-		go addMessageToReceiveChannel(*messageToDeliver)
+		addMessageToReceiveChannel(*messageToDeliver)
 		checkHoldbackQueue()
 	}
 }
@@ -437,7 +457,7 @@ func sendMessageToConn() {
 			sendMessageTCP(message.Destination, &message)
 			/* there are delayed messages, send one */
 			if len(sendDelayedQueue) > 0 {
-                delayedMessage := <-sendDelayedQueue
+				delayedMessage := <-sendDelayedQueue
 				sendMessageTCP(delayedMessage.Destination, &delayedMessage)
 			}
 		} else {
@@ -447,7 +467,7 @@ func sendMessageToConn() {
 			 */
 			if rule.Action == "delay" {
 				go putMessageToSendDelayedQueue(message)
-            } 
+			}
 		}
 	}
 }
@@ -482,7 +502,6 @@ func Send(message Message) {
 		}
 	}
 }
-
 
 /*
  * a public method that returns a message from receiveChannel
@@ -591,7 +610,7 @@ func InitMessagePasser(configName string, localName string) {
 	decodeConfigFile(configName)
 	findLocalNodeFromConfig(localName)
 
-    initRules()
+	initRules()
 
 	/* keep track of group seqNum for multicasting */
 	seqNums[config.Group[0]] = 0
