@@ -62,9 +62,10 @@ class GoBridge :
 		try:
 			#Try to open connection to local Go Bridge
 			print("Attempting to connect to local Go bridge on port " + CLI_PORT)
-			GoSocket.connect((LOCALHOST_IP, CLI_PORT))
-		except:
+			GoSocket.connect((LOCALHOST_IP, int(CLI_PORT)))
+		except Exception as e:
 			#NOTE: this is mostly useful for debugging, but in reality the game couldn't run without this.
+			print(e)
 			print(self.getPrettyTime() + " Can't connect. Is PyBridge up?")
 			sys.exit(1)
 
