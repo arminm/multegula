@@ -98,7 +98,7 @@ func getConnectionName(connection net.Conn) (string, error) {
 
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
-var multicastDestStr = "EVERYONE"
+var multicastDestStr = "EVERYBODY"
 
 /*
  * connection for localhost, this is the receive side,
