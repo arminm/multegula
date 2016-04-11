@@ -240,7 +240,7 @@ def runUI(cmd_line_args) :
     # set up dicitonary
     canvas.data = {}
 
-    # act on command line arguments
+    # act on command line arguments. Get TCP port here.
     if (len(cmd_line_args) > 1) and (cmd_line_args[1] == '-mid'):
         canvas.data['mid_demo'] = True;
     else:
@@ -253,7 +253,8 @@ def runUI(cmd_line_args) :
     root.bind('<KeyRelease>', keyReleased)
 
     # get the GoBridge
-    canvas.data['bridge'] = GoBridge();
+    #TODO: MAKE THIS MORE ROBUST.  CHECK TO ENSURE A PORT AND NOT "-mid" WAS PASSED IN.
+    canvas.data['bridge'] = GoBridge(cmd_line_args[1]);
     
     # Set up for ReceiveThread
     Process = threading.Thread(target=canvas.data['bridge'].receiveThread)

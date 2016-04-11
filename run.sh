@@ -15,10 +15,12 @@ killall multegula 2> /dev/null
 sleep 1
 
 #Start multegula.go and wait for it to come up.
-go run multegula.go -port=${1:-44444} config bob  &
+#Defaults to port 44444 if port isn't received.
+go run multegula.go -port=${1:-44444} config bob &
 sleep 4
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
+#Defaults to port 44444 if port isn't received.
 if kill -0 $!; then
     echo "Multegula core started successfully! Starting UI."
     python3 UI/multegulaUI.py ${1:-44444}

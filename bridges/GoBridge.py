@@ -20,9 +20,7 @@ LOCALHOST_IP = 'localhost'
 DEFAULT_SRC = 'UNSET'
 MULTICAST_DEST = 'EVERYBODY'
 MULTEGULA_DEST = 'MULTEGULA'
-##Get TCP Port from CLI. Defaults to 44444.
-for arg in sys.argv:
-    TCP_PORT = arg
+DEFAULT_PORT = 44444
 ##########################
 
 class PyMessage :
@@ -50,7 +48,7 @@ class GoBridge :
     ### __init___ - initialize and return GoBridge
     ## # this function starts the GoBridge running
 	## # Returns a connected socket object GoBridge
-	def __init__(self, src = DEFAULT_SRC) :
+	def __init__(self, CLI_PORT, src = DEFAULT_SRC,) :
 		# set the self src
 		self.src = src;
 		
@@ -60,17 +58,16 @@ class GoBridge :
 		#Disable Nagle's Algorithm to decrease latency.
 		#TCP_NODELAY sends packets immediately.
 		GoSocket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-		#Disable blocking so our receive thread can continue.
-		#Currently blocking - I think this is okay. -Garrett
-		#GoSocket.setblocking(0)
 		
 		try:
 			#Try to open connection to local Go Bridge
-			GoSocket.connect((LOCALHOST_IP, TCP_PORT))
+			print("Attempting to connect to local Go bridge on port " + CLI_PORT)
+			GoSocket.connect((LOCALHOST_IP, CLI_PORT))
 		except:
 			#NOTE: this is mostly useful for debugging, but in reality the game couldn't run without this.
 			print(self.getPrettyTime() + " Can't connect. Is PyBridge up?")
 			sys.exit(1)
+
 		#And declare GoBridge
 		self.GoSocket = GoSocket
 
