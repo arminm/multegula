@@ -16,7 +16,7 @@ sleep 1
 
 #Start multegula.go and wait for it to come up.
 go run multegula.go config bob ${1:-44444} &
-sleep 3
+sleep 4
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
 if kill -0 $!; then
