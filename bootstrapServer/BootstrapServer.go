@@ -11,6 +11,12 @@ import (
     "log"
     "net"
     "strings"
+    "sync"
+    "encoding/gob"
+    "encoding/json"
+    "errors"
+    "sort"
+    "strconv"
 )
 
 // constants
@@ -140,25 +146,25 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
     }
 }
 
+/*
+ * Tells nodes to start the game
+ **/
+func acceptConnection(frontNodes map[string]Node, localNode Node) {
+    //TODO
+}
+
 
 //Main function, listens on TCP socket and tells a client hello
 func main() {
-    l, err := net.Listen("tcp", listenAddr)
-    if err != nil {
-        log.Fatal(err)
-    }
-    for {
-        c, err := l.Accept()
-        //Catch Errors
-        if err != nil {
-            log.Fatal(err)
-        }
-        //Tell the connected client Hello
-        //TODO: This is a placeholder, remove it
-        fmt.Fprintln(c, "Hello!")
-        c.Close()
-    }
-}
+    /* wait for connections setup before proceeding */
+    wg.Add(2)
+    /* setup TCP connections */
+    go acceptConnection(frontNodes, localNode)
+    wg.Wait()
 
-/* the Main function of the Multegula application */
-func main() {
+    /* start routines listening on each connection to receive messages */
+    startReceiveRoutines()
+
+    /* start routine to send message */
+    go startGame()
+}
