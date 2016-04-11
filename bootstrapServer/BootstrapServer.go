@@ -4,7 +4,7 @@
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
 ////////////////////////////////////////////////////////////
 
-package bootstrapserver
+package main
 
 import (
     "fmt"
