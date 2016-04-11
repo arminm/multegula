@@ -32,6 +32,20 @@ type Node struct {
     Port int
 }
 
+/* Message structure
+ * before message transported through TCP connection, it will
+ * be converted to string in the format of: Source##Destination##Content##Kind
+ * when message is received, it will be reconstructed
+ **/
+type Message struct {
+    Source      string // the DNS name of sending node
+    Destination string // the DNS name of receiving node
+    Content     string // the Content of message
+    Kind        string // the Kind of messages
+    SeqNum      int
+    Timestamp   []int
+}
+
 // required functions to implement the sort.Interface for sorting Nodes
 type Nodes []Node
 
@@ -47,6 +61,9 @@ func (slice Nodes) Swap(i, j int) {
     slice[i], slice[j] = slice[j], slice[i]
 }
 
+//Wait for enough connections before continuing
+var wg sync.WaitGroup
+
 /* map stores connections to each node
  * <key, value> = <name, connection>
  **/
@@ -59,32 +76,6 @@ func getConnectionName(connection net.Conn) (string, error) {
         }
     }
     return "Not Found", fmt.Errorf("Connection not found:%v\n", connection)
-}
-
-/*
- * send TCP messages
- * @param   conn – connection to send message over
- * @param   message – message to be sent
- **/
-func sendMessageTCP(nodeName string, message *Message) {
-    encoder := gob.NewEncoder(connections[nodeName])
-    encoder.Encode(message)
-}
-
-/*
- * receive TCP messages
- * @param   conn – the connection to use
- *
- * @return  message
- **/
-func receiveMessageTCP(conn net.Conn) (Message, error) {
-    dec := gob.NewDecoder(conn)
-    msg := &Message{}
-    err := dec.Decode(msg)
-    if err != nil {
-        return *msg, err
-    }
-    return *msg, nil
 }
 
 /*
@@ -147,6 +138,29 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 }
 
 /*
+ * construct message from it's string format
+ * @param   messageString
+ *          message in string format
+ *
+ * @return  message
+ **/
+func decodeMessage(messageString string) Message {
+    var elements []string = strings.Split(messageString, delimiter)
+    return messagePasser.Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
+}
+
+/*
+ * convert message to string
+ * @param   message
+ *          message to be converted
+ *
+ * @return  the string format of the message
+ **/
+func encodeMessage(message Message) string {
+    return message.Source + delimiter + message.Destination + delimiter + message.Content + delimiter + message.Kind
+}
+
+/*
  * Tells nodes to start the game
  **/
 func acceptConnection(frontNodes map[string]Node, localNode Node) {
@@ -156,15 +170,17 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 
 //Main function, listens on TCP socket and tells a client hello
 func main() {
-    /* wait for connections setup before proceeding */
-    wg.Add(2)
-    /* setup TCP connections */
-    go acceptConnection(frontNodes, localNode)
-    wg.Wait()
+    portStr := ":" + strconv.Itoa(port)
+    ln, err := net.Listen("tcp", portStr)
+    if err != nil {
+        fmt.Println(err)
+    }
 
-    /* start routines listening on each connection to receive messages */
-    startReceiveRoutines()
+    conn, _ := ln.Accept()
 
-    /* start routine to send message */
-    go startGame()
+    /* start a new routine to receive messages from UI */
+    go receiveFromUI(conn)
+
+    /* start a new routine to send message to UI */
+    go sendToUI(conn)
 }
