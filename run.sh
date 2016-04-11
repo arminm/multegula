@@ -11,7 +11,7 @@ killall multegula 2> /dev/null
 sleep 1
 
 bash -c 'go run multegula.go config bob' &
-sleep 1
+sleep 2
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
 if kill -0 $!; then
