@@ -12,7 +12,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/messagePasser"
 )
