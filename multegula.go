@@ -200,7 +200,8 @@ func parseMainArguments(args []string) (configName string, localNodeName string)
 
 /* the Main function of the Multegula application */
 func main() {
-	testFlag := flag.Bool("test", false, "a bool")
+	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	portFlag := flag.Int("port", 44444, "Local port number for Python-Go bridge.")
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
 	args := flag.Args()
@@ -208,7 +209,6 @@ func main() {
 	//FIXME: Uncomment the following line when done testing
 
 	if *testFlag {
-
 		fmt.Print("--------------------------------\n")
 		fmt.Println("Initing with localName:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
@@ -245,7 +245,8 @@ func main() {
 		// get the the local node name from the UI
 		// NOTE: this will be required when we move to the bootstrap server method, for now
 		//	this must match the config file.
-		bridges.InitPyBridge()
+		fmt.Printf("Port is:%d\n", *portFlag)
+		bridges.InitPyBridge(*portFlag)
 		localNodeName = uiGetLocalName()
 		fmt.Println("GOT NAME FROM UI:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
