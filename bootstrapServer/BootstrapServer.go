@@ -7,6 +7,7 @@
 package main
 
 import (
+    "flag"
     "fmt"
     "log"
     "net"
@@ -15,15 +16,15 @@ import (
     "encoding/gob"
     "encoding/json"
     "errors"
-    "sort"
     "strconv"
+    "time"
 )
 
 // constants
 const MULTEGULA_DNS string = "multegula.dyndns.org"
 const MAX_PLAYERS_PER_GAME int = 4
 const MULTICAST_DEST string = "EVERYBODY"
-const DEFAULT_LISTEN_PORT = "localhost:55555"
+const DELIMITER string = "##"
 
 // Node structure to hold each node's information
 type Node struct {
@@ -46,106 +47,72 @@ type Message struct {
     Timestamp   []int
 }
 
-// required functions to implement the sort.Interface for sorting Nodes
-type Nodes []Node
-
-func (slice Nodes) Len() int {
-    return len(slice)
-}
-
-func (slice Nodes) Less(i, j int) bool {
-    return slice[i].Name < slice[j].Name
-}
-
-func (slice Nodes) Swap(i, j int) {
-    slice[i], slice[j] = slice[j], slice[i]
-}
-
-//Wait for enough connections before continuing
-var wg sync.WaitGroup
-
 /* map stores connections to each node
  * <key, value> = <name, connection>
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
 
-func getConnectionName(connection net.Conn) (string, error) {
-    for name, conn := range connections {
-        if conn == connection {
-            return name, nil
-        }
-    }
-    return "Not Found", fmt.Errorf("Connection not found:%v\n", connection)
-}
-
-/*
- * finds a node within an array of nodes by Name
- */
-func findNodeByName(nodes []Node, name string) (int, Node, error) {
-    for i, node := range nodes {
-        if node.Name == name {
-            return i, node, nil
-        }
-    }
-    return -1, Node{}, errors.New("Node not found: " + name)
-}
-
-/*
- * print out all nodes' name
- */
-func printNodesName(nodes []Node) {
-    fmt.Println("Possiable node names are: ")
-    for _, node := range nodes {
-        fmt.Printf("\t%s\n", node.Name)
-    }
-}
-
-
 /*
  * accepts connections from other nodes and stores
- * connections into connections map, after accepting
- * all connections from all other nodes in the group,
- * this routine exits
- * @param   frontNodes
- *          map that contains all nodes with smaller Node names
- *
- * @param   localNode
+ * connections into connections map
  **/
-func acceptConnection(frontNodes map[string]Node, localNode Node) {
-    defer wg.Done()
-    fmt.Println("Local Port:", strconv.Itoa(localNode.Port))
-    ln, err := net.Listen("tcp", ":"+strconv.Itoa(localNode.Port))
-    if err != nil {
-        fmt.Println("Couldn't Start Server...")
-        panic(err)
-    }
-    for len(frontNodes) > 0 {
-        /*
-         * when a node first connects to other nodes, it will first
-         * send it's DNS name so that another node can know it's name
-         **/
-        conn, _ := ln.Accept()
-        msg, _ := receiveMessageTCP(conn)
-        // remove the connected node from the frontNodes
-        delete(frontNodes, msg.Source)
-        if msg.Source == localNode.Name {
-            localConn = conn
-        } else {
-            connections[msg.Source] = conn
-            seqNums[msg.Source] = 0
+func acceptConnections() {
+    for {
+        fmt.Println("Multegula Bootstrap Server listening on: ", strconv.Itoa(portFlag))
+        ln, err := net.Listen("tcp", ":"+strconv.Itoa(portFlag))
+        if err != nil {
+            fmt.Println("Couldn't start Bootstrap Server!")
+            panic(err)
         }
+        //Accept connection
+        conn, _ := ln.Accept()
+
+        //Get remote address of connection
+        fmt.Println("Connection received from: ", conn.RemoteAddr())
+
+        //Client will send a message introducing itself as soon as it's connected
+        msg, _ := receiveMessageTCP(conn)
+        fmt.Println("Client introduced itself as ", msg.Source, " at ", conn.RemoteAddr())
+
+        connections[msg.Source] = conn
     }
 }
 
 /*
- * construct message from it's string format
+ * receive TCP messages
+ * @param   conn – the connection to use
+ *
+ * @return  message
+ **/
+func receiveMessageTCP(conn net.Conn) (Message, error) {
+    dec := gob.NewDecoder(conn)
+    msg := &Message{}
+    err := dec.Decode(msg)
+    if err != nil {
+        return *msg, err
+    }
+    return *msg, nil
+}
+
+/*
+ * send TCP messages
+ * @param   conn – connection to send message over
+ * @param   message – message to be sent
+ **/
+func sendMessageTCP(nodeName string, message *Message) {
+    encoder := gob.NewEncoder(connections[nodeName])
+    encoder.Encode(message)
+}
+
+/*
+ * construct message from its string format
  * @param   messageString
  *          message in string format
  *
  * @return  message
  **/
 func decodeMessage(messageString string) Message {
-    var elements []string = strings.Split(messageString, delimiter)
+    var elements []string = strings.Split(messageString, DELIMITER)
     return messagePasser.Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
 }
 
@@ -157,30 +124,39 @@ func decodeMessage(messageString string) Message {
  * @return  the string format of the message
  **/
 func encodeMessage(message Message) string {
-    return message.Source + delimiter + message.Destination + delimiter + message.Content + delimiter + message.Kind
-}
-
-/*
- * Tells nodes to start the game
- **/
-func acceptConnection(frontNodes map[string]Node, localNode Node) {
-    //TODO
+    return message.Source + DELIMITER + message.Destination + DELIMITER + message.Content + DELIMITER + message.Kind
 }
 
 
 //Main function, listens on TCP socket and tells a client hello
 func main() {
-    portStr := ":" + strconv.Itoa(port)
-    ln, err := net.Listen("tcp", portStr)
-    if err != nil {
-        fmt.Println(err)
+        portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
+        ln, err := net.Listen("tcp", portFlag)
+        if err != nil {
+            fmt.Println(err)
+        }
+        
+        //Spawn thread to listen for connections
+        go acceptConnections()
+        
+        //Wait for a group of four, then start
+        //TODO: If 60 seconds passes and four nodes haven't joined, start game with two or three
+        while len(connections) < 4 {
+            //Do nothing, just wait
+        }
+
+        //Spin off clients into their own game.
+        //Will need to send a message including everybody's name and IP/Port information
+        groupMessage = "BOOTSTRAPSERVER"+ DELIMITER + "EVERYBODY" + DELIMITER + message.Content + DELIMITER + "MSG_GROUP"
+
+        for connection := range connections {
+            sendMessageTCP(connection, groupMessage)
+        }
+
+        //Clear connection map and wait for new 
+        for key := range connections {
+            delete(connections, key)
+        }
     }
 
-    conn, _ := ln.Accept()
-
-    /* start a new routine to receive messages from UI */
-    go receiveFromUI(conn)
-
-    /* start a new routine to send message to UI */
-    go sendToUI(conn)
 }
