@@ -218,6 +218,8 @@ func main() {
 		for id, node := range configuration.Nodes {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
+		/* start a receiveRoutine to be able to use nonBlockingReceive */
+		go receiveRoutine()
 
 		fmt.Println("Please select the operation you want to do:")
 		for {
@@ -227,7 +229,7 @@ func main() {
 				message := getMessage(configuration.Nodes, localNodeName)
 				messagePasser.Send(message)
 			} else if operation == 1 {
-				var message messagePasser.Message = messagePasser.Receive()
+				var message messagePasser.Message = nonBlockingReceive()
 				if (reflect.DeepEqual(message, messagePasser.Message{})) {
 					fmt.Print("No messages received.\n\n")
 				} else {
@@ -258,4 +260,17 @@ func main() {
 			uiReceiveAndReact(message, localNodeName)
 		}
 	}
+}
+
+/* testing functions */
+var receiveQueue = []messagePasser.Message{}
+
+func receiveRoutine() {
+	for {
+		messagePasser.Push(&receiveQueue, messagePasser.Receive())
+	}
+}
+
+func nonBlockingReceive() messagePasser.Message {
+	return messagePasser.Pop(&receiveQueue)
 }

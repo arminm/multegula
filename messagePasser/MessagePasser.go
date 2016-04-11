@@ -497,7 +497,6 @@ func Send(message Message) {
  * this method is blocking if there are no messages.
  */
 func Receive() Message {
-	fmt.Printf("holdbackQueue: %+v\n", holdbackQueue)
 	return <-receiveChannel
 }
 
