@@ -128,7 +128,12 @@ func encodeMessage(message Message) string {
 }
 
 
-//Main function, listens on TCP socket and tells a client hello
+/* Main function.  
+* Listens on provided port or default (55555), 
+* spawns a thread to accept connections and add them to a map,
+* then sends a message to each node in the group indicating that the
+* game has started.
+**/
 func main() {
         portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
         ln, err := net.Listen("tcp", portFlag)
