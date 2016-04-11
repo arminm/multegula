@@ -27,7 +27,6 @@ from UI.components.screens.GameOver import *
 from UI.components.screens.GameScreen import *
 from UI.typedefs import *
 
-
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
     canvas = event.widget.canvas

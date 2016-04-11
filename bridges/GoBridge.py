@@ -9,6 +9,7 @@ import socket #Needed for network communications
 import time #Needed for labeling date/time
 import datetime #Needed for labeling date/time
 import queue #Needed for receive queue
+import sys #Needed to exit
 #####################
 
 ########PARAMETERS########
@@ -19,7 +20,9 @@ LOCALHOST_IP = 'localhost'
 DEFAULT_SRC = 'UNSET'
 MULTICAST_DEST = 'EVERYBODY'
 MULTEGULA_DEST = 'MULTEGULA'
-TCP_PORT = 44444
+##Get TCP Port from CLI. Defaults to 44444.
+for arg in sys.argv:
+    TCP_PORT = arg
 ##########################
 
 class PyMessage :
@@ -67,7 +70,7 @@ class GoBridge :
 		except:
 			#NOTE: this is mostly useful for debugging, but in reality the game couldn't run without this.
 			print(self.getPrettyTime() + " Can't connect. Is PyBridge up?")
-
+			sys.exit(1)
 		#And declare GoBridge
 		self.GoSocket = GoSocket
 
