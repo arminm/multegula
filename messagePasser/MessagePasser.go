@@ -338,14 +338,18 @@ func receiveMessageFromConn(conn net.Conn) {
 		msg, err := receiveMessageTCP(conn)
 		if err != nil {
 			name, _ := getConnectionName(conn)
-			fmt.Println("Lost Connection To:", name)
-			break
+			if err.Error() == "EOF" {
+				fmt.Println("Lost connection to:", name)
+				break
+			} else {
+				fmt.Printf("Error from connection:%v, Error:%v\n", name, err.Error())
+				continue
+			}
 		}
 
 		rule := matchReceiveRule(msg)
 		/* no rule matched, put it into receivedQueue */
 		if (rule == Rule{}) {
-			fmt.Printf("No rules for Message: %+v\n", msg)
 			deliverMessage(msg)
 			/*
 			 * there are delayed messages in receiveDelayedQueue
@@ -353,7 +357,6 @@ func receiveMessageFromConn(conn net.Conn) {
 			 */
 			for len(receiveDelayedQueue) > 0 {
 				delayedMessage := <-receiveDelayedQueue
-				fmt.Printf("Delivering DELAYED Message: %+v\n", delayedMessage)
 				deliverMessage(delayedMessage)
 			}
 		} else {
@@ -363,7 +366,6 @@ func receiveMessageFromConn(conn net.Conn) {
 			 * this message
 			 */
 			if rule.Action == "delay" {
-				fmt.Printf("DELAYING Message: %+v\n", msg)
 				go putMessageToReceiveDelayedQueue(msg)
 			} else {
 				fmt.Printf("DROPPING Message: %+v\n", msg)
