@@ -3,16 +3,15 @@
 NODES=(armin lunwen daniel garrett)
 
 ##############################
+# Modify these parameters:
+PWD=~/go/src/github.com/arminm/multegula
+CONFIG_FILE_NAME=localConfig
+
+##############################
 #Cleanup any running go
 killall go 2> /dev/null
 killall multegula 2> /dev/null
 sleep 1
-
-
-##############################
-# Modify these parameters:
-PWD=~/go/src/github.com/arminm/multegula
-CONFIG_FILE_NAME=localConfig
 
 ##############################
 # generate launcher files
