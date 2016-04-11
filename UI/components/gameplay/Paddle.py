@@ -91,7 +91,7 @@ class Paddle :
 
             # if this is a multi-player game send an update
             if self.gameType == GameType.MULTI_PLAYER:
-                print('sending an update');
+                print('UI: sending an update');
                 toSend = PyMessage()
                 toSend.src = canvas.data['myName']
                 toSend.kind = 'MSG_PADDLE'

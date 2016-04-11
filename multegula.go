@@ -250,7 +250,7 @@ func main() {
 		fmt.Printf("Port is:%d\n", *portFlag)
 		bridges.InitPyBridge(*portFlag)
 		localNodeName = uiGetLocalName()
-		fmt.Println("GOT NAME FROM UI:", localNodeName)
+		fmt.Println("Multegula: GOT NAME FROM UI:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
 
 		// main loop - this runs the Multegula in all it's glory
