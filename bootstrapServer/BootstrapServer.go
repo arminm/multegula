@@ -37,7 +37,7 @@ func main() {
     //Set port from command line
     portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
     flag.Parse()
-    fmt.Println("Multegula Bootstrap Server listening on: ", *portFlag)
+    fmt.Println("Multegula Bootstrap Server listening on TCP Port: ", *portFlag)
     
     //And connect
     ln, err := net.Listen("tcp", ":"+strconv.Itoa(*portFlag))
@@ -91,7 +91,8 @@ func handleConnection(c net.Conn, msgchan chan<- string, addchan chan<- Client, 
         //Accept the client's nickname
         nickname := string(nick)
 
-        //Tell the client that we've acknowledged their connection
+        //Tell the client that we've acknowledged their connection.
+        //Client will now wait to receive their group message.
         c.Write([]byte("WELCOME_CLIENT_" + nickname + "\n"))
 
         //Not sure if the client will be communicating any more or not.
@@ -133,14 +134,8 @@ func handleMessages(msgchan <-chan string, addchan <-chan Client, rmchan <-chan 
 
     for {
         select {
-        case msg := <-msgchan:
-            fmt.Printf("Received a message from client: %s\n", msg)
-            for _, ch := range clients {
-                go func(mch chan<- string) { 
-                    mch <- "\033[1;33;40m" + msg + "\033[m\r\n" }(ch)
-                }
         case client := <-addchan:
-            fmt.Printf("New client observed: %v\n", client.conn)
+            fmt.Printf("New client connected: %v\n", client.conn)
             clients[client.conn] = client.ch
         case conn := <-rmchan:
             fmt.Printf("Client has disconnected: %v\n", conn)
