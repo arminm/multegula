@@ -45,11 +45,15 @@ type Message struct {
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
 
+// required functions to implement the sort.Interface for sorting Nodes
+type Nodes []Node
+
 /*
  * accepts connections from other nodes and stores
  * connections into connections map
  **/
 func acceptConnections() {
+    //Set port from command line
     portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
     flag.Parse()
     fmt.Println("Multegula Bootstrap Server listening on: ", *portFlag)
@@ -143,9 +147,8 @@ func main() {
         //Will need to send a message including everybody's name and IP/Port information
         groupMessage := Message{"BOOTSTRAPSERVER", "EVERYBODY", "THIS IS WHERE THE CLIENT INFORMATION GOES", "MSG_GROUP"}
 
-        //Send groupMessage to each client
-        for connection := range connections {
-            sendMessageTCP(connection.Name, &groupMessage)
+        for connectionName := range connections {
+            sendMessageTCP(connectionName, &groupMessage)
         }
 
         //Clear connection map and wait for new 

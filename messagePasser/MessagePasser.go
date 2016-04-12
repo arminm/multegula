@@ -580,7 +580,7 @@ func decodeConfigFile(configName string) {
  * print out all nodes' name
  */
 func printNodesName(nodes []Node) {
-	fmt.Println("Possiable node names are: ")
+	fmt.Println("Possible node names are: ")
 	for _, node := range nodes {
 		fmt.Printf("\t%s\n", node.Name)
 	}
