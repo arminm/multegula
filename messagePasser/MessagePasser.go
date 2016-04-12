@@ -140,31 +140,32 @@ func updateSeqNum(message *Message) {
  * is not ready yet, and we have to receive [1,2,4] first.
  */
 func isMessageReady(message Message, localTimeStamp *[]int) bool {
-	foundPotential := false
+	var sourceIndex int
+	sourceIndex, _, _ = FindNodeByName(config.Nodes, message.Source)
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
-		if val < localValue {
+		if i == sourceIndex && val != localValue+1 {
 			return false
-		} else if val == localValue+1 {
-			if foundPotential == false {
-				foundPotential = true
-			} else {
-				return false
-			}
+		} else if val > localValue {
+			return false
 		}
 	}
-	return foundPotential
-	// var sourceIndex int
-	// sourceIndex, _, _ = FindNodeByName(config.Nodes, message.Source)
+	return true
+	// foundPotential := false
 	// for i, val := range message.Timestamp {
 	// 	localValue := (*localTimeStamp)[i]
-	// 	if i == sourceIndex && val != localValue+1 {
+	// 	if val < localValue {
 	// 		return false
-	// 	} else if val > localValue {
-	// 		return false
+	// 	} else if val == localValue+1 {
+	// 		if foundPotential == false {
+	// 			foundPotential = true
+	// 		} else {
+	// 			return false
+	// 		}
 	// 	}
 	// }
-	// return true
+	// return foundPotential
+
 }
 
 /*
