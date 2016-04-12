@@ -100,7 +100,7 @@ const multicastDestStr = "EVERYBODY"
 
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
-var multicastSeqNum = 0
+var localReceivedSeqNum = 0
 
 /*
  * connection for localhost, this is the receive side,
@@ -144,9 +144,9 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
 	sourceIndex, _, _ = FindNodeByName(config.Nodes, message.Source)
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
-		if i == sourceIndex && val == (localValue+1) {
-			continue
-		} else if val > localValue {
+		if i == sourceIndex && val != (localValue+1) {
+			return false
+		} else if i != sourceIndex && val > localValue {
 			return false
 		}
 	}
@@ -158,9 +158,12 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
  */
 func messageHasBeenReceived(message Message) bool {
 	/* check if message has been delivered already */
-	if CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
+	if message.Source == localNode.Name && message.Timestamp[localIndex] <= localReceivedSeqNum {
+		return true
+	} else if message.Source != localNode.Name && CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
 		return true
 	}
+
 	/* check if message is in holdbackQueue */
 	for _, msg := range holdbackQueue {
 		if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
@@ -203,8 +206,7 @@ func Multicast(message *Message) {
 	if message.Source == localNode.Name {
 		message.Destination = multicastDestStr
 		updateSeqNum(message)
-		multicastSeqNum += 1
-		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex, multicastSeqNum)
+		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 	}
 
 	for _, node := range config.Nodes {
@@ -321,7 +323,11 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  *			the message to be put into receiveQueue
  **/
 func addMessageToReceiveChannel(message Message) {
-	UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
+	if message.Source == localNode.Name {
+		localReceivedSeqNum += 1
+	} else {
+		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
+	}
 	receiveChannel <- message
 }
 
