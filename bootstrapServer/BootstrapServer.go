@@ -16,22 +16,15 @@ import (
 )
 
 // constants
-const MULTEGULA_DNS string = "multegula.dyndns.org"
 const MAX_PLAYERS_PER_GAME int = 4
-const MULTICAST_DEST string = "EVERYBODY"
-const DELIMITER string = "##"
 
 type Client struct {
     conn net.Conn
     ch   chan<- string
 }
 
-
 /* Main function.  
-* Listens on provided port or default (55555), 
-* spawns a thread to accept connections and add them to a map,
-* then sends a message to each node in the group indicating that the
-* game has started.
+* Listens on provided port or default (55555)
 **/
 func main() {
     //Set port from command line
@@ -47,13 +40,12 @@ func main() {
         os.Exit(1)
     }
 
-    //Make channels to handle messages, clients, and connections
-    msgchan := make(chan string)
-    addchan := make(chan Client)
-    rmchan := make(chan net.Conn)
+    //Make channels to handle clients and connections
+    clientChannel := make(chan Client)
+    connectionChannel := make(chan net.Conn)
 
     //Spawn thread to handle messages
-    go handleMessages(msgchan, addchan, rmchan)
+    go handleClients(clientChannel, connectionChannel)
 
     //Infinitely accept connections from clients
     for {
@@ -63,81 +55,56 @@ func main() {
             continue
         }
         //Spawn thread to handle connections
-        go handleConnection(conn, msgchan, addchan, rmchan)
+        go handleConnection(conn, clientChannel, connectionChannel)
     }
 }
 
-func handleConnection(c net.Conn, msgchan chan<- string, addchan chan<- Client, rmchan chan<- net.Conn) {
+func handleConnection(conn net.Conn, clientChannel chan<- Client, connectionChannel chan<- net.Conn) {
     ch := make(chan string)
-    msgs := make(chan string)
-    addchan <- Client{c, ch}
+    clientChannel <- Client{conn, ch}
 
-    //Spawns a function that handles connections for new clients.
-    go func() {
-        defer close(msgs)
-        bufc := bufio.NewReader(c)
+    bufc := bufio.NewReader(conn)
 
-        //Introduce ourselves to the client with these strings
-        c.Write([]byte("MULTEGULA_BOOTSTRAP_SERVER\n"))
-        c.Write([]byte("CLIENT_INTRODUCE_YOURSELF_NOW\n"))
+    //Introduce ourselves to the client with these strings
+    conn.Write([]byte("MULTEGULA_BOOTSTRAP_SERVER\n"))
+    conn.Write([]byte("CLIENT_INTRODUCE_YOURSELF_NOW\n"))
 
-        //Then the client should respond with its introduction message.
-        nick, _, err := bufc.ReadLine()
-        if err != nil {
-            fmt.Println("Something went wrong when the client was introducing itself.")
-            return
-        }
-
-        //Accept the client's nickname
-        nickname := string(nick)
-
-        //Tell the client that we've acknowledged their connection.
-        //Client will now wait to receive their group message.
-        c.Write([]byte("WELCOME_CLIENT_" + nickname + "\n"))
-
-        //Not sure if the client will be communicating any more or not.
-        //This is for that - REMOVE for actual operation.
-        for {
-            line, _, err := bufc.ReadLine()
-            if err != nil {
-                break
-            }
-            msgs <- nickname + ": " + string(line)
-        }
-    }()
-
-LOOP:
-    for {
-        select {
-        case msg, ok := <-msgs:
-            if !ok {
-                break LOOP
-            }
-            msgchan <- msg
-        case msg := <-ch:
-            _, err := c.Write([]byte(msg))
-            if err != nil {
-                break LOOP
-            }
-        }
+    //Then the client should respond with its introduction message.
+    nick, _, err := bufc.ReadLine()
+    if err != nil {
+         fmt.Println("Something went wrong when the client was introducing itself.")
+        return
     }
 
-    c.Close()
-    fmt.Printf("Connection from client %v closed.\n", c.RemoteAddr())
-    rmchan <- c
+    //Accept the client's nickname
+    nickname := string(nick)
+
+    //Tell the client that we've acknowledged their connection.
+    //Client will now wait to receive their group message.
+    conn.Write([]byte("WELCOME_CLIENT_" + nickname + "\n"))
+
+    //Wait until we get four players and then GO GO GO
+    for len(connectionChannel) < MAX_PLAYERS_PER_GAME {}
+
+    //Send our player list out to all connected clients
+    conn.Write([]byte("PLAYER_LIST_BEGIN\n"))
+    conn.Close()
+
+    fmt.Printf("Connection from client %v closed.\n", conn.RemoteAddr())
+    connectionChannel <- conn
 }
 
-func handleMessages(msgchan <-chan string, addchan <-chan Client, rmchan <-chan net.Conn) {
+func handleClients(clientChannel <-chan Client, connectionChannel <-chan net.Conn) {
     
     //Make a map of all clients
     clients := make(map[net.Conn]chan<- string)
 
     for {
         select {
-        case client := <-addchan:
+        case client := <-clientChannel:
             fmt.Printf("New client connected: %v\n", client.conn)
             clients[client.conn] = client.ch
-        case conn := <-rmchan:
+        case conn := <-connectionChannel:
             fmt.Printf("Client has disconnected: %v\n", conn)
             delete(clients, conn)
         }
