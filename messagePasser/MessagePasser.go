@@ -144,28 +144,13 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
 	sourceIndex, _, _ = FindNodeByName(config.Nodes, message.Source)
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
-		if i == sourceIndex && val != localValue+1 {
-			return false
+		if i == sourceIndex && val == (localValue+1) {
+			continue
 		} else if val > localValue {
 			return false
 		}
 	}
 	return true
-	// foundPotential := false
-	// for i, val := range message.Timestamp {
-	// 	localValue := (*localTimeStamp)[i]
-	// 	if val < localValue {
-	// 		return false
-	// 	} else if val == localValue+1 {
-	// 		if foundPotential == false {
-	// 			foundPotential = true
-	// 		} else {
-	// 			return false
-	// 		}
-	// 	}
-	// }
-	// return foundPotential
-
 }
 
 /*
