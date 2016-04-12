@@ -9,15 +9,10 @@ package main
 import (
     "flag"
     "fmt"
-    "log"
     "net"
     "strings"
-    "sync"
-    "encoding/gob"
-    "encoding/json"
-    "errors"
     "strconv"
-    "time"
+    "encoding/gob"
 )
 
 // constants
@@ -43,8 +38,6 @@ type Message struct {
     Destination string // the DNS name of receiving node
     Content     string // the Content of message
     Kind        string // the Kind of messages
-    SeqNum      int
-    Timestamp   []int
 }
 
 /* map stores connections to each node
@@ -57,9 +50,11 @@ var connections map[string]net.Conn = make(map[string]net.Conn)
  * connections into connections map
  **/
 func acceptConnections() {
+    portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
+    flag.Parse()
+    fmt.Println("Multegula Bootstrap Server listening on: ", *portFlag)
     for {
-        fmt.Println("Multegula Bootstrap Server listening on: ", strconv.Itoa(portFlag))
-        ln, err := net.Listen("tcp", ":"+strconv.Itoa(portFlag))
+        ln, err := net.Listen("tcp", ":"+strconv.Itoa(*portFlag))
         if err != nil {
             fmt.Println("Couldn't start Bootstrap Server!")
             panic(err)
@@ -113,7 +108,7 @@ func sendMessageTCP(nodeName string, message *Message) {
  **/
 func decodeMessage(messageString string) Message {
     var elements []string = strings.Split(messageString, DELIMITER)
-    return messagePasser.Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
+    return Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
 }
 
 /*
@@ -135,27 +130,22 @@ func encodeMessage(message Message) string {
 * game has started.
 **/
 func main() {
-        portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
-        ln, err := net.Listen("tcp", portFlag)
-        if err != nil {
-            fmt.Println(err)
-        }
-        
         //Spawn thread to listen for connections
         go acceptConnections()
         
         //Wait for a group of four, then start
         //TODO: If 60 seconds passes and four nodes haven't joined, start game with two or three
-        while len(connections) < 4 {
-            //Do nothing, just wait
+        for len(connections) < 4 {
+            //Do nothing, just wait until we have four
         }
 
         //Spin off clients into their own game.
         //Will need to send a message including everybody's name and IP/Port information
-        groupMessage = "BOOTSTRAPSERVER"+ DELIMITER + "EVERYBODY" + DELIMITER + message.Content + DELIMITER + "MSG_GROUP"
+        groupMessage := Message{"BOOTSTRAPSERVER", "EVERYBODY", "THIS IS WHERE THE CLIENT INFORMATION GOES", "MSG_GROUP"}
 
+        //Send groupMessage to each client
         for connection := range connections {
-            sendMessageTCP(connection, groupMessage)
+            sendMessageTCP(connection.Name, &groupMessage)
         }
 
         //Clear connection map and wait for new 
@@ -163,5 +153,3 @@ func main() {
             delete(connections, key)
         }
     }
-
-}
