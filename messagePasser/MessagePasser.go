@@ -139,9 +139,7 @@ func updateSeqNum(message *Message) {
  * that was received by node 1 before it multicasts [1,3,4]. Thus this message
  * is not ready yet, and we have to receive [1,2,4] first.
  */
-func isMessageReady(message Message, localTimeStamp *[]int) bool {
-	var sourceIndex int
-	sourceIndex, _, _ = FindNodeByName(config.Nodes, message.Source)
+func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) bool {
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
 		if i == sourceIndex && val != (localValue+1) {
@@ -387,7 +385,8 @@ func deliverMessage(message Message) {
 		return
 	}
 	if message.Destination == multicastDestStr {
-		if isMessageReady(message, &vectorTimeStamp) {
+		sourceIndex, _, _ := FindNodeByName(config.Nodes, message.Source)
+		if isMessageReady(message, sourceIndex, &vectorTimeStamp) {
 			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
 		} else {
@@ -413,7 +412,8 @@ func deliverMessage(message Message) {
 func checkHoldbackQueue() {
 	var messageToDeliver *Message
 	for i, msg := range holdbackQueue {
-		if isMessageReady(msg, &vectorTimeStamp) {
+		sourceIndex, _, _ := FindNodeByName(config.Nodes, msg.Source)
+		if isMessageReady(msg, sourceIndex, &vectorTimeStamp) {
 			messageToDeliver = &msg
 			Delete(&holdbackQueue, i)
 			break
