@@ -140,11 +140,15 @@ func updateSeqNum(message *Message) {
  * is not ready yet, and we have to receive [1,2,4] first.
  */
 func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) bool {
+	if localIndex == sourceIndex {
+		if message.Timestamp[localIndex] == (localReceivedSeqNum + 1) {
+			return true
+		}
+		return false
+	}
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
-		if i == localIndex && val != (localReceivedSeqNum+1) {
-			return false
-		} else if i == sourceIndex && val != (localValue+1) {
+		if i == sourceIndex && i != localIndex && val != (localValue+1) {
 			return false
 		} else if i != sourceIndex && i != localIndex && val > localValue {
 			return false
@@ -574,7 +578,7 @@ func decodeConfigFile(configName string) {
  * print out all nodes' name
  */
 func printNodesName(nodes []Node) {
-	fmt.Println("Possiable node names are: ")
+	fmt.Println("Possible node names are: ")
 	for _, node := range nodes {
 		fmt.Printf("\t%s\n", node.Name)
 	}
@@ -600,31 +604,30 @@ func findLocalNodeFromConfig(localName string) {
 /*
  * initialize MessagePasser, this is a public method
  **/
-func InitMessagePasser(configName string, localName string) {
+func InitMessagePasser(configName string, localName string) {	
 	decodeConfigFile(configName)
 	findLocalNodeFromConfig(localName)
-
 	initRules()
 
-	/* keep track of group seqNum for multicasting */
+	// keep track of group seqNum for multicasting
 	seqNums[config.Group[0]] = 0
-	/* initialize the vectorTimeStamp */
+	// initialize the vectorTimeStamp 
 	vectorTimeStamp = make([]int, len(config.Nodes))
 
-	/* separate Node names */
+	// separate Node names 
 	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
 
 	//TODO: Don't wait for connections
-	/* wait for connections setup before proceeding */
+	// wait for connections setup before proceeding
 	wg.Add(2)
-	/* setup TCP connections */
+	// setup TCP connections 
 	go acceptConnection(frontNodes, localNode)
 	go sendConnection(latterNodes, localNode)
 	wg.Wait()
 
-	/* start routines listening on each connection to receive messages */
+	// start routines listening on each connection to receive messages
 	startReceiveRoutines()
 
-	/* start routine to send message */
+	// start routine to send message
 	go sendMessageToConn()
 }

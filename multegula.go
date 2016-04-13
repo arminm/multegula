@@ -141,16 +141,40 @@ func uiGetLocalName() (localName string) {
 }
 
 /* receive message from PyBridge and send to messagePasser */
-func uiReceiveAndReact(received messagePasser.Message, localName string) {
-	if strings.EqualFold(received.Destination, UI_MULTICAST_DEST) {
-		received.Source = localName
-		fmt.Println("Multegula: Multicasting message - ", received)
-		messagePasser.Multicast(&received)
-	} else if strings.EqualFold(received.Destination, UI_MULTEGULA_DEST) {
-		fmt.Println("TODO: Handle any messages meant only for Multegula.")
-	} else {
-		fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
+func uiReceiveAndReact() {
+	for {
+		message := bridges.ReceiveFromPyBridge()
+
+		fmt.Println("Multegula: UI message received - ", message)
+		if strings.EqualFold(message.Destination, UI_MULTICAST_DEST) {
+			messagePasser.Multicast(&message)
+		} else if strings.EqualFold(message.Destination, UI_MULTEGULA_DEST) {
+			fmt.Println("TODO: Handle any messages meant only for Multegula.")
+		} else {
+			fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
+		}		
 	}
+
+}
+
+
+/* receive message from PyBridge and send to messagePasser */
+func networkReceiveAndReact() {
+	for {
+		message := messagePasser.Receive()
+		fmt.Println("Multegula: received network message -", message)
+		switch message.Kind {
+		case "MSG_PADDLE_POS":
+			bridges.SendToPyBridge(message)
+		case "MSG_PADDLE_DIR":
+			bridges.SendToPyBridge(message)
+		}
+		/*
+		if message.Kind == "MSG_PADDLE_POS" {
+			fmt.Println("it worked")
+		}*/
+	}
+
 }
 
 /* receive message from MessagePasser and send to PyBridge */
@@ -182,21 +206,16 @@ func parseMainArguments(args []string) (configName string, localNodeName string)
 	return configName, localNodeName
 }
 
-/* the Main function of the Multegula application */
-/*func main() {
-	args := os.Args[1:]
+func skinnyParseMainArguments(args []string) (configName string) {
 
-	// Read command-line arguments and prompt the user if not provided
-	configName, localNodeName := parseMainArguments(args)
-
-    messagePasser.InitMessagePasser(configName, localNodeName)
-
-    bridges.InitPyBridge()
-
-    go sendToMessagePasser()
-    receiveFromMessagePasser()
-
-}*/
+	if len(args) > 0 {
+		configName = args[0]
+	} else {
+		configName = getConfigName()
+	}
+	fmt.Println("Config Name:", configName)
+	return configName
+}
 
 /* the Main function of the Multegula application */
 func main() {
@@ -205,10 +224,9 @@ func main() {
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
 	args := flag.Args()
-	configName, localNodeName := parseMainArguments(args)
-	//FIXME: Uncomment the following line when done testing
 
 	if *testFlag {
+		configName, localNodeName := parseMainArguments(args)
 		fmt.Print("--------------------------------\n")
 		fmt.Println("Initing with localName:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
@@ -244,21 +262,25 @@ func main() {
 			}
 		}
 	} else {
+		configName := skinnyParseMainArguments(args)
+
 		// get the the local node name from the UI
 		// NOTE: this will be required when we move to the bootstrap server method, for now
 		//	this must match the config file.
 		fmt.Printf("Port is:%d\n", *portFlag)
 		bridges.InitPyBridge(*portFlag)
-		localNodeName = uiGetLocalName()
+		localNodeName := uiGetLocalName()
 		fmt.Println("Multegula: GOT NAME FROM UI:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
-
+		fmt.Println("Multegula: made message passer for", localNodeName)
 		// main loop - this runs the Multegula in all it's glory
+
+		go uiReceiveAndReact()
+		go networkReceiveAndReact()
+
 		for {
-			message := bridges.ReceiveFromPyBridge()
-			// TODO: we shouldn't have to send the localNodeName to uiReceiveAndReact so that it can multicast.
-			uiReceiveAndReact(message, localNodeName)
 		}
+
 	}
 }
 
