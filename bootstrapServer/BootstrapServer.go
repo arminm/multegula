@@ -62,10 +62,14 @@ func handleConnection(conn net.Conn) {
 			//Tell the client that we've acknowledged their connection.
 			//Client will now wait to receive their group message.
 			conn.Write([]byte("WELCOME_CLIENT\n"))
+			//Keep track of connections.
+			connections[conn.RemoteAddr()] = conn
+			fmt.Printf("We have %v connections now!\n", len(connections))
 			continue
 		} else {
 			conn.Write([]byte("ERR_INCORRECT_IDENTIFICATION\n"))
 			fmt.Printf("Didn't receive correct hello. Disconnecting client.")
+			delete(connections, conn.RemoteAddr())
 			//Closing the connection is having problems right now, not sure why.
 			//We can just have the clients do this as long as the map is clear.
 			//conn.Close()
@@ -103,11 +107,7 @@ func main() {
 		fmt.Println("Connection received from:", conn.RemoteAddr())
 		go handleConnection(conn)
 
-		//Keep track of connections.
-		connections[conn.RemoteAddr()] = conn
-		fmt.Printf("We have %v connections now!\n", len(connections))
-
-		//Only continue past here if we have at least 2 connections
+		//Only run this if we have at least 2 connections
 		for len(connections) >= 2 {
 			//Set our timeout values
 			timeout := time.After(5 * time.Second)
