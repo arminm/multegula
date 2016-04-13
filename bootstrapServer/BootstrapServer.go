@@ -18,10 +18,6 @@ import (
 // constants
 const MAX_PLAYERS_PER_GAME int = 4
 
-type Client struct {
-    conn net.Conn
-}
-
 /*
  * Handle Connections
  *
@@ -35,8 +31,8 @@ type Client struct {
  *        A channel used for removing connections
  *
  **/
-func handleConnection(conn net.Conn, addChannel chan<- Client, removeChannel chan<- net.Conn) {
-    addChannel <- Client{conn}
+func handleConnection(conn net.Conn, addChannel chan<- net.Conn, removeChannel chan<- net.Conn) {
+    addChannel <- conn
 
     bufc := bufio.NewReader(conn)
     defer conn.Close()
@@ -59,7 +55,7 @@ func handleConnection(conn net.Conn, addChannel chan<- Client, removeChannel cha
     //Client will now wait to receive their group message.
     conn.Write([]byte("WELCOME_CLIENT_" + nickname + "\n"))
 
-    //Wait forever.
+    //Wait forever (for now).
     for {}
 
     //Clean up this connection.
@@ -77,17 +73,17 @@ func handleConnection(conn net.Conn, addChannel chan<- Client, removeChannel cha
  * @param removeChannel
  *        A channel used for removing connections
  *
- *
  **/
-func handleClients(addChannel <-chan Client, removeChannel <-chan net.Conn) {
-    
+func handleClients(addChannel <-chan net.Conn, removeChannel <-chan net.Conn) {
+
     //Make a map of all clients
     clients := make(map[net.Conn]chan<- string)
 
+    //Run forever, keep track of clients
     for {
         select {
-        case client := <-addChannel:
-            fmt.Printf("New client connected: %v\n", client.conn)
+        case conn := <-addChannel:
+            fmt.Printf("New client connected: %v\n", conn)
         case conn := <-removeChannel:
             fmt.Printf("Client has disconnected: %v\n", conn)
             delete(clients, conn)
@@ -112,30 +108,28 @@ func main() {
         os.Exit(1)
     }
 
-    //Make channels to handle clients and connections
-    addChannel := make(chan Client)
-    removeChannel := make(chan net.Conn)
-    //Make a map of all clients
-    clients := make(map[net.Conn]chan<- string)
+    //THIS IS THE MAIN SEQUENCE.
+    //Run forever.
+    for{
+        //Make channels to handle clients and connections
+        addChannel := make(chan net.Conn)
+        removeChannel := make(chan net.Conn)
 
-    //Spawn thread to handle messages
-    go handleClients(addChannel, removeChannel)
+        //Spawn thread to handle messages
+        go handleClients(addChannel, removeChannel)
 
-    //Wait until we get four players and then GO GO GO
-    for len(addChannel) < MAX_PLAYERS_PER_GAME {
-        conn, err := ln.Accept()
-        if err != nil {
-            fmt.Println(err)
-            continue
+        //Wait until we get four players and then GO GO GO
+        for len(addChannel) < MAX_PLAYERS_PER_GAME {
+            conn, err := ln.Accept()
+            if err != nil {
+                fmt.Println(err)
+                continue
+            }
+            //Spawn thread to handle connections
+            go handleConnection(conn, addChannel, removeChannel)
         }
-        //Spawn thread to handle connections
-        go handleConnection(conn, addChannel, removeChannel)
-
-        //Output diagnostic information in console
-        fmt.Println("Clients Connected: ",len(clients))
+        
+        //Once we have four, send out our player list to all connected clients
+        //conn.Write([]byte("PLAYER_LIST_BEGIN\n"))
     }
-    
-    //Once we have four, send out our player list to all connected clients
-    //conn.Write([]byte("PLAYER_LIST_BEGIN\n"))
-
 }
