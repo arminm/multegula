@@ -140,11 +140,15 @@ func updateSeqNum(message *Message) {
  * is not ready yet, and we have to receive [1,2,4] first.
  */
 func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) bool {
+	if localIndex == sourceIndex {
+		if message.Timestamp[localIndex] == (localReceivedSeqNum + 1) {
+			return true
+		}
+		return false
+	}
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
-		if i == localIndex && val != (localReceivedSeqNum+1) {
-			return false
-		} else if i == sourceIndex && val != (localValue+1) {
+		if i == sourceIndex && i != localIndex && val != (localValue+1) {
 			return false
 		} else if i != sourceIndex && i != localIndex && val > localValue {
 			return false
