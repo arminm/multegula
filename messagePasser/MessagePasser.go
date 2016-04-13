@@ -146,7 +146,7 @@ func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) boo
 			return false
 		} else if i == sourceIndex && val != (localValue+1) {
 			return false
-		} else if i != sourceIndex && val > localValue {
+		} else if i != sourceIndex && i != localIndex && val > localValue {
 			return false
 		}
 	}
