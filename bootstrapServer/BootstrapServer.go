@@ -14,13 +14,10 @@ import (
 	"strconv"
 )
 
-// type Message struct {
-// 	Content string
-// }
-
 // constants
 const MAX_PLAYERS_PER_GAME int = 4
 
+//Declare a map of connections to nodes
 var connections = make(map[net.Addr]net.Conn)
 
 /*
@@ -43,14 +40,14 @@ func handleConnection(conn net.Conn) {
 
 	//Introduce ourselves to the client with these strings
 	conn.Write([]byte("MULTEGULA_BOOTSTRAP_SERVER\n"))
-	conn.Write([]byte("SAY_SOMETHING\n"))
+	conn.Write([]byte("CLIENT_INTRODUCE_YOURSELF_NOW\n"))
 
 	for {
 		//Then the client should respond with its introduction message.
 		raw, _, err := bufc.ReadLine()
 		if err != nil {
 			if err.Error() == "EOF" {
-				fmt.Println("Got disconneted from", conn.RemoteAddr())
+				fmt.Println("Got disconnected from", conn.RemoteAddr())
 				delete(connections, conn.RemoteAddr())
 				fmt.Printf("We have %v connections now!\n", len(connections))
 				break
@@ -65,24 +62,9 @@ func handleConnection(conn net.Conn) {
 		fmt.Printf("%v:%v\n", conn.RemoteAddr(), message)
 		//Tell the client that we've acknowledged their connection.
 		//Client will now wait to receive their group message.
-		conn.Write([]byte("You said: " + message + "\n"))
+		conn.Write([]byte("WELCOME_CLIENT_" + message + "\n"))
 	}
 }
-
-// func sendMessage(msg Message, conn net.Conn) {
-// 	encoder := gob.NewEncoder(conn)
-// 	encoder.Encode(msg)
-// }
-//
-// func receiveMessage(conn net.Conn) (*Message, error) {
-// 	dec := gob.NewDecoder(conn)
-// 	msg := &Message{}
-// 	err := dec.Decode(msg)
-// 	if err != nil {
-// 		return msg, err
-// 	}
-// 	return msg, nil
-// }
 
 /* Main function.
 * Listens on provided port or default (55555)
