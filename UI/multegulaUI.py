@@ -63,8 +63,27 @@ def keyPressed(event) :
     elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
         if (event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') :
             canvas.data['Player_01'].paddle.direction = Direction.DIR_LEFT
+
+            # if this is a multi-player game send a paddle update
+            if canvas.data['gameType'] == GameType.MULTI_PLAYER:
+                toSend = PyMessage()
+                toSend.src = canvas.data['myName']
+                toSend.kind = 'MSG_PADDLE_DIR'
+                toSend.content = 'LEFT'
+                toSend.multicast = True
+                canvas.data['bridge'].sendMessage(toSend)
+
         elif (event.keysym == 'Right') or (event.keysym == 'd') or (event.keysym == 'D') :
             canvas.data['Player_01'].paddle.direction = Direction.DIR_RIGHT
+
+            # if this is a multi-player game send a paddle update
+            if canvas.data['gameType'] == GameType.MULTI_PLAYER:
+                toSend = PyMessage()
+                toSend.src = canvas.data['myName']
+                toSend.kind = 'MSG_PADDLE_DIR'
+                toSend.content = 'RIGHT'
+                toSend.multicast = True
+                canvas.data['bridge'].sendMessage(toSend)
 
 ### keyReleased - handle key release events
 def keyReleased(event) :
@@ -76,6 +95,15 @@ def keyReleased(event) :
         if((event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') or 
             (event.keysym == 'Right') or (event.keysym == 'd') or (event.keysym == 'D')) :
             canvas.data['Player_01'].paddle.direction = Direction.DIR_STOP
+            # if this is a multi-player game send an update
+            if canvas.data['gameType'] == GameType.MULTI_PLAYER:
+                content = str(canvas.data['Player_01'].paddle.center) + '|' + str(canvas.data['Player_01'].paddle.width)
+                toSend = PyMessage()
+                toSend.src = canvas.data['myName']
+                toSend.kind = 'MSG_PADDLE_POS'
+                toSend.content = content
+                toSend.multicast = True
+                canvas.data['bridge'].sendMessage(toSend)
 
 ### mousePressed - handle mouse press events
 def mousePressed(event) :
@@ -115,14 +143,10 @@ def mousePressed(event) :
 def receiveAndReact(canvas) :
     bridge = canvas.data['bridge']
 
-    # this emulates a do-while loop
-    while True:
-        message = bridge.receiveMessage()
-
-        if message.src == '':
-            break
-        else:
-            print("UI: " + message.printMessage())
+    message = canvas.data['bridge'].receiveMessage();
+    if message.src != '':
+        print("UI received message ")
+        message.printMessage();
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :

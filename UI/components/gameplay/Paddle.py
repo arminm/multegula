@@ -89,30 +89,10 @@ class Paddle :
             self.setPaddle(canvas)
             self.redraw = False
 
-            # if this is a multi-player game send an update
-            if self.gameType == GameType.MULTI_PLAYER:
-                print('UI: sending an update');
-                toSend = PyMessage()
-                toSend.src = canvas.data['myName']
-                toSend.kind = 'MSG_PADDLE'
-                toSend.content = str(self.center) + '|' + str(self.width)
-                toSend.multicast = True
-                canvas.data['bridge'].sendMessage(toSend)
-
         # if this is the first time
         elif(self.first) :
             self.setPaddle(canvas)
             self.first = False
-
-            # if this is a multi-player game send an update
-            if self.gameType == GameType.MULTI_PLAYER:
-                print('UI: sending an update');
-                toSend = PyMessage()
-                toSend.src = canvas.data['myName']
-                toSend.kind = 'MSG_PADDLE'
-                toSend.content = str(self.center) + '|' + str(self.width)
-                toSend.multicast = True
-                canvas.data['bridge'].sendMessage(toSend)
 
     ### update - update the paddle location (that is, 'move' if applicable) and draw
     def update(self, canvas) :

@@ -31,11 +31,11 @@ class PyMessage :
 	multicast = False
 
 	def crack(self, received):
-		receivedArray = received.split(DELIMITER)
-		self.src = receivedArray[0]
+		receivedArray = str(received).split(DELIMITER)
+		self.src = receivedArray[0].replace("b'", '')
 		self.dest = receivedArray[1]
 		self.content = receivedArray[2].split(PAYLOAD_DELIMITER)
-		self.kind = receivedArray[3].replace('\n', '')
+		self.kind = receivedArray[3].replace("\\n'", '')
 
 	def assemble(self):
 		return self.src + DELIMITER + self.dest + DELIMITER + self.content + DELIMITER + self.kind + '\n'
@@ -116,17 +116,17 @@ class GoBridge :
 			else:
 				self.receiveQueue.put(receivedData)
 
+
 	## Receive Message
 	## # this function pulls a message from the receive queue
 	def receiveMessage(self):
 		message = PyMessage()
 		# only try and get a message if there is something in the queue.
 		if not(self.receiveQueue.empty()):
-			try:
-				received = self.receiveQueue.get(block = False)
-				message.crack(received)
-			except:
-				pass
+			## TODO: Eventually put this in a try/except
+			received = self.receiveQueue.get()
+			message.crack(received)
+			self.receiveQueue.task_done()
 
 		return message
 
