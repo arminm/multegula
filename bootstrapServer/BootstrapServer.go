@@ -108,13 +108,12 @@ func main() {
         os.Exit(1)
     }
 
+    //Make channels to handle clients and connections
+    addChannel := make(chan net.Conn)
+    removeChannel := make(chan net.Conn)
     //THIS IS THE MAIN SEQUENCE.
     //Run forever.
     for{
-        //Make channels to handle clients and connections
-        addChannel := make(chan net.Conn)
-        removeChannel := make(chan net.Conn)
-
         //Spawn thread to handle messages
         go handleClients(addChannel, removeChannel)
 
