@@ -60,10 +60,20 @@ func handleConnection(conn net.Conn) {
 
 		//Accept the client's message
 		message := string(raw)
-		fmt.Printf("Got hello from: %v:%v\n", conn.RemoteAddr(), message)
-		//Tell the client that we've acknowledged their connection.
-		//Client will now wait to receive their group message.
-		conn.Write([]byte("WELCOME_CLIENT\n"))
+		fmt.Printf("Got message from: %v:%v\n", conn.RemoteAddr(), message)
+
+		//Check to ensure it was valid
+		if message == "MULTEGULA_CLIENT_HELLO" {
+			//Tell the client that we've acknowledged their connection.
+			//Client will now wait to receive their group message.
+			conn.Write([]byte("WELCOME_CLIENT\n"))
+		} else {
+			conn.Write([]byte("ERR_INCORRECT_IDENTIFICATION\n"))
+			fmt.Printf("Didn't receive correct hello. Disconnecting client.")
+			//Closing is still causing errors for some reason.
+			//connections[conn.RemoteAddr()].Close()
+			delete(connections, conn.RemoteAddr())
+		}
 	}
 }
 
@@ -84,59 +94,59 @@ func main() {
 		panic(err)
 	}
 
-    //Loop forever
-    	for {
-    		//Begin accepting connections
-    		conn, err := ln.Accept()
-    		if err != nil {
-    			fmt.Println(err)
-    			continue
-    		}
-    		//Spawn thread to handle connections
-    		fmt.Println("Connection received from:", conn.RemoteAddr())
-    		go handleConnection(conn)
+	//Loop forever
+	for {
+		//Begin accepting connections
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		//Spawn thread to handle connections
+		fmt.Println("Connection received from:", conn.RemoteAddr())
+		go handleConnection(conn)
 
-    		//Keep track of connections. 
-    		connections[conn.RemoteAddr()] = conn
-    		fmt.Printf("We have %v connections now!\n", len(connections))
+		//Keep track of connections.
+		connections[conn.RemoteAddr()] = conn
+		fmt.Printf("We have %v connections now!\n", len(connections))
 
-            //Only continue past here if we have at least 2 connections
-            for len(connections) >= 2 {
-            	//Set our timeout values
-            	timeout := time.After(5 * time.Second)
-				tick := time.Tick(500 * time.Millisecond)
+		//Only continue past here if we have at least 2 connections
+		for len(connections) >= 2 {
+			//Set our timeout values
+			timeout := time.After(5 * time.Second)
+			tick := time.Tick(500 * time.Millisecond)
 
-	            fmt.Printf("At least two connections established, starting countdown to game.\n")
-	            //Once we have 4 connections, we can spin off a game
-	            //But timeout after 30 seconds if we have at least one connection...
-	            TIMELOOP:
-		            for{
-						select {
-							    case <- timeout:
-							    	fmt.Printf("Timed out, starting with %v players!\n", len(connections))
-							    	break TIMELOOP
-							    case <- tick:
-								    if len(connections) >= MAX_PLAYERS_PER_GAME{				    	
-								    	break TIMELOOP
-								    }
-						}
+			fmt.Printf("At least two connections established, starting countdown to game.\n")
+			//Once we have 4 connections, we can spin off a game
+			//But timeout after 30 seconds if we have at least one connection...
+		TIMELOOP:
+			for {
+				select {
+				case <-timeout:
+					fmt.Printf("Timed out, starting with %v players!\n", len(connections))
+					break TIMELOOP
+				case <-tick:
+					if len(connections) >= MAX_PLAYERS_PER_GAME {
+						break TIMELOOP
 					}
-			    //Give everyone their player list
-	            for connection := range connections {
-	                connections[connection].Write([]byte("PLAYER_LIST_BEGIN\n"))
-	                for peerConnection := range connections {
-	                    connections[connection].Write([]byte(peerConnection.String()+"\n"))
-	                }
-	                connections[connection].Write([]byte("PLAYER_LIST_END\n"))
-	            }
-	            
-	            //Clear the map
-	            for connection := range connections {
-	                delete(connections, connection)
-	                //Closing the connection is having problems right now, not sure why.
-	                //We can just have the clients do this as long as the map is clear.
-	                //connections[connection].Close()
-	            }
-        	}
-        }
-    }
+				}
+			}
+			//Give everyone their player list
+			for connection := range connections {
+				connections[connection].Write([]byte("PLAYER_LIST_BEGIN\n"))
+				for peerConnection := range connections {
+					connections[connection].Write([]byte(peerConnection.String() + "\n"))
+				}
+				connections[connection].Write([]byte("PLAYER_LIST_END\n"))
+			}
+
+			//Clear the map
+			for connection := range connections {
+				delete(connections, connection)
+				//Closing the connection is having problems right now, not sure why.
+				//We can just have the clients do this as long as the map is clear.
+				//connections[connection].Close()
+			}
+		}
+	}
+}
