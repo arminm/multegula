@@ -182,6 +182,16 @@ func parseMainArguments(args []string) (configName string, localNodeName string)
 	return configName, localNodeName
 }
 
+func skinnyParseMainArguments(args []string) (configName string) {
+
+	if len(args) > 0 {
+		configName = args[0]
+	} else {
+		configName = getConfigName()
+	}
+	fmt.Println("Config Name:", configName)
+	return configName
+}
 /* the Main function of the Multegula application */
 /*func main() {
 	args := os.Args[1:]
@@ -205,10 +215,9 @@ func main() {
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
 	args := flag.Args()
-	configName, localNodeName := parseMainArguments(args)
-	//FIXME: Uncomment the following line when done testing
 
 	if *testFlag {
+		configName, localNodeName := parseMainArguments(args)
 		fmt.Print("--------------------------------\n")
 		fmt.Println("Initing with localName:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
@@ -244,12 +253,14 @@ func main() {
 			}
 		}
 	} else {
+		configName := skinnyParseMainArguments(args)
+
 		// get the the local node name from the UI
 		// NOTE: this will be required when we move to the bootstrap server method, for now
 		//	this must match the config file.
 		fmt.Printf("Port is:%d\n", *portFlag)
 		bridges.InitPyBridge(*portFlag)
-		localNodeName = uiGetLocalName()
+		localNodeName := uiGetLocalName()
 		fmt.Println("Multegula: GOT NAME FROM UI:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
 
