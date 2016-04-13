@@ -29,8 +29,6 @@ var connections = make(map[net.Addr]net.Conn)
  *
  **/
 func handleConnection(conn net.Conn) {
-	defer conn.Close()
-
 	bufc := bufio.NewReader(conn)
 
 	//Introduce ourselves to the client with these strings
@@ -65,14 +63,14 @@ func handleConnection(conn net.Conn) {
 			//Keep track of connections.
 			connections[conn.RemoteAddr()] = conn
 			fmt.Printf("We have %v connections now!\n", len(connections))
-			continue
+			return
 		} else {
 			conn.Write([]byte("ERR_INCORRECT_IDENTIFICATION\n"))
-			fmt.Printf("Didn't receive correct hello. Disconnecting client.")
+			fmt.Printf("Didn't receive correct hello. Disconnecting client.\n")
 			delete(connections, conn.RemoteAddr())
 			//Closing the connection is having problems right now, not sure why.
 			//We can just have the clients do this as long as the map is clear.
-			//conn.Close()
+			conn.Close()
 			return
 		}
 	}
@@ -97,16 +95,6 @@ func main() {
 
 	//Loop forever
 	for {
-		//Begin accepting connections
-		conn, err := ln.Accept()
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		//Spawn thread to handle connections
-		fmt.Println("Connection received from:", conn.RemoteAddr())
-		go handleConnection(conn)
-
 		//Only run this if we have at least 2 connections
 		for len(connections) >= 2 {
 			//Set our timeout values
@@ -135,6 +123,7 @@ func main() {
 					connections[connection].Write([]byte(peerConnection.String() + "\n"))
 				}
 				connections[connection].Write([]byte("PLAYER_LIST_END\n"))
+				connections[connection].Close()
 			}
 
 			//Clear the map
@@ -146,5 +135,15 @@ func main() {
 
 			}
 		}
+		//Begin accepting connections
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		//Spawn thread to handle connections
+		fmt.Println("Connection received from:", conn.RemoteAddr())
+		go handleConnection(conn)
+
 	}
 }
