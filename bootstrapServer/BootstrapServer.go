@@ -27,12 +27,6 @@ var connections = make(map[net.Addr]net.Conn)
  * @param connection
  *        the connection object
  *
- * @param addChannel
- *        A channel used for adding clients
- *
- * @param removeChannel
- *        A channel used for removing connections
- *
  **/
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
@@ -58,7 +52,7 @@ func handleConnection(conn net.Conn) {
 			}
 		}
 
-		//Accept the client's message
+		//Accept the client's message, add them to
 		message := string(raw)
 		fmt.Printf("Got message from: %v:%v\n", conn.RemoteAddr(), message)
 
@@ -68,12 +62,15 @@ func handleConnection(conn net.Conn) {
 			//Tell the client that we've acknowledged their connection.
 			//Client will now wait to receive their group message.
 			conn.Write([]byte("WELCOME_CLIENT\n"))
+			//Keep track of connections.
+			connections[conn.RemoteAddr()] = conn
+			fmt.Printf("We have %v connections now!\n", len(connections))
 		} else {
 			conn.Write([]byte("ERR_INCORRECT_IDENTIFICATION\n"))
 			fmt.Printf("Didn't receive correct hello. Disconnecting client.")
-			//Closing is still causing errors for some reason.
-			//connections[conn.RemoteAddr()].Close()
-			delete(connections, conn.RemoteAddr())
+			//Closing the connection is having problems right now, not sure why.
+			//We can just have the clients do this as long as the map is clear.
+			//conn.Close()
 		}
 	}
 }
@@ -105,11 +102,7 @@ func main() {
 		}
 		//Spawn thread to handle connections
 		fmt.Println("Connection received from:", conn.RemoteAddr())
-		go handleConnection(conn)
-
-		//Keep track of connections.
-		connections[conn.RemoteAddr()] = conn
-		fmt.Printf("We have %v connections now!\n", len(connections))
+		go handleConnection(conn, connections)
 
 		//Only continue past here if we have at least 2 connections
 		for len(connections) >= 2 {
@@ -147,6 +140,7 @@ func main() {
 				//Closing the connection is having problems right now, not sure why.
 				//We can just have the clients do this as long as the map is clear.
 				//connections[connection].Close()
+
 			}
 		}
 	}
