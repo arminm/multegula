@@ -41,7 +41,7 @@ func handleConnection(conn net.Conn) {
 
 	//Introduce ourselves to the client with these strings
 	conn.Write([]byte("MULTEGULA_BOOTSTRAP_SERVER\n"))
-	conn.Write([]byte("CLIENT_INTRODUCE_YOURSELF_NOW\n"))
+	conn.Write([]byte("CLIENT_SAY_HELLO_NOW\n"))
 
 	for {
 		//Then the client should respond with its introduction message.
@@ -60,10 +60,10 @@ func handleConnection(conn net.Conn) {
 
 		//Accept the client's message
 		message := string(raw)
-		fmt.Printf("%v:%v\n", conn.RemoteAddr(), message)
+		fmt.Printf("Got hello from: %v:%v\n", conn.RemoteAddr(), message)
 		//Tell the client that we've acknowledged their connection.
 		//Client will now wait to receive their group message.
-		conn.Write([]byte("WELCOME_CLIENT_" + message + "\n"))
+		conn.Write([]byte("WELCOME_CLIENT\n"))
 	}
 }
 
