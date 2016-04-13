@@ -64,19 +64,29 @@ class Paddle :
         self.color = color
         self.redraw = True
 
+    ### canMove 
+    def canMove(self, direction):
+        if direction == Direction.DIR_LEFT and (self.center - self.width) <= PADDLE_MIN:
+            return False
+        elif direction == Direction.DIR_RIGHT and (self.center + self.width) >= PADDLE_MAX:
+            return False
+        else:
+            return True
+
     ### move - move the paddle based on the current direction
     def move(self) :
         # move paddle left if not already at the MIN possible
-        if((self.direction == Direction.DIR_LEFT) and ((self.center - self.width) > PADDLE_MIN)) :
+        if self.direction == Direction.DIR_LEFT and self.canMove(self.direction) :
             self.center = self.center - self.speed
             self.redraw = True
         # move paddle right if not already at the MAX possible
-        elif((self.direction == Direction.DIR_RIGHT) and ((self.center + self.width) < PADDLE_MAX)) :
+        elif self.direction == Direction.DIR_RIGHT and self.canMove(self.direction) :
             self.center = self.center + self.speed
             self.redraw = True
         else :
             self.redraw = False
 
+    ### setPaddle - place the paddle on the canvas
     def setPaddle(self, canvas) :
         (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges()
         self.p = canvas.create_rectangle(leftEdge, topEdge, rightEdge, bottomEdge,

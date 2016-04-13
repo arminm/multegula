@@ -145,7 +145,7 @@ func uiReceiveAndReact() {
 	for {
 		message := bridges.ReceiveFromPyBridge()
 
-		fmt.Println("Multegula: UI message received - ", message)
+		//fmt.Println("Multegula: UI message received - ", message)
 		if strings.EqualFold(message.Destination, UI_MULTICAST_DEST) {
 			messagePasser.Multicast(&message)
 		} else if strings.EqualFold(message.Destination, UI_MULTEGULA_DEST) {
@@ -162,19 +162,14 @@ func uiReceiveAndReact() {
 func networkReceiveAndReact() {
 	for {
 		message := messagePasser.Receive()
-		fmt.Println("Multegula: received network message -", message)
+		//fmt.Println("Multegula: received network message -", message)
 		switch message.Kind {
 		case "MSG_PADDLE_POS":
 			bridges.SendToPyBridge(message)
 		case "MSG_PADDLE_DIR":
 			bridges.SendToPyBridge(message)
 		}
-		/*
-		if message.Kind == "MSG_PADDLE_POS" {
-			fmt.Println("it worked")
-		}*/
 	}
-
 }
 
 /* receive message from MessagePasser and send to PyBridge */

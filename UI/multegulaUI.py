@@ -51,59 +51,81 @@ def keyPressed(event) :
             canvas.data['myName'] = myName
 
             # send name up to Multegula!
-            print('UI: sending my name');
             toSend = PyMessage()
             toSend.src = myName
-            toSend.kind = 'MSG_MYNAME'
+            toSend.kind = MsgType.MSG_MYNAME
             toSend.content = myName
             toSend.multicast = False
             canvas.data['bridge'].sendMessage(toSend)
 
     # pause screen / gameplay keyPressed events - move the paddle
     elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
+        myName  = canvas.data['myName']
+        myPaddle = canvas.data[myName].paddle
+
+        ### MOVE PADDLE LEFT ###
         if (event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') :
-            canvas.data['Player_01'].paddle.direction = Direction.DIR_LEFT
-
-            # if this is a multi-player game send a paddle update
+            # if this is a multi-player game, the direction is not already set, and the paddle can move,
+            #   then it is okay to send an update
             if canvas.data['gameType'] == GameType.MULTI_PLAYER:
-                toSend = PyMessage()
-                toSend.src = canvas.data['myName']
-                toSend.kind = 'MSG_PADDLE_DIR'
-                toSend.content = 'LEFT'
-                toSend.multicast = True
-                canvas.data['bridge'].sendMessage(toSend)
+                if myPaddle.direction != Direction.DIR_LEFT and myPaddle.canMove(Direction.DIR_LEFT):
+                    # create and send message
+                    toSend = PyMessage()
+                    toSend.src = myName
+                    toSend.kind = MsgType.MSG_PADDLE_DIR
+                    toSend.content = MsgPayload.MSG_PADDLE_DIR_LEFT
+                    toSend.multicast = True
+                    canvas.data['bridge'].sendMessage(toSend)
 
+            # if this is a single player game, then go ahead and set the paddle direction
+            elif canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
+                myPaddle.direction = Direction.DIR_LEFT
+
+        ### MOVE PADDLE RIGHT ####
         elif (event.keysym == 'Right') or (event.keysym == 'd') or (event.keysym == 'D') :
-            canvas.data['Player_01'].paddle.direction = Direction.DIR_RIGHT
+            # if this is a multi-player game, the direction is not already set, and the paddle can move,
+            #   then it is okay to send an update.  
+            if canvas.data['gameType'] == GameType.MULTI_PLAYER: 
+                if myPaddle.direction != Direction.DIR_RIGHT and myPaddle.canMove(Direction.DIR_RIGHT):
+                    # create and send message
+                    toSend = PyMessage()
+                    toSend.src = canvas.data['myName']
+                    toSend.kind = MsgType.MSG_PADDLE_DIR
+                    toSend.content = MsgPayload.MSG_PADDLE_DIR_RIGHT
+                    toSend.multicast = True
+                    canvas.data['bridge'].sendMessage(toSend)
 
-            # if this is a multi-player game send a paddle update
-            if canvas.data['gameType'] == GameType.MULTI_PLAYER:
-                toSend = PyMessage()
-                toSend.src = canvas.data['myName']
-                toSend.kind = 'MSG_PADDLE_DIR'
-                toSend.content = 'RIGHT'
-                toSend.multicast = True
-                canvas.data['bridge'].sendMessage(toSend)
+            # if this is a single player game, then go ahead and set the paddle direction
+            elif canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
+                canvas.data[canvas.data['myName']].paddle.direction = Direction.DIR_RIGHT
+
 
 ### keyReleased - handle key release events
 def keyReleased(event) :
     canvas = event.widget.canvas
     currentScreen = canvas.data['currentScreen']
 
-    # pause screen / gameplay keyReleased events - stop paddle motion
+    ### STOP PADDLE MOTION ###
     if (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
         if((event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') or 
             (event.keysym == 'Right') or (event.keysym == 'd') or (event.keysym == 'D')) :
-            canvas.data['Player_01'].paddle.direction = Direction.DIR_STOP
-            # if this is a multi-player game send an update
-            if canvas.data['gameType'] == GameType.MULTI_PLAYER:
-                content = str(canvas.data['Player_01'].paddle.center) + '|' + str(canvas.data['Player_01'].paddle.width)
-                toSend = PyMessage()
-                toSend.src = canvas.data['myName']
-                toSend.kind = 'MSG_PADDLE_POS'
-                toSend.content = content
-                toSend.multicast = True
-                canvas.data['bridge'].sendMessage(toSend)
+
+            # if this is a multi-player game, the direction is not already set then it is okay to send and update
+            if canvas.data['gameType'] == GameType.MULTI_PLAYER: 
+                if canvas.data[canvas.data['myName']].paddle.direction != Direction.DIR_STOP:
+                    #create and send message
+                    content = str(canvas.data[canvas.data['myName']].paddle.center) + '|' + str(canvas.data[canvas.data['myName']].paddle.width)
+                    toSend = PyMessage()
+                    toSend.src = canvas.data['myName']
+                    toSend.kind = MsgType.MSG_PADDLE_POS
+                    toSend.content = content
+                    toSend.multicast = True
+                    canvas.data['bridge'].sendMessage(toSend)
+
+            # if this is a single player game, then go ahead and set the paddle direction
+            elif canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
+                canvas.data[canvas.data['myName']].paddle.direction = Direction.DIR_STOP
+
 
 ### mousePressed - handle mouse press events
 def mousePressed(event) :
@@ -140,17 +162,34 @@ def mousePressed(event) :
         init(canvas);
 
 
-def receiveAndReact(canvas) :
-    bridge = canvas.data['bridge']
+def react(canvas, received) :
+    print("UI: ", received.toString())
+    if received.kind == MsgType.MSG_PADDLE_DIR:
+        if received.content[MsgIndex.MSG_PADDLE_DIR] == MsgPayload.MSG_PADDLE_DIR_LEFT:
+            canvas.data[received.src].paddle.direction = Direction.DIR_LEFT
+        elif received.content[MsgIndex.MSG_PADDLE_DIR] == MsgPayload.MSG_PADDLE_DIR_RIGHT:
+            canvas.data[received.src].paddle.direction = Direction.DIR_RIGHT
 
-    message = canvas.data['bridge'].receiveMessage();
-    if message.src != '':
-        print("UI received message ")
-        message.printMessage();
+    elif received.kind == MsgType.MSG_PADDLE_POS: 
+        canvas.data[received.src].paddle.direction = Direction.DIR_STOP
+        canvas.data[received.src].paddle.center = int(received.content[MsgIndex.MSG_PADDLE_POS_CENTER])
+        canvas.data[received.src].paddle.width = int(received.content[MsgIndex.MSG_PADDLE_POS_WIDTH])
+
+
+### receiveAll - get all messages from the GoBrige
+def receiveAll(canvas) :
+    # loop until there are no
+    while True:
+        message = canvas.data['bridge'].receiveMessage();
+        if message.src == '':
+            break
+        else:
+            react(canvas, message)
+            
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
-    receiveAndReact(canvas)
+    receiveAll(canvas)
 
     ### SPLASH SCREEN
     if canvas.data['currentScreen'] == Screens.SCRN_SPLASH :
@@ -171,7 +210,7 @@ def redrawAll(canvas) :
     elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE :
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
-        canvas.data['Player_01'].update(canvas)
+        canvas.data[canvas.data['myName']].update(canvas)
         canvas.data['Player_02'].update(canvas)
         canvas.data['Player_03'].update(canvas)
         canvas.data['Player_04'].update(canvas)
@@ -180,7 +219,7 @@ def redrawAll(canvas) :
     ### GAME SCREEN
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.SINGLE_PLAYER):
         canvas.data['gameScreen'].draw(canvas)
-        canvas.data['Player_01'].update(canvas)
+        canvas.data[canvas.data['myName']].update(canvas)
         canvas.data['Player_02'].update(canvas)
         canvas.data['Player_03'].update(canvas)
         canvas.data['Player_04'].update(canvas)
@@ -189,7 +228,7 @@ def redrawAll(canvas) :
 
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.MULTI_PLAYER):
         canvas.data['gameScreen'].draw(canvas)
-        canvas.data['Player_01'].update(canvas)
+        canvas.data[canvas.data['myName']].update(canvas)
         canvas.data['Player_02'].update(canvas)
         canvas.data['Player_03'].update(canvas)
         canvas.data['Player_04'].update(canvas)
@@ -232,14 +271,15 @@ def init(canvas) :
     canvas.data['level'] = Level()
 
 def initPlayers(canvas):
+    myName = canvas.data['myName']
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
-        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['myName'], GameType.SINGLE_PLAYER)
+        canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.SINGLE_PLAYER)
         canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH', GameType.SINGLE_PLAYER)
         canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST', GameType.SINGLE_PLAYER)
         canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST', GameType.SINGLE_PLAYER)
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
-        canvas.data['Player_01'] = Player(Orientation.DIR_SOUTH, PlayerState.USER, canvas.data['myName'], GameType.MULTI_PLAYER)
+        canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.MULTI_PLAYER)
         canvas.data['Player_02'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH', GameType.MULTI_PLAYER)
         canvas.data['Player_03'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST', GameType.MULTI_PLAYER)
         canvas.data['Player_04'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST', GameType.MULTI_PLAYER) 
@@ -263,12 +303,6 @@ def runUI(cmd_line_args) :
 
     # set up dicitonary
     canvas.data = {}
-
-    # act on command line arguments. Get TCP port here.
-    if (len(cmd_line_args) > 1) and (cmd_line_args[1] == '-mid'):
-        canvas.data['mid_demo'] = True;
-    else:
-        canvas.data['mid_demo'] = False;
 
     # sets up events
     #root.bind('<Key>', keyPressed)
