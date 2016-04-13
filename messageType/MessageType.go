@@ -25,11 +25,13 @@ const (
 )
 
 var messageTypes = [...]string{
+
 	/* The beginning of message type values for bully algorithm */
 	"election",
 	"answer",
 	"coordinator",
 	/* The end of message type values for bully algorithm */
+
 }
 
 func (messageType MessageType) String() string {
