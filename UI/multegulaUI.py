@@ -145,7 +145,8 @@ def receiveAndReact(canvas) :
 
     message = canvas.data['bridge'].receiveMessage();
     if message.src != '':
-        print("UI received message " + message.printMessage());
+        print("UI received message ")
+        message.printMessage();
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
