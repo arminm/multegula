@@ -70,32 +70,54 @@ func handleConnection(conn net.Conn) {
 * Listens on provided port or default (55555)
 **/
 func main() {
+
 	//Set port from command line
 	portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
 	flag.Parse()
 	fmt.Println("Multegula Bootstrap Server listening on TCP Port: ", *portFlag)
 
-	//And connect
+	//And listen
 	ln, err := net.Listen("tcp", ":"+strconv.Itoa(*portFlag))
 	if err != nil {
 		fmt.Println("Couldn't start Bootstrap Server!")
 		panic(err)
 	}
 
-	for {
-		//Wait until we get four players and then GO GO GO
-		conn, err := ln.Accept()
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		//Spawn thread to handle connections
-		fmt.Println("Connection received from:", conn.RemoteAddr())
-		go handleConnection(conn)
+    //Wait forever
+    	for {
+    		//Wait until we get four players and then GO GO GO
+    		conn, err := ln.Accept()
+    		if err != nil {
+    			fmt.Println(err)
+    			continue
+    		}
+    		//Spawn thread to handle connections
+    		fmt.Println("Connection received from:", conn.RemoteAddr())
+    		go handleConnection(conn)
 
-		// Keep track of connections. Once we have 4 connections, we can spin off a game...
-		connections[conn.RemoteAddr()] = conn
-		fmt.Printf("We have %v connections now!\n", len(connections))
+    		// Keep track of connections. 
+    		connections[conn.RemoteAddr()] = conn
+    		fmt.Printf("We have %v connections now!\n", len(connections))
 
-	}
+            //Once we have 4 connections, we can spin off a game...
+            if len(connections) >= MAX_PLAYERS_PER_GAME {
+                fmt.Printf("We have enough connections, starting game!")
+
+                //Give everyone their player list
+                for connection := range connections {
+                    connections[connection].Write([]byte("PLAYER_LIST_BEGIN\n"))
+                    for peerConnection := range connections {
+                        connections[connection].Write([]byte(peerConnection.String()+"\n"))
+                    }
+                    connections[connection].Write([]byte("PLAYER_LIST_END\n"))
+                }
+            
+                //Clear the map
+                for connection := range connections {
+                    delete(connections, connection)
+                    //Closing the connection is having problems right now, not sure why.
+                    //connections[connection].Close()
+                }
+        }
+    }
 }
