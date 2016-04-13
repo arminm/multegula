@@ -122,10 +122,13 @@ class GoBridge :
 		message = PyMessage()
 		# only try and get a message if there is something in the queue.
 		if not(self.receiveQueue.empty()):
+			print("queue isn't empty")
 			try:
-				received = self.receiveQueue.get(block = False)
+				received = self.receiveQueue.get()
 				message.crack(received)
+				print("message craccked")
 			except:
+				print("try failed")
 				pass
 
 		return message

@@ -144,16 +144,35 @@ func uiGetLocalName() (localName string) {
 func uiReceiveAndReact() {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-		
-		fmt.Println("Multegula: Message received - ", message)
+
+		fmt.Println("Multegula: UI message received - ", message)
 		if strings.EqualFold(message.Destination, UI_MULTICAST_DEST) {
-			fmt.Println("Multegula: Multicasting message - ", message)
 			messagePasser.Multicast(&message)
 		} else if strings.EqualFold(message.Destination, UI_MULTEGULA_DEST) {
 			fmt.Println("TODO: Handle any messages meant only for Multegula.")
 		} else {
 			fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
 		}		
+	}
+
+}
+
+
+/* receive message from PyBridge and send to messagePasser */
+func networkReceiveAndReact() {
+	for {
+		message := messagePasser.Receive()
+		fmt.Println("Multegula: received network message -", message)
+		switch message.Kind {
+		case "MSG_PADDLE_POS":
+			bridges.SendToPyBridge(message)
+		case "MSG_PADDLE_DIR":
+			bridges.SendToPyBridge(message)
+		}
+		/*
+		if message.Kind == "MSG_PADDLE_POS" {
+			fmt.Println("it worked")
+		}*/
 	}
 
 }
@@ -197,21 +216,6 @@ func skinnyParseMainArguments(args []string) (configName string) {
 	fmt.Println("Config Name:", configName)
 	return configName
 }
-/* the Main function of the Multegula application */
-/*func main() {
-	args := os.Args[1:]
-
-	// Read command-line arguments and prompt the user if not provided
-	configName, localNodeName := parseMainArguments(args)
-
-    messagePasser.InitMessagePasser(configName, localNodeName)
-
-    bridges.InitPyBridge()
-
-    go sendToMessagePasser()
-    receiveFromMessagePasser()
-
-}*/
 
 /* the Main function of the Multegula application */
 func main() {
@@ -268,14 +272,14 @@ func main() {
 		localNodeName := uiGetLocalName()
 		fmt.Println("Multegula: GOT NAME FROM UI:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
+		fmt.Println("Multegula: made message passer for", localNodeName)
 		// main loop - this runs the Multegula in all it's glory
 
 		go uiReceiveAndReact()
-		/*for {
-			message := bridges.ReceiveFromPyBridge()
-			// TODO: we shouldn't have to send the localNodeName to uiReceiveAndReact so that it can multicast.
-			uiReceiveAndReact(message)
-		}*/
+		go networkReceiveAndReact()
+
+		for {
+		}
 
 	}
 }

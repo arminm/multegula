@@ -143,14 +143,9 @@ def mousePressed(event) :
 def receiveAndReact(canvas) :
     bridge = canvas.data['bridge']
 
-    # this emulates a do-while loop
-    while True:
-        message = bridge.receiveMessage()
-
-        if message.src == '':
-            break
-        else:
-            print("UI: " + message.printMessage())
+    message = canvas.data['bridge'].receiveMessage();
+    if message.src != '':
+        print("UI received message " + message.printMessage());
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
