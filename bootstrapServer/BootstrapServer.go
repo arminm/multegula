@@ -41,27 +41,47 @@ func main() {
     }
 
     //Make channels to handle clients and connections
-    clientChannel := make(chan Client)
-    connectionChannel := make(chan net.Conn)
+    addChannel := make(chan Client)
+    removeChannel := make(chan net.Conn)
+    //Make a map of all clients
+    clients := make(map[net.Conn]chan<- string)
 
     //Spawn thread to handle messages
-    go handleClients(clientChannel, connectionChannel)
+    go handleClients(addChannel, removeChannel)
 
-    //Infinitely accept connections from clients
-    for {
+    //Wait until we get four players and then GO GO GO
+    for len(addChannel) < MAX_PLAYERS_PER_GAME {
         conn, err := ln.Accept()
         if err != nil {
             fmt.Println(err)
             continue
         }
         //Spawn thread to handle connections
-        go handleConnection(conn, clientChannel, connectionChannel)
+        go handleConnection(conn, addChannel, removeChannel)
+
+        fmt.Println("Clients Connected: ",len(clients))
     }
+    //Once we have four, send out our player list to all connected clients
+    //conn.Write([]byte("PLAYER_LIST_BEGIN\n"))
+
 }
 
-func handleConnection(conn net.Conn, clientChannel chan<- Client, connectionChannel chan<- net.Conn) {
+/*
+ * Handle Connections
+ *
+ * @param connection
+ *        the connection object
+ *
+ * @param addChannel
+ *        A channel used for adding clients
+ *
+ * @param removeChannel
+ *        A channel used for removing connections
+ *
+ **/
+func handleConnection(conn net.Conn, addChannel chan<- Client, removeChannel chan<- net.Conn) {
     ch := make(chan string)
-    clientChannel <- Client{conn, ch}
+    addChannel <- Client{conn, ch}
 
     bufc := bufio.NewReader(conn)
 
@@ -72,7 +92,7 @@ func handleConnection(conn net.Conn, clientChannel chan<- Client, connectionChan
     //Then the client should respond with its introduction message.
     nick, _, err := bufc.ReadLine()
     if err != nil {
-         fmt.Println("Something went wrong when the client was introducing itself.")
+        fmt.Println("Something went wrong when the client was introducing itself.")
         return
     }
 
@@ -83,28 +103,37 @@ func handleConnection(conn net.Conn, clientChannel chan<- Client, connectionChan
     //Client will now wait to receive their group message.
     conn.Write([]byte("WELCOME_CLIENT_" + nickname + "\n"))
 
-    //Wait until we get four players and then GO GO GO
-    for len(connectionChannel) < MAX_PLAYERS_PER_GAME {}
+    //Wait forever.
+    for {}
 
-    //Send our player list out to all connected clients
-    conn.Write([]byte("PLAYER_LIST_BEGIN\n"))
+    //Clean up this connection.
     conn.Close()
-
     fmt.Printf("Connection from client %v closed.\n", conn.RemoteAddr())
-    connectionChannel <- conn
+    removeChannel <- conn
 }
 
-func handleClients(clientChannel <-chan Client, connectionChannel <-chan net.Conn) {
+/*
+ * Handle Clients
+ *
+ * @param addChannel
+ *        A channel used for adding clients
+ *
+ * @param removeChannel
+ *        A channel used for removing connections
+ *
+ *
+ **/
+func handleClients(addChannel <-chan Client, removeChannel <-chan net.Conn) {
     
     //Make a map of all clients
     clients := make(map[net.Conn]chan<- string)
 
     for {
         select {
-        case client := <-clientChannel:
+        case client := <-addChannel:
             fmt.Printf("New client connected: %v\n", client.conn)
             clients[client.conn] = client.ch
-        case conn := <-connectionChannel:
+        case conn := <-removeChannel:
             fmt.Printf("Client has disconnected: %v\n", conn)
             delete(clients, conn)
         }
