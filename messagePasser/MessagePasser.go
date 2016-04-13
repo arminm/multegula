@@ -100,7 +100,7 @@ const multicastDestStr = "EVERYBODY"
 
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
-var multicastSeqNum = 0
+var localReceivedSeqNum = 0
 
 /*
  * connection for localhost, this is the receive side,
@@ -139,32 +139,16 @@ func updateSeqNum(message *Message) {
  * that was received by node 1 before it multicasts [1,3,4]. Thus this message
  * is not ready yet, and we have to receive [1,2,4] first.
  */
-func isMessageReady(message Message, localTimeStamp *[]int) bool {
-	foundPotential := false
+func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) bool {
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
-		if val < localValue {
+		if i == sourceIndex && val != (localValue+1) {
 			return false
-		} else if val == localValue+1 {
-			if foundPotential == false {
-				foundPotential = true
-			} else {
-				return false
-			}
+		} else if i != sourceIndex && val > localValue {
+			return false
 		}
 	}
-	return foundPotential
-	// var sourceIndex int
-	// sourceIndex, _, _ = FindNodeByName(config.Nodes, message.Source)
-	// for i, val := range message.Timestamp {
-	// 	localValue := (*localTimeStamp)[i]
-	// 	if i == sourceIndex && val != localValue+1 {
-	// 		return false
-	// 	} else if val > localValue {
-	// 		return false
-	// 	}
-	// }
-	// return true
+	return true
 }
 
 /*
@@ -172,9 +156,12 @@ func isMessageReady(message Message, localTimeStamp *[]int) bool {
  */
 func messageHasBeenReceived(message Message) bool {
 	/* check if message has been delivered already */
-	if CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
+	if message.Source == localNode.Name && message.Timestamp[localIndex] <= localReceivedSeqNum {
+		return true
+	} else if message.Source != localNode.Name && CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
 		return true
 	}
+
 	/* check if message is in holdbackQueue */
 	for _, msg := range holdbackQueue {
 		if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
@@ -217,8 +204,7 @@ func Multicast(message *Message) {
 	if message.Source == localNode.Name {
 		message.Destination = multicastDestStr
 		updateSeqNum(message)
-		multicastSeqNum += 1
-		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex, multicastSeqNum)
+		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 	}
 
 	for _, node := range config.Nodes {
@@ -335,7 +321,11 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  *			the message to be put into receiveQueue
  **/
 func addMessageToReceiveChannel(message Message) {
-	UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
+	if message.Source == localNode.Name {
+		localReceivedSeqNum += 1
+	} else {
+		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
+	}
 	receiveChannel <- message
 }
 
@@ -395,7 +385,8 @@ func deliverMessage(message Message) {
 		return
 	}
 	if message.Destination == multicastDestStr {
-		if isMessageReady(message, &vectorTimeStamp) {
+		sourceIndex, _, _ := FindNodeByName(config.Nodes, message.Source)
+		if isMessageReady(message, sourceIndex, &vectorTimeStamp) {
 			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
 		} else {
@@ -421,7 +412,8 @@ func deliverMessage(message Message) {
 func checkHoldbackQueue() {
 	var messageToDeliver *Message
 	for i, msg := range holdbackQueue {
-		if isMessageReady(msg, &vectorTimeStamp) {
+		sourceIndex, _, _ := FindNodeByName(config.Nodes, msg.Source)
+		if isMessageReady(msg, sourceIndex, &vectorTimeStamp) {
 			messageToDeliver = &msg
 			Delete(&holdbackQueue, i)
 			break

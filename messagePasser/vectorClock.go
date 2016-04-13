@@ -5,10 +5,10 @@ import "fmt"
 /*
  * initializes a new timestamp by incrementing and copying the current timestamp
  */
-func GetNewTimestamp(currentTimestamp *[]int, localIndex int, seqNum int) *[]int {
+func GetNewTimestamp(currentTimestamp *[]int, localIndex int) *[]int {
+	(*currentTimestamp)[localIndex] += 1
 	newTimestamp := make([]int, len(*currentTimestamp))
 	copy(newTimestamp, *currentTimestamp)
-	newTimestamp[localIndex] = seqNum
 	return &newTimestamp
 }
 
