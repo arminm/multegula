@@ -142,7 +142,9 @@ func updateSeqNum(message *Message) {
 func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) bool {
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
-		if i == sourceIndex && val != (localReceivedSeqNum+1) {
+		if i == localIndex && val != (localReceivedSeqNum+1) {
+			return false
+		} else if i == sourceIndex && val != (localValue+1) {
 			return false
 		} else if i != sourceIndex && val > localValue {
 			return false
