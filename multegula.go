@@ -141,16 +141,21 @@ func uiGetLocalName() (localName string) {
 }
 
 /* receive message from PyBridge and send to messagePasser */
-func uiReceiveAndReact(received messagePasser.Message, localName string) {
-	if strings.EqualFold(received.Destination, UI_MULTICAST_DEST) {
-		received.Source = localName
-		fmt.Println("Multegula: Multicasting message - ", received)
-		messagePasser.Multicast(&received)
-	} else if strings.EqualFold(received.Destination, UI_MULTEGULA_DEST) {
-		fmt.Println("TODO: Handle any messages meant only for Multegula.")
-	} else {
-		fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
+func uiReceiveAndReact() {
+	for {
+		message := bridges.ReceiveFromPyBridge()
+		
+		fmt.Println("Multegula: Message received - ", message)
+		if strings.EqualFold(message.Destination, UI_MULTICAST_DEST) {
+			fmt.Println("Multegula: Multicasting message - ", message)
+			messagePasser.Multicast(&message)
+		} else if strings.EqualFold(message.Destination, UI_MULTEGULA_DEST) {
+			fmt.Println("TODO: Handle any messages meant only for Multegula.")
+		} else {
+			fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
+		}		
 	}
+
 }
 
 /* receive message from MessagePasser and send to PyBridge */
@@ -263,13 +268,15 @@ func main() {
 		localNodeName := uiGetLocalName()
 		fmt.Println("Multegula: GOT NAME FROM UI:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
-
 		// main loop - this runs the Multegula in all it's glory
-		for {
+
+		go uiReceiveAndReact()
+		/*for {
 			message := bridges.ReceiveFromPyBridge()
 			// TODO: we shouldn't have to send the localNodeName to uiReceiveAndReact so that it can multicast.
-			uiReceiveAndReact(message, localNodeName)
-		}
+			uiReceiveAndReact(message)
+		}*/
+
 	}
 }
 
