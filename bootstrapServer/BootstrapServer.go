@@ -62,7 +62,8 @@ func handleConnection(conn net.Conn) {
 		message := string(raw)
 		fmt.Printf("Got message from: %v:%v\n", conn.RemoteAddr(), message)
 
-		//Check to ensure it was valid
+		//Check to ensure it was valid.
+		//The \n seems to mess this up little bit when using nc, maybe we can put it back in for network comms.
 		if message == "MULTEGULA_CLIENT_HELLO" {
 			//Tell the client that we've acknowledged their connection.
 			//Client will now wait to receive their group message.
