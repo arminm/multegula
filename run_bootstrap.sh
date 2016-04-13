@@ -12,4 +12,4 @@ sleep 1
 
 #Start multegula.go and wait for it to come up.
 #Defaults to port 55555 if port isn't received.
-go run bootstrapServer/BootstrapServer.go -port=${1:-55555} &
+go run bootstrapServer/BootstrapServer.go -port=${1:-55555}
