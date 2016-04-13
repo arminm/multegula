@@ -7,16 +7,21 @@
 package main
 
 import (
-    "flag"
-    "fmt"
-    "net"
-    "strconv"
-    "os"
-    "bufio"
+	"bufio"
+	"flag"
+	"fmt"
+	"net"
+	"strconv"
 )
+
+// type Message struct {
+// 	Content string
+// }
 
 // constants
 const MAX_PLAYERS_PER_GAME int = 4
+
+var connections = make(map[net.Addr]net.Conn)
 
 /*
  * Handle Connections
@@ -31,104 +36,84 @@ const MAX_PLAYERS_PER_GAME int = 4
  *        A channel used for removing connections
  *
  **/
-func handleConnection(conn net.Conn, addChannel chan<- net.Conn, removeChannel chan<- net.Conn) {
-    addChannel <- conn
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
 
-    bufc := bufio.NewReader(conn)
-    defer conn.Close()
+	bufc := bufio.NewReader(conn)
 
-    //Introduce ourselves to the client with these strings
-    conn.Write([]byte("MULTEGULA_BOOTSTRAP_SERVER\n"))
-    conn.Write([]byte("CLIENT_INTRODUCE_YOURSELF_NOW\n"))
+	//Introduce ourselves to the client with these strings
+	conn.Write([]byte("MULTEGULA_BOOTSTRAP_SERVER\n"))
+	conn.Write([]byte("SAY_SOMETHING\n"))
 
-    //Then the client should respond with its introduction message.
-    nick, _, err := bufc.ReadLine()
-    if err != nil {
-        fmt.Println("Something went wrong when the client was introducing itself.")
-        return
-    }
+	for {
+		//Then the client should respond with its introduction message.
+		raw, _, err := bufc.ReadLine()
+		if err != nil {
+			if err.Error() == "EOF" {
+				fmt.Println("Got disconneted from", conn.RemoteAddr())
+				delete(connections, conn.RemoteAddr())
+				fmt.Printf("We have %v connections now!\n", len(connections))
+				break
+			} else {
+				fmt.Println("Not disconnecting but got error:", err.Error())
+				continue
+			}
+		}
 
-    //Accept the client's nickname
-    nickname := string(nick)
-
-    //Tell the client that we've acknowledged their connection.
-    //Client will now wait to receive their group message.
-    conn.Write([]byte("WELCOME_CLIENT_" + nickname + "\n"))
-
-    //Wait forever (for now).
-    for {}
-
-    //Clean up this connection.
-    conn.Close()
-    fmt.Printf("Connection from client %v closed.\n", conn.RemoteAddr())
-    removeChannel <- conn
+		//Accept the client's message
+		message := string(raw)
+		fmt.Printf("%v:%v\n", conn.RemoteAddr(), message)
+		//Tell the client that we've acknowledged their connection.
+		//Client will now wait to receive their group message.
+		conn.Write([]byte("You said: " + message + "\n"))
+	}
 }
 
-/*
- * Handle Clients
- *
- * @param addChannel
- *        A channel used for adding clients
- *
- * @param removeChannel
- *        A channel used for removing connections
- *
- **/
-func handleClients(addChannel <-chan net.Conn, removeChannel <-chan net.Conn) {
+// func sendMessage(msg Message, conn net.Conn) {
+// 	encoder := gob.NewEncoder(conn)
+// 	encoder.Encode(msg)
+// }
+//
+// func receiveMessage(conn net.Conn) (*Message, error) {
+// 	dec := gob.NewDecoder(conn)
+// 	msg := &Message{}
+// 	err := dec.Decode(msg)
+// 	if err != nil {
+// 		return msg, err
+// 	}
+// 	return msg, nil
+// }
 
-    //Make a map of all clients
-    clients := make(map[net.Conn]chan<- string)
-
-    //Run forever, keep track of clients
-    for {
-        select {
-        case conn := <-addChannel:
-            fmt.Printf("New client connected: %v\n", conn)
-        case conn := <-removeChannel:
-            fmt.Printf("Client has disconnected: %v\n", conn)
-            delete(clients, conn)
-        }
-    }
-}
-
-/* Main function.  
+/* Main function.
 * Listens on provided port or default (55555)
 **/
 func main() {
-    //Set port from command line
-    portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
-    flag.Parse()
-    fmt.Println("Multegula Bootstrap Server listening on TCP Port: ", *portFlag)
-    
-    //And connect
-    ln, err := net.Listen("tcp", ":"+strconv.Itoa(*portFlag))
-    if err != nil {
-        fmt.Println("Couldn't start Bootstrap Server!")
-        panic(err)
-        os.Exit(1)
-    }
+	//Set port from command line
+	portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
+	flag.Parse()
+	fmt.Println("Multegula Bootstrap Server listening on TCP Port: ", *portFlag)
 
-    //Make channels to handle clients and connections
-    addChannel := make(chan net.Conn)
-    removeChannel := make(chan net.Conn)
-    //THIS IS THE MAIN SEQUENCE.
-    //Run forever.
-    for{
-        //Spawn thread to handle messages
-        go handleClients(addChannel, removeChannel)
+	//And connect
+	ln, err := net.Listen("tcp", ":"+strconv.Itoa(*portFlag))
+	if err != nil {
+		fmt.Println("Couldn't start Bootstrap Server!")
+		panic(err)
+	}
 
-        //Wait until we get four players and then GO GO GO
-        for len(addChannel) < MAX_PLAYERS_PER_GAME {
-            conn, err := ln.Accept()
-            if err != nil {
-                fmt.Println(err)
-                continue
-            }
-            //Spawn thread to handle connections
-            go handleConnection(conn, addChannel, removeChannel)
-        }
-        
-        //Once we have four, send out our player list to all connected clients
-        //conn.Write([]byte("PLAYER_LIST_BEGIN\n"))
-    }
+	for {
+		//Wait until we get four players and then GO GO GO
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		//Spawn thread to handle connections
+		fmt.Println("Connection received from:", conn.RemoteAddr())
+		go handleConnection(conn)
+
+		// Keep track of connections. Once we have 4 connections, we can spin off a game...
+		connections[conn.RemoteAddr()] = conn
+		fmt.Printf("We have %v connections now!\n", len(connections))
+
+	}
 }
