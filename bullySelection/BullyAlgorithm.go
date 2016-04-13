@@ -138,7 +138,7 @@ func sendHeartBeat() {
 	}
 }
 
-/* Unicorn send COORDINATOR message to other nodes */
+/* Unicorn send COORDINATOR message to other nodes including it self */
 func sendCoordinator() {
 	for _, name := range frontNodes {
 		go putMessageToSendChannel(messagePasser.Message{
@@ -148,6 +148,12 @@ func sendCoordinator() {
 			Kind: COORDINATOR
 			})
 	}
+	go putMessageToSendChannel(messagePasser.Message{
+		Source: localName,
+		Destination: localName,
+		Content: COORDINATOR,
+		Kind: COORDINATOR
+		})
 }
 
 /* Node sends election message */
