@@ -48,7 +48,8 @@ var frontNodes []string
 /* Nodes whose names are greater than local name in the group */
 var latterNodes []string
 
-/* the size of queue: sendQueue, receivedQueue
+/* 
+ * The size of queue: sendQueue, receivedQueue
  */
 const QUEUE_SIZE int = 100
 
@@ -102,7 +103,7 @@ func getMessageFromReceiveChannel() messagePasser.Message {
 }
 
 /*
- * separate nodes' name into two parts based on lexicographical order
+ * Separate nodes' name into two parts based on lexicographical order
  * @param	nodes
  *			the names of all nodes in the group
  *
@@ -125,7 +126,7 @@ func getFrontAndLatterNodes(nodes []string, localName string) ([]string, []strin
 	return frontNodes, latterNodes
 }
 
-/* unicorn send MSG_ALIVE message to other nodes */
+/* Unicorn send MSG_ALIVE message to other nodes */
 func sendHeartBeat() {
 	for _, name := range frontNodes {
 		go putMessageToSendChannel(messagePasser.Message{
@@ -137,7 +138,19 @@ func sendHeartBeat() {
 	}
 }
 
-/* node sends election message */
+/* Unicorn send COORDINATOR message to other nodes */
+func sendCoordinator() {
+	for _, name := range frontNodes {
+		go putMessageToSendChannel(messagePasser.Message{
+			Source: localName,
+			Destination: name,
+			Content: COORDINATOR,
+			Kind: COORDINATOR
+			})
+	}
+}
+
+/* Node sends election message */
 func sendElection() {
 	for _, name := range latterNodes {
 		go putMessageToSendChannel(messagePasser.Message{
@@ -147,6 +160,19 @@ func sendElection() {
 			Kind: ELECTION
 			})
 	}
+}
+
+/* Node reply answer message
+ * @param	destination
+ *			the destination of reply
+ */
+func sendAnswer(destination string) {
+	go putMessageToSendChannel(messagePasser.Message{
+		Source: localName,
+		Destination: destination,
+		Content:ANSWER,
+		Kind: ANSWER
+		})
 }
 
 /*
