@@ -20,50 +20,6 @@ const MAX_PLAYERS_PER_GAME int = 4
 
 type Client struct {
     conn net.Conn
-    ch   chan<- string
-}
-
-/* Main function.  
-* Listens on provided port or default (55555)
-**/
-func main() {
-    //Set port from command line
-    portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
-    flag.Parse()
-    fmt.Println("Multegula Bootstrap Server listening on TCP Port: ", *portFlag)
-    
-    //And connect
-    ln, err := net.Listen("tcp", ":"+strconv.Itoa(*portFlag))
-    if err != nil {
-        fmt.Println("Couldn't start Bootstrap Server!")
-        panic(err)
-        os.Exit(1)
-    }
-
-    //Make channels to handle clients and connections
-    addChannel := make(chan Client)
-    removeChannel := make(chan net.Conn)
-    //Make a map of all clients
-    clients := make(map[net.Conn]chan<- string)
-
-    //Spawn thread to handle messages
-    go handleClients(addChannel, removeChannel)
-
-    //Wait until we get four players and then GO GO GO
-    for len(addChannel) < MAX_PLAYERS_PER_GAME {
-        conn, err := ln.Accept()
-        if err != nil {
-            fmt.Println(err)
-            continue
-        }
-        //Spawn thread to handle connections
-        go handleConnection(conn, addChannel, removeChannel)
-
-        fmt.Println("Clients Connected: ",len(clients))
-    }
-    //Once we have four, send out our player list to all connected clients
-    //conn.Write([]byte("PLAYER_LIST_BEGIN\n"))
-
 }
 
 /*
@@ -80,10 +36,10 @@ func main() {
  *
  **/
 func handleConnection(conn net.Conn, addChannel chan<- Client, removeChannel chan<- net.Conn) {
-    ch := make(chan string)
-    addChannel <- Client{conn, ch}
+    addChannel <- Client{conn}
 
     bufc := bufio.NewReader(conn)
+    defer conn.Close()
 
     //Introduce ourselves to the client with these strings
     conn.Write([]byte("MULTEGULA_BOOTSTRAP_SERVER\n"))
@@ -132,10 +88,54 @@ func handleClients(addChannel <-chan Client, removeChannel <-chan net.Conn) {
         select {
         case client := <-addChannel:
             fmt.Printf("New client connected: %v\n", client.conn)
-            clients[client.conn] = client.ch
         case conn := <-removeChannel:
             fmt.Printf("Client has disconnected: %v\n", conn)
             delete(clients, conn)
         }
     }
+}
+
+/* Main function.  
+* Listens on provided port or default (55555)
+**/
+func main() {
+    //Set port from command line
+    portFlag := flag.Int("port", 55555, "Port to listen on for connections.")
+    flag.Parse()
+    fmt.Println("Multegula Bootstrap Server listening on TCP Port: ", *portFlag)
+    
+    //And connect
+    ln, err := net.Listen("tcp", ":"+strconv.Itoa(*portFlag))
+    if err != nil {
+        fmt.Println("Couldn't start Bootstrap Server!")
+        panic(err)
+        os.Exit(1)
+    }
+
+    //Make channels to handle clients and connections
+    addChannel := make(chan Client)
+    removeChannel := make(chan net.Conn)
+    //Make a map of all clients
+    clients := make(map[net.Conn]chan<- string)
+
+    //Spawn thread to handle messages
+    go handleClients(addChannel, removeChannel)
+
+    //Wait until we get four players and then GO GO GO
+    for len(addChannel) < MAX_PLAYERS_PER_GAME {
+        conn, err := ln.Accept()
+        if err != nil {
+            fmt.Println(err)
+            continue
+        }
+        //Spawn thread to handle connections
+        go handleConnection(conn, addChannel, removeChannel)
+
+        //Output diagnostic information in console
+        fmt.Println("Clients Connected: ",len(clients))
+    }
+    
+    //Once we have four, send out our player list to all connected clients
+    //conn.Write([]byte("PLAYER_LIST_BEGIN\n"))
+
 }
