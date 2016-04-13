@@ -13,7 +13,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
 	"github.com/arminm/multegula/messagePasser"
 )
 
