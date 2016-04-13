@@ -15,8 +15,8 @@ class TextField :
         self.Y_CENTER = yCenter
         self.INIT_TEXT = initText
         self.TEXT_SIZE = textSize
-        self.text = ""
-        self.color = "grey"
+        self.text = ''
+        self.color = 'grey'
         self.first = True
         self.changed = False
 
@@ -24,7 +24,7 @@ class TextField :
     def addChar(self, char) :
         if(self.changed == False) :
             self.text += char
-            self.color = "black"
+            self.color = 'black'
             self.changed = True
         elif(len(self.text) < 16) :
             self.text += char
@@ -42,7 +42,7 @@ class TextField :
 
         self.t = canvas.create_text(self.X_CENTER, self.Y_CENTER, 
                                     text = text, 
-                                    font = ("Courier", self.TEXT_SIZE), fill = self.color) 
+                                    font = ('Courier', self.TEXT_SIZE), fill = self.color) 
         
     ### draw - manages the drawing of the text field       
     def draw(self, canvas) :

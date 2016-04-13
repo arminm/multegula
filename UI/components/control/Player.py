@@ -4,34 +4,34 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-import random
 from enum import Enum
-from components.Paddle import *
-from components.ComponentDefs import *
-from screens.ScreenEnum import *
+import random
+from UI.typedefs import *
+from UI.components.gameplay.Paddle import *
 
 # PLAYER class
 class Player :
     ### __init__  - initialize and return Player
     ##  @param orientation - location on the screen of this padde (DIR_NORTH/DIR_SOUTH/...)
     ##  @param state - current control state of the player (USER/AI/COMP)
-    def __init__(self, orientation, state, name) :
+    def __init__(self, orientation, state, name, gameType) :
         self.ORIENTATION = orientation
         self.state = state
         self.score = 0
         self.lives = 5
         self.power = PowerUps.PWR_NONE
-        self.paddle = Paddle(orientation, state)
+        self.paddle = Paddle(orientation, state, gameType)
         self.first = True
         self.statusUpdate = False
         self.name = name
+        self.gameType = gameType
 
     ### AI method -
     ##  This method moves the paddles automatically to contact the ball. There are some
     ##  non-idealities built in so the computer is not perfect
     def AI(self, canvas) :
         # get ball/paddle information
-        (ballCenterX, ballCenterY, ballRadius) = canvas.data["ball"].getInfo()
+        (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
         (paddleCenter, paddleWidth, paddleDir, paddleOrientation) = self.paddle.getInfo()
 
         # calcualte an offset and a random number - used to create a delay in the paddle response
@@ -60,10 +60,10 @@ class Player :
     ### breakBlock --
     ##  handles the breaking of blocks
     def breakBlock(self, canvas) :
-        (ballLeft, ballRight, ballTop, ballBottom) = canvas.data["ball"].getEdges()
-        (ballCenterX, ballCenterY, ballRadius) = canvas.data["ball"].getInfo()
-        (xVelocity, yVelocity) = canvas.data["ball"].getVelocity()
-        blocks = canvas.data["level"].blocks;
+        (ballLeft, ballRight, ballTop, ballBottom) = canvas.data['ball'].getEdges()
+        (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
+        (xVelocity, yVelocity) = canvas.data['ball'].getVelocity()
+        blocks = canvas.data['level'].blocks;
         broken = -1;
 
         # ball moving NORTH WEST
@@ -72,11 +72,11 @@ class Player :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
                     if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballCenterX <= blkRight) :
-                        canvas.data["ball"].setVelocity(xVelocity, (-yVelocity))
+                        canvas.data['ball'].setVelocity(xVelocity, (-yVelocity))
                         broken = i;
                         break
                     elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballCenterY <= blkBottom) :
-                        canvas.data["ball"].setVelocity((-xVelocity), yVelocity)
+                        canvas.data['ball'].setVelocity((-xVelocity), yVelocity)
                         broken = i;
                         break                                     
 
@@ -86,11 +86,11 @@ class Player :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
                     if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballCenterX <= blkRight) :
-                        canvas.data["ball"].setVelocity(xVelocity, (-yVelocity))
+                        canvas.data['ball'].setVelocity(xVelocity, (-yVelocity))
                         broken = i;
                         break
                     elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballCenterY <= blkBottom) :
-                        canvas.data["ball"].setVelocity((-xVelocity), yVelocity)
+                        canvas.data['ball'].setVelocity((-xVelocity), yVelocity)
                         broken = i;
                         break                                   
           
@@ -100,11 +100,11 @@ class Player :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
                     if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballCenterX <= blkRight) :
-                        canvas.data["ball"].setVelocity(xVelocity, (-yVelocity))
+                        canvas.data['ball'].setVelocity(xVelocity, (-yVelocity))
                         broken = i;
                         break
                     elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballCenterY <= blkBottom) :
-                        canvas.data["ball"].setVelocity((-xVelocity), yVelocity)
+                        canvas.data['ball'].setVelocity((-xVelocity), yVelocity)
                         broken = i;
                         break
 
@@ -114,17 +114,17 @@ class Player :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
                     if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballCenterX <= blkRight) :
-                        canvas.data["ball"].setVelocity(xVelocity, (-yVelocity))
+                        canvas.data['ball'].setVelocity(xVelocity, (-yVelocity))
                         broken = i;
                         break
                     elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballCenterY <= blkBottom) :
-                        canvas.data["ball"].setVelocity((-xVelocity), yVelocity)
+                        canvas.data['ball'].setVelocity((-xVelocity), yVelocity)
                         broken = i;
                         break
 
         if broken >= 0:
-            canvas.data["level"].blocks[broken].disable()
-            canvas.data["level"].updated = True 
+            canvas.data['level'].blocks[broken].disable()
+            canvas.data['level'].updated = True 
             self.score += 5;    
             self.statusUpdate = True
 
@@ -134,7 +134,7 @@ class Player :
     def updateBall(self, canvas) :
         # get canvas/paddle/ball info
         ORIENTATION = self.ORIENTATION
-        (ballCenterX, ballCenterY, ballRadius) = canvas.data["ball"].getInfo()
+        (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
         (leftEdge, rightEdge, topEdge, bottomEdge) = self.paddle.getEdges()
         (paddleCenter, paddleWidth, paddleDir, paddleOrientation) = self.paddle.getInfo()
 
@@ -178,9 +178,9 @@ class Player :
 
         # reset ball, apply appropriate scoring
         if(ballReset) :
-            canvas.data["ball"].reset()
-            canvas.data["currentScreen"] = Screens.SCRN_PAUSE
-            canvas.data["nextScreen"] = Screens.SCRN_GAME
+            canvas.data['ball'].reset()
+            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+            canvas.data['nextScreen'] = Screens.SCRN_GAME
             self.lives -= 1
             self.score -= 20
             self.statusUpdate = True
@@ -190,7 +190,7 @@ class Player :
             self.deflectOffPaddle(canvas)    
             self.score += 3 
             self.statusUpdate = True
-            canvas.data["ball"].lastToTouch = self.name;
+            canvas.data['ball'].lastToTouch = self.name;
             return True;
         else:
             return False;
@@ -206,7 +206,7 @@ class Player :
 
         # get ball/paddle info
         (paddleCenter, paddleWidth, paddleDir, paddleOrientation) = self.paddle.getInfo()
-        (ballCenterX, ballCenterY, ballRadius) = canvas.data["ball"].getInfo()
+        (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
 
         # deflect off NORTH paddle
         if(paddleOrientation == Orientation.DIR_NORTH) :
@@ -233,8 +233,8 @@ class Player :
             xVelocity = speed
             yVelocity = speed * speedFactor * offsetFactor + offset
             
-        canvas.data["ball"].setVelocity(xVelocity, yVelocity)  
-        canvas.data["ball"].randomColor()
+        canvas.data['ball'].setVelocity(xVelocity, yVelocity)  
+        canvas.data['ball'].randomColor()
  
 
     def setStatus(self, canvas) :
@@ -244,7 +244,7 @@ class Player :
         Y_MARGIN = CANVAS_HEIGHT // 60
 
         # initilize status message
-        statusMsg = self.name + " : "
+        statusMsg = self.name + ' : '
 
         # determin X_LOC, Y_LOC, and NAME based on orientation
         if(ORIENTATION == Orientation.DIR_NORTH) :
@@ -261,9 +261,9 @@ class Player :
             Y_LOC = CANVAS_HEIGHT - Y_MARGIN
 
         # finish status message and display
-        statusMsg += "P/" + str(self.score) + ".  L/" + str(self.lives) + "."
+        statusMsg += 'P/' + str(self.score) + '.  L/' + str(self.lives) + '.'
         self.t = canvas.create_text(X_LOC, Y_LOC, text = statusMsg,
-                                    font = ("Courier", S_TEXT_SIZE), fill = "white")
+                                    font = ('Courier', S_TEXT_SIZE), fill = 'white')
         
     ### displayStatus method -
     ##  Display the text for the player indicating the current score and number of lives remaining
@@ -281,14 +281,14 @@ class Player :
         # Human player update
         if(self.state == PlayerState.USER) :
             self.paddle.update(canvas)
-            if not(self.updateBall(canvas)) and (canvas.data["ball"].lastToTouch == self.name):
+            if not(self.updateBall(canvas)) and (canvas.data['ball'].lastToTouch == self.name):
                 self.breakBlock(canvas);
             self.displayStatus(canvas)
         # Artificial player update
         elif(self.state == PlayerState.AI) :
             self.AI(canvas)
             self.paddle.update(canvas)
-            if not(self.updateBall(canvas)) and (canvas.data["ball"].lastToTouch == self.name):
+            if not(self.updateBall(canvas)) and (canvas.data['ball'].lastToTouch == self.name):
                 self.breakBlock(canvas);
             self.displayStatus(canvas)
         # Only competitor update

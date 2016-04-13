@@ -1,61 +1,77 @@
+////////////////////////////////////////////////////////////
+//Multegula - multegula.go
+//Main Go Package for Multegula
+//Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
+////////////////////////////////////////////////////////////
+
 package main
 
 import (
-	"encoding/json"
+	"flag"
 	"fmt"
-    "os"
-    "sort"
-    "github.com/arminm/multegula/messagePasser"
-    "strconv"
+	"reflect"
+	"strconv"
+	"strings"
+
+	"github.com/arminm/multegula/bridges"
+	"github.com/arminm/multegula/messagePasser"
 )
+
+// constants
+const UI_MULTICAST_DEST string = "EVERYBODY"
+const UI_MULTEGULA_DEST string = "MULTEGULA"
+const MSG_MYNAME string = "MSG_MYNAME"
+
 /*
  * get the operation, send or receive
  * @return if send, return 1; otherwise return 0
  **/
 func getOperation() int {
-    fmt.Println("Please select the operation you want to do, send(s)/receive(r): ")
-    var operation string
-    fmt.Scanf("%s", &operation)
-    for operation != "s" && operation != "r" {
-        fmt.Println("Please select a valid operation, send(s)/receive(r): ")
-        fmt.Scanf("%s", &operation)
-    }
-    if(operation == "s") {
-        return 1
-    } else {
-        return 0
-    }
+	var operation string
+	for {
+		fmt.Println("Send(s) / Receive(r) / Multicast (m): ")
+		fmt.Scanf("%s", &operation)
+		switch operation {
+		case "s":
+			return 0
+		case "r":
+			return 1
+		case "m":
+			return 2
+		default:
+			fmt.Printf("'%v' is Invalid. Please select a valid operation.", operation)
+		}
+	}
 }
 
 /*
- * print out available DNS IDs
- * @param n
- *        number of DNS IDs
- **/
-func printDNSID(n int) {
-    fmt.Println("Valid operation ID: ")
-    for i := 0; i < n; i++ {
-        fmt.Println("\t" + strconv.Itoa(i))
-    }
-}
-
-/*
- * get DNS ID
- * @param n
- *        the number of DNS ID
+ * get destination name
+ * @param nodes
+ *        the available nodes to contact
  *
- * @return selected DNS ID
+ * @return destination name string
  **/
-func getDNSID(n int) int {
-    printDNSID(n)
-    fmt.Println("Please choose one DNS ID: ")
-    var id int
-    fmt.Scanf("%d", &id)
-    for id < 0 || id >= n {
-        fmt.Println("Invalid DNS ID, please select again: ")
-        fmt.Scanf("%d", &id)
-    }
-    return id
+func getDest(nodes []messagePasser.Node) string {
+	fmt.Println("To: (ex. lunwen OR 1)")
+	var destName string
+	fmt.Scanf("%v", &destName)
+	// Check if input is an ID
+	id, err := strconv.Atoi(destName)
+	if err == nil && id >= 0 && id < len(nodes) {
+		return nodes[id].Name
+	}
+	// else input must be a name
+	var destNode messagePasser.Node
+	for len(destName) > 0 {
+		_, destNode, err = messagePasser.FindNodeByName(nodes, destName)
+		if err == nil {
+			break
+		}
+		fmt.Printf("Couldn't find '%v', please try again:\n", destName)
+		fmt.Scanf("%v", &destName)
+	}
+
+	return destNode.Name
 }
 
 /*
@@ -66,54 +82,195 @@ func getDNSID(n int) int {
  * @return string got from stdin
  **/
 func getString(stringType string) string {
-    fmt.Println("Please input " + stringType + ":")
-    var res string
-    fmt.Scanf("%s", &res)
-    for len(res) == 0 {
-        fmt.Println("string cannot be empty, please input again:")
-        fmt.Scanf("%s", &res)
-    }
-    return res
+	fmt.Println("Please input " + stringType + ":")
+	var res string
+	fmt.Scanf("%s", &res)
+	return res
 }
 
+/*
+ * Prompts the user for the configuration file's name
+ * @return configuration file's name string
+ */
+func getConfigName() string {
+	var configName string
+	fmt.Println("What's the config file's name? (ex. config)")
+	fmt.Scanf("%s", &configName)
+	if len(configName) == 0 {
+		configName = "config" // default name
+	}
+	return configName
+}
+
+/*
+ * Prompts the user for the local Node's name
+ * @return local Node's name string
+ */
+func getLocalName() string {
+	var localName string
+	fmt.Println("Who are you? (ex. armin)")
+	fmt.Scanf("%s", &localName)
+	if len(localName) == 0 {
+		localName = "unknown" // default name
+	}
+	return localName
+}
+
+/*
+ * prompts the user and builds a message
+ */
+func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.Message {
+	dest := getDest(nodes)
+	kind := getString("message kind")
+	content := getString("message content")
+	return messagePasser.Message{Source: localNodeName, Destination: dest, Content: content, Kind: kind}
+}
+
+/*
+ * retreives local name from the UI
+ */
+func uiGetLocalName() (localName string) {
+	for {
+		message := bridges.ReceiveFromPyBridge()
+		if strings.EqualFold(message.Kind, MSG_MYNAME) {
+			localName = message.Content
+			break
+		}
+	}
+	return localName
+}
+
+/* receive message from PyBridge and send to messagePasser */
+func uiReceiveAndReact(received messagePasser.Message, localName string) {
+	if strings.EqualFold(received.Destination, UI_MULTICAST_DEST) {
+		received.Source = localName
+		fmt.Println("Multegula: Multicasting message - ", received)
+		messagePasser.Multicast(&received)
+	} else if strings.EqualFold(received.Destination, UI_MULTEGULA_DEST) {
+		fmt.Println("TODO: Handle any messages meant only for Multegula.")
+	} else {
+		fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
+	}
+}
+
+/* receive message from MessagePasser and send to PyBridge */
+func pyBridgeSend() {
+	for {
+		message := messagePasser.Receive()
+		bridges.SendToPyBridge(message)
+	}
+}
+
+/*
+ * parses main arguments passed in through command-line
+ */
+func parseMainArguments(args []string) (configName string, localNodeName string) {
+
+	if len(args) > 0 {
+		configName = args[0]
+	} else {
+		configName = getConfigName()
+	}
+	fmt.Println("Config Name:", configName)
+
+	if len(args) > 1 {
+		localNodeName = args[1]
+	} else {
+		localNodeName = getLocalName()
+	}
+	fmt.Println("Local Node Name:", localNodeName)
+	return configName, localNodeName
+}
+
+/* the Main function of the Multegula application */
+/*func main() {
+	args := os.Args[1:]
+
+	// Read command-line arguments and prompt the user if not provided
+	configName, localNodeName := parseMainArguments(args)
+
+    messagePasser.InitMessagePasser(configName, localNodeName)
+
+    bridges.InitPyBridge()
+
+    go sendToMessagePasser()
+    receiveFromMessagePasser()
+
+}*/
+
+/* the Main function of the Multegula application */
 func main() {
-	fmt.Println("initialzing message passer...")
-	messagePasser.InitMessagePasser()
-	fmt.Println("message passer initialzed")
+	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	portFlag := flag.Int("port", 44444, "Local port number for Python-Go bridge.")
+	flag.Parse()
+	// Read command-line arguments and prompt the user if not provided
+	args := flag.Args()
+	configName, localNodeName := parseMainArguments(args)
+	//FIXME: Uncomment the following line when done testing
 
-	file, _ := os.Open("./messagePasser/config.json")
-	decoder := json.NewDecoder(file)
-	configuration := messagePasser.Configuration{}
-	err := decoder.Decode(&configuration)
-	if err != nil {
-	  fmt.Println("error:", err)
+	if *testFlag {
+		fmt.Print("--------------------------------\n")
+		fmt.Println("Initing with localName:", localNodeName)
+		messagePasser.InitMessagePasser(configName, localNodeName)
+
+		configuration := messagePasser.Config()
+		fmt.Println("Available Nodes:")
+		for id, node := range configuration.Nodes {
+			fmt.Printf("  ID:%d – %s\n", id, node.Name)
+		}
+		/* start a receiveRoutine to be able to use nonBlockingReceive */
+		go receiveRoutine()
+
+		fmt.Println("Please select the operation you want to do:")
+		for {
+			fmt.Println("Getting operation")
+			operation := getOperation()
+			if operation == 0 {
+				message := getMessage(configuration.Nodes, localNodeName)
+				messagePasser.Send(message)
+			} else if operation == 1 {
+				var message messagePasser.Message = nonBlockingReceive()
+				if (reflect.DeepEqual(message, messagePasser.Message{})) {
+					fmt.Print("No messages received.\n\n")
+				} else {
+					fmt.Printf("Received: %+v\n\n", message)
+				}
+			} else if operation == 2 {
+				message := getMessage(configuration.Nodes, localNodeName)
+				messagePasser.Multicast(&message)
+				fmt.Println("Did multicast")
+			} else {
+				fmt.Println("Operation not recognized. Please try again.")
+			}
+		}
+	} else {
+		// get the the local node name from the UI
+		// NOTE: this will be required when we move to the bootstrap server method, for now
+		//	this must match the config file.
+		fmt.Printf("Port is:%d\n", *portFlag)
+		bridges.InitPyBridge(*portFlag)
+		localNodeName = uiGetLocalName()
+		fmt.Println("Multegula: GOT NAME FROM UI:", localNodeName)
+		messagePasser.InitMessagePasser(configName, localNodeName)
+
+		// main loop - this runs the Multegula in all it's glory
+		for {
+			message := bridges.ReceiveFromPyBridge()
+			// TODO: we shouldn't have to send the localNodeName to uiReceiveAndReact so that it can multicast.
+			uiReceiveAndReact(message, localNodeName)
+		}
 	}
+}
 
-	sort.Strings(configuration.Group)
+/* testing functions */
+var receiveQueue = []messagePasser.Message{}
 
-	fmt.Println("local name: " + configuration.LocalName[0])
-	for i, dns := range configuration.Group {
-		fmt.Printf("ID %d, DNS name %s\n", i, dns)
+func receiveRoutine() {
+	for {
+		messagePasser.Push(&receiveQueue, messagePasser.Receive())
 	}
+}
 
-    for {
-        operation := getOperation()
-        if(operation == 1) {
-            id := getDNSID(len(configuration.Group))
-            kind := getString("message kind")
-            content := getString("message content")
-            message := messagePasser.Message{Source: configuration.LocalName[0], Destination: configuration.Group[id], Content: content, Kind: kind}
-            messagePasser.Send(message)
-        } else {
-            var message messagePasser.Message = messagePasser.Receive()
-            if(message == messagePasser.Message{}) {
-                fmt.Println("There is no message received right now.")
-            } else {
-                fmt.Println("Message comes from: " + message.Source)
-                fmt.Println("Message goes to: " + message.Destination)
-                fmt.Println("Message content: " + message.Content)
-                fmt.Println("Message kind: " + message.Content)
-            }
-        }
-    }
+func nonBlockingReceive() messagePasser.Message {
+	return messagePasser.Pop(&receiveQueue)
 }

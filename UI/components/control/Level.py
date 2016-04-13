@@ -4,11 +4,10 @@
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
-import random
-from components.ComponentDefs import *
-from components.Block import *
-from screens.ScreenEnum import *
 import queue
+import random
+from UI.typedefs import *
+from UI.components.gameplay.Block import *
 
 ### LEVEL class
 class Level :
@@ -52,7 +51,7 @@ class Level :
 
     ### getTextLevel -- get a text version of the current level
     def getTextLevel(self) :
-        return "LEVEL " + str(self.currentLevel + 1) + "."
+        return 'LEVEL ' + str(self.currentLevel + 1) + '.'
 
     ### setBlocks -- draw blocks on canvas
     def setBlocks(self, canvas) :
@@ -90,12 +89,12 @@ class Level :
             self.currentLevel += 1;
             self.blocks = self.levels[self.currentLevel];
             self.first = True;
-            canvas.data["currentScreen"] = Screens.SCRN_PAUSE
-            canvas.data["nextScreen"] = Screens.SCRN_GAME
-            canvas.data["ball"].reset()
+            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+            canvas.data['nextScreen'] = Screens.SCRN_GAME
+            canvas.data['ball'].reset()
 
         # current level is complete and there are no more levels to be played ... Game over!
         elif levelComplete and ((self.currentLevel + 1) == self.MAX_LEVELS):
-            canvas.data["currentScreen"] = Screens.SCRN_GAME_OVER;
+            canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER;
 
 

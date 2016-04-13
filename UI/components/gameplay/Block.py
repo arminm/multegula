@@ -5,7 +5,7 @@
 
 # imports
 from enum import Enum
-from components.ComponentDefs import *
+from UI.typedefs import *
 
 # BLOCK class
 class Block :
@@ -58,7 +58,7 @@ class Block :
         (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges()
 
         ## TODO: THE COLOR SHOULD BE SET BASED ON THE POWER UP
-        color = "white"
+        color = 'white'
 
         self.b = canvas.create_rectangle(leftEdge, topEdge, rightEdge, bottomEdge,
                                             fill = color, width = BORDER_WIDTH)  
