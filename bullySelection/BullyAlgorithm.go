@@ -33,7 +33,7 @@ const TIMEOUT int = 200
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_unicorn_MESSAGE_TIMEOUT int = 100
+const WAITING_UNICORN_MESSAGE_TIMEOUT int = 100
 
 /* The name of node */
 var localName string
@@ -98,7 +98,7 @@ var receivedAnswerChannel chan messagePasser.Message = make(chan messagePasser.M
 /* received election message */
 var receivedElectionChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 /* received unicorn message */
-var receivedunicornChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var receivedUnicornChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 
 func dispatchMessage() {
 	for {
@@ -110,7 +110,7 @@ func dispatchMessage() {
 			}()
         case messageType.UNICORN:
 			go func() {
-				receivedunicornChannel <- message
+				receivedUnicornChannel <- message
 			}()
 		case messageType.ELECTION:
 			go func() {
@@ -145,7 +145,7 @@ func getFrontAndLatterNodes(nodes []string, localName string) ([]string, []strin
 }
 
 /* Unicorn send unicorn message to other nodes */
-func sendunicornMessage() {
+func sendUnicornMessage() {
 	for _, name := range frontNodes {
 		go putMessageToSendChannel(messagePasser.Message{
 			Source: localName,
@@ -178,7 +178,7 @@ func sendElectionMessage(timestamp string) {
  * @param	timestamp
  *			the timestamp of received election message
  */
-func sendAnswer(destination string, timestamp string) {
+func sendAnswerMessage(destination string, timestamp string) {
 	go putMessageToSendChannel(messagePasser.Message{
 		Source: localName,
 		Destination: destination,
@@ -217,22 +217,22 @@ func startElection() {
 		case <- timeoutWaitAnswer:
 			close(timeoutWaitAnswer)
 			unicorn = localName
-			sendunicornMessage()
+			sendUnicornMessage()
 			i = 1
 		/* get answer within time out */
         case message := <-receivedAnswerChannel:
 			/* receive an answer */
 			if message.Content == currentTime {
 				i = 1
-				var timeoutWaitunicorn chan bool = make(chan bool, 1)
+				var timeoutWaitUnicorn chan bool = make(chan bool, 1)
 				go func() {
-					time.Sleep(time.Millisecond * time.Duration(WAITING_unicorn_MESSAGE_TIMEOUT))
-					timeoutWaitunicorn <- true
+					time.Sleep(time.Millisecond * time.Duration(WAITING_UNICORN_MESSAGE_TIMEOUT))
+					timeoutWaitUnicorn <- true
 				}()
 				select {
-				case <- timeoutWaitunicorn:
+				case <- timeoutWaitUnicorn:
 					startElection()
-				case <- receivedunicornChannel:
+				case <- receivedUnicornChannel:
 					unicorn = localName
 					startHealthCheck()
 				}
