@@ -181,11 +181,7 @@ func uiReceiveAndReact() {
 	for {
 		message := getMessageFromSendChannel()
 
-<<<<<<< HEAD
-		//fmt.Println("Multegula: UI message received - ", message)
-=======
 		fmt.Println("Multegula: Message is going to be sent to messagePasser - ", message)
->>>>>>> master
 		if strings.EqualFold(message.Destination, UI_MULTICAST_DEST) {
 			messagePasser.Multicast(&message)
 		} else if strings.EqualFold(message.Destination, UI_MULTEGULA_DEST) {
