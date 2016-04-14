@@ -18,12 +18,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"github.com/arminm/multegula/messageType"
 )
-
-/* the size of queue: sendQueue, receivedQueue,
- * sendDelayedQueue and receiveDelayedQueue
- **/
-const QUEUE_SIZE int = 100
 
 // Node structure to hold each node's information
 type Node struct {
@@ -115,10 +111,10 @@ var localNode Node
 var localIndex int
 
 /* the queue for messages to be sent */
-var sendChannel chan Message = make(chan Message, 100)
+var sendChannel chan Message = make(chan Message, messageType.QUEUE_SIZE)
 
 /* the queue for received messages */
-var receiveChannel chan Message = make(chan Message, 100)
+var receiveChannel chan Message = make(chan Message, messageType.QUEUE_SIZE)
 var holdbackQueue []Message = []Message{}
 
 func updateSeqNum(message *Message) {

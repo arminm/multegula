@@ -10,14 +10,21 @@
 
 package messageType
 
+/* 
+ * The size of queues
+ */
+const QUEUE_SIZE int = 100
+
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
 /* The election message */
-const ELECTION string = "election"
+const ELECTION string = "ELECTION"
 /* The answer message */
-const ANSWER string = "answer"
+const ANSWER string = "ANSWER"
 /* The coordinator message */	
-const COORDINATOR string = "coordinator"
+const COORDINATOR string = "COORDINATOR"
+/* The coordinator hear beat message */
+const MSG_ALIVE string = "MSG_ALIVE"
 /* The end of message types for bully algorithm */
 
 const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
