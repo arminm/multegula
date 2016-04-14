@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"github.com/arminm/multegula/messageType"
 )
 
 /*
@@ -40,10 +41,10 @@ type Rules struct {
 var rules Rules = Rules{}
 
 /* the queue for delayed sending messages */
-var sendDelayedQueue chan Message = make(chan Message, QUEUE_SIZE)
+var sendDelayedQueue chan Message = make(chan Message, messageType.QUEUE_SIZE)
 
 /* the queue for delayed receive messages */
-var receiveDelayedQueue chan Message = make(chan Message, QUEUE_SIZE)
+var receiveDelayedQueue chan Message = make(chan Message, messageType.QUEUE_SIZE)
 
 /* init function, decode rules from rules.json */
 func initRules() {
