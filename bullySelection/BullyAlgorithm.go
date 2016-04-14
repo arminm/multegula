@@ -33,7 +33,7 @@ const TIMEOUT int = 200
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_COORDINATOR_MESSAGE int = 100
+const WAITING_COORDINATOR_MESSAGE_TIMEOUT int = 100
 
 /* The name of node */
 var localName string
@@ -67,6 +67,7 @@ func putMessageToSendChannel(message messagePasser.Message) {
  */
 func GetMessageFromSendChannel() messagePasser.Message {
 	message := <- sendChannel
+    return message
 }
 
 /* The queue for received messages, mutegula will put messages,
@@ -89,6 +90,7 @@ func PutMessageToReceiveChannel(message messagePasser.Message) {
  */
 func getMessageFromReceiveChannel() messagePasser.Message {
 	message := <- receiveChannel
+    return message
 }
 
 /* received answer message */
@@ -105,15 +107,15 @@ func dispatchMessage() {
 		case messageType.ANSWER:
 			go func() {
 				receivedAnswerChannel <- message
-			}
+			}()
 		case messageType.COORDINATOR:
 			go func() {
 				receivedCoordinatorChannel <- message
-			}
+			}()
 		case messageType.ELECTION:
 			go func() {
 				receivedElectionChannel <- message
-			}
+			}()
 		}
 	}
 }
@@ -149,14 +151,14 @@ func sendHeartBeatMessage() {
 			Source: localName, 
 			Destination: name, 
 			Content: messageType.MSG_ALIVE, 
-			Kind: messageType.MSG_ALIVE
-			})
+			Kind: messageType.MSG_ALIVE,
+        })
 	}
 	go putMessageToSendChannel(messagePasser.Message{
 		Source: localName,
 		Destination: localName,
 		Content: messageType.MSG_ALIVE,
-		Kind: messageType.MSG_ALIVE
+		Kind: messageType.MSG_ALIVE,
 		})
 }
 
@@ -167,7 +169,7 @@ func sendCoordinatorMessage() {
 			Source: localName,
 			Destination: name,
 			Content: localName,
-			Kind: messageType.COORDINATOR
+			Kind: messageType.COORDINATOR,
 			})
 	}
 }
@@ -182,7 +184,7 @@ func sendElectionMessage(timestamp string) {
 			Source: localName,
 			Destination: name,
 			Content: timestamp,
-			Kind: messageType.ELECTION
+			Kind: messageType.ELECTION,
 			})
 	}
 }
@@ -199,7 +201,7 @@ func sendAnswer(destination string, timestamp string) {
 		Source: localName,
 		Destination: destination,
 		Content: timestamp,
-		Kind: messageType.ANSWER
+		Kind: messageType.ANSWER,
 		})
 }
 
@@ -220,31 +222,31 @@ func getCurrentTime() string {
 /* Start election */
 func startElection() {
 	currentTime := getCurrentTime()
-	sendElection(currentTime)
+	sendElectionMessage(currentTime)
 	var timeoutWaitAnswer chan bool = make(chan bool, 1)
 	go func() {
-		time.Sleep(time.Millisecond * TIMEOUT)
+		time.Sleep(time.Duration(TIMEOUT) * time.Millisecond)
 		timeoutWaitAnswer <- true
-	}
+	}()
 	var i int = -1
 	for i < 0 {
 		select {
 		/* no answer after timeout */
 		case <- timeoutWaitAnswer: 
-			close(timeout)
+			close(timeoutWaitAnswer)
 			coordinator = localName
-			sendCoordinator()
+			sendCoordinatorMessage()
 			i = 1
 		/* get answer within time out */
-		case message <- receivedAnswerChannel: 
+        case message := <- receivedAnswerChannel: 
 			/* receive an answer */
 			if message.Content == currentTime {
 				i = 1
 				var timeoutWaitCoordinator chan bool = make(chan bool, 1)
 				go func() {
-					time.Sleep(time.Millisecond * WAITING_COORDINATOR_MESSAGE)
+					time.Sleep(time.Millisecond * time.Duration(WAITING_COORDINATOR_MESSAGE_TIMEOUT))
 					timeoutWaitCoordinator <- true
-				}
+				}()
 				select {
 				case <- timeoutWaitCoordinator:
 					startElection()
