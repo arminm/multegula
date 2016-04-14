@@ -28,6 +28,9 @@ import (
  */
 const TIMEOUT int = 200
 
+/* The time period between two health check */
+const TIME_BETWEEN_HEALTH_CHECK = 500
+
 /* This is the time a node will wait after sending out an answer
  * message. If it receives unicorn message within this time
  * period, it will know which node is the new unicorn; otherwise,
@@ -99,7 +102,10 @@ var receivedAnswerChannel chan messagePasser.Message = make(chan messagePasser.M
 var receivedElectionChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 /* received unicorn message */
 var receivedUnicornChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+/* received health check reply message */
+var receivedHeadCheckReplyChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 
+/* dispatch received message */
 func dispatchMessage() {
 	for {
 		message := getMessageFromReceiveChannel()
@@ -116,6 +122,20 @@ func dispatchMessage() {
 			go func() {
 				receivedElectionChannel <- message
 			}()
+        /* receive health check message, reply if node is unicorn */
+        case messageType.ARE_YOU_ALIVE:
+            if unicorn == localName {
+                go putMessageToSendChannel(messagePasser.Message{
+                    Source: localName,
+                    Destination: message.Source,
+                    Content: message.Content,
+                    Kind: messageType.IAM_ALIVE,
+                })
+            }
+        case messageType.IAM_ALIVE:
+            go func() {
+                receivedHeadCheckReplyChannel <- message
+            }()
 		}
 	}
 }
@@ -187,18 +207,54 @@ func sendAnswerMessage(destination string, timestamp string) {
 		})
 }
 
-/* check the liveness of unicorn */
-func startHealthCheck() {
-
-}
-
-
 /* Get the string representation of current time
  * @return	the current time in string format
  */
 func getCurrentTime() string {
 	currentTime := time.Now()
 	return currentTime.String()
+}
+
+func sendHealthCheckMessage(timestamp string) {
+    go putMessageToSendChannel(messagePasser.Message{
+        Source: localName,
+        Destination: unicorn,
+        Content: timestamp,
+        Kind: messageType.ARE_YOU_ALIVE,
+    })
+}
+
+/* check the liveness of unicorn */
+func startHealthCheck() {
+    var i int = -1
+    for i < 0 {
+        currentTime := getCurrentTime()
+        sendHealthCheckMessage(currentTime)
+        var waitHealthCheckReplyTimeout chan bool = make(chan bool, 1)
+        go func(){
+            time.Sleep(time.Duration(TIMEOUT) * time.Millisecond)
+            waitHealthCheckReplyTimeout <- true
+        }()
+        var j int = -1
+        for j < 0 {
+            select {
+            /* no reply after timeout, break loop and start election */
+            case <- waitHealthCheckReplyTimeout:
+                j = 1
+                i = 1
+                startElection()
+            case message := <- receivedHeadCheckReplyChannel:
+                /* valide health check reply message received
+                 * break the inner loop, wait for TIME_BETWEEN_HEALTH_CHECK,
+                 * and start another round of health check
+                 */
+                if message.Content == currentTime {
+                    j = 1
+                    time.Sleep(time.Duration(TIME_BETWEEN_HEALTH_CHECK) * time.Millisecond)
+                }
+            }
+        }
+    }
 }
 
 /* Start election */
