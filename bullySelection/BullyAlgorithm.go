@@ -47,11 +47,6 @@ var frontNodes []string
 /* Nodes whose names are greater than local name in the group */
 var latterNodes []string
 
-/* This is the message kind unicorn will send to other nodes
- * to let other nodes know that it is alive
- */
-const MSG_ALIVE string = "MSG_ALIVE"
-
 /* The queue for messages to be sent, messages in this queue
  * will be passed to messagePasser by mutegula
  */
@@ -148,7 +143,7 @@ func getFrontAndLatterNodes(nodes []string, localName string) ([]string, []strin
 }
 
 /* Unicorn send MSG_ALIVE message to other nodes including it self */
-func sendHeartBeat() {
+func sendHeartBeatMessage() {
 	for _, name := range frontNodes {
 		go putMessageToSendChannel(messagePasser.Message{
 			Source: localName, 
@@ -166,7 +161,7 @@ func sendHeartBeat() {
 }
 
 /* Unicorn send COORDINATOR message to other nodes */
-func sendCoordinator() {
+func sendCoordinatorMessage() {
 	for _, name := range frontNodes {
 		go putMessageToSendChannel(messagePasser.Message{
 			Source: localName,
@@ -181,7 +176,7 @@ func sendCoordinator() {
  * @param	timestamp
  *			the timestamp for this message
  */
-func sendElection(timestamp string) {
+func sendElectionMessage(timestamp string) {
 	for _, name := range latterNodes {
 		go putMessageToSendChannel(messagePasser.Message{
 			Source: localName,
