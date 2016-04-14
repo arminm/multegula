@@ -170,7 +170,7 @@ func uiGetLocalName() (localName string) {
 func receiveFromPyBridge() {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-		fmt.Println("message received from ui in multegula")
+        fmt.Println(message)
 		go putMessageIntoSendChannel(message)
 	}
 }
@@ -311,11 +311,7 @@ func main() {
 		go receiveFromPyBridge()
 			
 		go uiReceiveAndReact()
-		go networkReceiveAndReact()
-
-		for {
-		}
-
+		networkReceiveAndReact()
 	}
 }
 
