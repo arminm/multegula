@@ -6,8 +6,8 @@
 
 ////////////////////////////////////////////////////////////
 //This file implements the bull algorithm which will be used
-//for selecting unicorn in multegula. The unicorn will send
-//heart beats to others nodes to tell others he is alive.
+//for selecting unicorn in multegula. Health check is used
+//to check the health of selected unicorn
 ////////////////////////////////////////////////////////////
 
 package bullySelection
@@ -49,6 +49,14 @@ var frontNodes []string
 
 /* Nodes whose names are greater than local name in the group */
 var latterNodes []string
+
+/*
+ * Indicate wheather this node has already started an election.
+ * When a node starts an election, set this value to true.
+ * When a node receives an unicorn message, set this value to false,
+ * because en election has finished when receiving an unicorn message
+ */
+var electionIsStarted bool = false
 
 /* The queue for messages to be sent, messages in this queue
  * will be passed to messagePasser by mutegula
@@ -98,8 +106,6 @@ func getMessageFromReceiveChannel() messagePasser.Message {
 
 /* received answer message */
 var receivedAnswerChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
-/* received election message */
-var receivedElectionChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 /* received unicorn message */
 var receivedUnicornChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 /* received health check reply message */
@@ -119,9 +125,10 @@ func dispatchMessage() {
 				receivedUnicornChannel <- message
 			}()
 		case messageType.ELECTION:
-			go func() {
-				receivedElectionChannel <- message
-			}()
+            sendAnswerMessage(message.Source, message.Content)
+            if !electionIsStarted {
+                startElection()
+            }
         /* receive health check message, reply if node is unicorn */
         case messageType.ARE_YOU_ALIVE:
             if unicorn == localName {
@@ -261,6 +268,7 @@ func startHealthCheck() {
 func startElection() {
 	currentTime := getCurrentTime()
 	sendElectionMessage(currentTime)
+    electionIsStarted = true
 	var timeoutWaitAnswer chan bool = make(chan bool, 1)
 	go func() {
 		time.Sleep(time.Duration(TIMEOUT) * time.Millisecond)
@@ -274,6 +282,7 @@ func startElection() {
 			close(timeoutWaitAnswer)
 			unicorn = localName
 			sendUnicornMessage()
+            electionIsStarted = false
 			i = 1
 		/* get answer within time out */
         case message := <-receivedAnswerChannel:
@@ -288,8 +297,9 @@ func startElection() {
 				select {
 				case <- timeoutWaitUnicorn:
 					startElection()
-				case <- receivedUnicornChannel:
-					unicorn = localName
+                case unicornMessage := <- receivedUnicornChannel:
+					unicorn = unicornMessage.Content
+                    electionIsStarted = false
 					startHealthCheck()
 				}
 			}
@@ -309,5 +319,5 @@ func InitBullySelection(name string, names []string) {
 	localName = name
 	frontNodes, latterNodes = getFrontAndLatterNodes(names, localName)
 	dispatchMessage()
-	//TODO start the first election
+    startElection()
 }
