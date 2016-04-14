@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/messagePasser"
+	"github.com/arminm/multegula/messageType"
 )
 
 
@@ -41,7 +42,7 @@ const GAME_TYPE_SINGLE	string = "SINGLE"
  * messages out from this channel and send them
  * to messagePasser
  */
-var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, messagePasser.QUEUE_SIZE)
+var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 
 /*
  * get message out from sendChannel
