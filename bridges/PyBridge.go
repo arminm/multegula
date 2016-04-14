@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"github.com/arminm/multegula/messagePasser"
+	"github.com/arminm/multegula/messageType"
 )
 
 // TODO: Remove fixed port number
@@ -24,10 +25,10 @@ import (
 const delimiter string = "##"
 
 /* the queue for messages to be sent to multegula */
-var sendQueue chan messagePasser.Message = make(chan messagePasser.Message, messagePasser.QUEUE_SIZE)
+var sendQueue chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 
 /* the queue for messages received from multegula */
-var receivedQueue chan messagePasser.Message = make(chan messagePasser.Message, messagePasser.QUEUE_SIZE)
+var receivedQueue chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 
 /*
  * construct message from it's string format

@@ -66,7 +66,7 @@ func putMessageToSendChannel(message messagePasser.Message) {
  * @return	the message got from sendChannel
  */
 func GetMessageFromSendChannel() messagePasser.Message {
-	message := <- sendChannel
+	message := <-sendChannel
     return message
 }
 
@@ -89,7 +89,7 @@ func PutMessageToReceiveChannel(message messagePasser.Message) {
  * @return	the message got from receiveChannel
  */
 func getMessageFromReceiveChannel() messagePasser.Message {
-	message := <- receiveChannel
+	message := <-receiveChannel
     return message
 }
 
@@ -148,9 +148,9 @@ func getFrontAndLatterNodes(nodes []string, localName string) ([]string, []strin
 func sendHeartBeatMessage() {
 	for _, name := range frontNodes {
 		go putMessageToSendChannel(messagePasser.Message{
-			Source: localName, 
-			Destination: name, 
-			Content: messageType.MSG_ALIVE, 
+			Source: localName,
+			Destination: name,
+			Content: messageType.MSG_ALIVE,
 			Kind: messageType.MSG_ALIVE,
         })
 	}
@@ -232,13 +232,13 @@ func startElection() {
 	for i < 0 {
 		select {
 		/* no answer after timeout */
-		case <- timeoutWaitAnswer: 
+		case <- timeoutWaitAnswer:
 			close(timeoutWaitAnswer)
 			coordinator = localName
 			sendCoordinatorMessage()
 			i = 1
 		/* get answer within time out */
-        case message := <- receivedAnswerChannel: 
+        case message := <-receivedAnswerChannel:
 			/* receive an answer */
 			if message.Content == currentTime {
 				i = 1
@@ -255,7 +255,7 @@ func startElection() {
 					startHealthCheck()
 				}
 			}
-		}		
+		}
 	}
 }
 
