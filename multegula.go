@@ -21,6 +21,33 @@ const UI_MULTICAST_DEST string = "EVERYBODY"
 const UI_MULTEGULA_DEST string = "MULTEGULA"
 const MSG_MYNAME string = "MSG_MYNAME"
 
+/* 
+ * This is the sendChannel for message dispatcher.
+ * Any components like UI or bully algorithm will
+ * put messages into this channel if they whan to
+ * send message out. Message dispatcher will get
+ * messages out from this channel and send them
+ * to messagePasser
+ */
+var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, messagePasser.QUEUE_SIZE)
+
+/*
+ * get message out from sendChannel
+ * @return the message got from sendChannel
+ */
+func getMessageFromSendChannel() messagePasser.Message {
+	message := <- sendChannel
+	return message
+}
+
+/*
+ * put message into sendChannel
+ * @param message - message to be put into sendChannel
+ */
+func putMessageIntoSendChannel(message messagePasser.Message) {
+	sendChannel <- message
+}
+
 /*
  * get the operation, send or receive
  * @return if send, return 1; otherwise return 0
@@ -139,12 +166,22 @@ func uiGetLocalName() (localName string) {
 	return localName
 }
 
-/* receive message from PyBridge and send to messagePasser */
-func uiReceiveAndReact() {
+/* This is the routine waiting for messages come from PyBridge */
+func receiveFromPyBridge() {
 	for {
 		message := bridges.ReceiveFromPyBridge()
+		fmt.Println("message received from ui in multegula")
+		go putMessageIntoSendChannel(message)
+	}
+}
 
-		fmt.Println("Multegula: UI message received - ", message)
+/* send message out */
+//TODO handle messages coming fromm bully algorith
+func uiReceiveAndReact() {
+	for {
+		message := getMessageFromSendChannel()
+
+		fmt.Println("Multegula: Message is going to be sent to messagePasser - ", message)
 		if strings.EqualFold(message.Destination, UI_MULTICAST_DEST) {
 			messagePasser.Multicast(&message)
 		} else if strings.EqualFold(message.Destination, UI_MULTEGULA_DEST) {
@@ -153,11 +190,11 @@ func uiReceiveAndReact() {
 			fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
 		}		
 	}
-
 }
 
 
-/* receive message from PyBridge and send to messagePasser */
+/* receive message from messagePasser and dispatch messages */
+//TODO handle messages going to bully algorithm
 func networkReceiveAndReact() {
 	for {
 		message := messagePasser.Receive()
@@ -168,10 +205,6 @@ func networkReceiveAndReact() {
 		case "MSG_PADDLE_DIR":
 			bridges.SendToPyBridge(message)
 		}
-		/*
-		if message.Kind == "MSG_PADDLE_POS" {
-			fmt.Println("it worked")
-		}*/
 	}
 
 }
@@ -274,6 +307,9 @@ func main() {
 		fmt.Println("Multegula: made message passer for", localNodeName)
 		// main loop - this runs the Multegula in all it's glory
 
+		/* start the routine waiting for messages coming from UI */
+		go receiveFromPyBridge()
+			
 		go uiReceiveAndReact()
 		go networkReceiveAndReact()
 
