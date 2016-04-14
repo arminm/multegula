@@ -18,8 +18,8 @@ import (
 	"github.com/arminm/multegula/messageType"
 )
 
-/* If a node doesn't receive message from coordinator after 
- * after this time period, it will consider the coordinator
+/* If a node doesn't receive message from unicorn after 
+ * after this time period, it will consider the unicorn
  * is lost or crashed. After sending out an election message,
  * the node waits TIMEOUT time for answer message.
  * This time period includes the round-trip
@@ -29,17 +29,17 @@ import (
 const TIMEOUT int = 200
 
 /* This is the time a node will wait after sending out an answer
- * message. If it receives coordinator message within this time
+ * message. If it receives unicorn message within this time
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_COORDINATOR_MESSAGE_TIMEOUT int = 100
+const WAITING_unicorn_MESSAGE_TIMEOUT int = 100
 
 /* The name of node */
 var localName string
 
-/* The name of coordinator */
-var coordinator string
+/* The name of unicorn */
+var unicorn string
 
 /* Nodes whose names are smaller than local name in the group */
 var frontNodes []string
@@ -97,8 +97,8 @@ func getMessageFromReceiveChannel() messagePasser.Message {
 var receivedAnswerChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 /* received election message */
 var receivedElectionChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
-/* received coordinator message */
-var receivedCoordinatorChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+/* received unicorn message */
+var receivedunicornChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
 
 func dispatchMessage() {
 	for {
@@ -108,9 +108,9 @@ func dispatchMessage() {
 			go func() {
 				receivedAnswerChannel <- message
 			}()
-		case messageType.COORDINATOR:
+        case messageType.UNICORN:
 			go func() {
-				receivedCoordinatorChannel <- message
+				receivedunicornChannel <- message
 			}()
 		case messageType.ELECTION:
 			go func() {
@@ -144,32 +144,14 @@ func getFrontAndLatterNodes(nodes []string, localName string) ([]string, []strin
 	return frontNodes, latterNodes
 }
 
-/* Unicorn send MSG_ALIVE message to other nodes including it self */
-func sendHeartBeatMessage() {
-	for _, name := range frontNodes {
-		go putMessageToSendChannel(messagePasser.Message{
-			Source: localName,
-			Destination: name,
-			Content: messageType.MSG_ALIVE,
-			Kind: messageType.MSG_ALIVE,
-        })
-	}
-	go putMessageToSendChannel(messagePasser.Message{
-		Source: localName,
-		Destination: localName,
-		Content: messageType.MSG_ALIVE,
-		Kind: messageType.MSG_ALIVE,
-		})
-}
-
-/* Unicorn send COORDINATOR message to other nodes */
-func sendCoordinatorMessage() {
+/* Unicorn send unicorn message to other nodes */
+func sendunicornMessage() {
 	for _, name := range frontNodes {
 		go putMessageToSendChannel(messagePasser.Message{
 			Source: localName,
 			Destination: name,
 			Content: localName,
-			Kind: messageType.COORDINATOR,
+			Kind: messageType.UNICORN,
 			})
 	}
 }
@@ -205,7 +187,7 @@ func sendAnswer(destination string, timestamp string) {
 		})
 }
 
-/* check the liveness of coordinator */
+/* check the liveness of unicorn */
 func startHealthCheck() {
 
 }
@@ -234,24 +216,24 @@ func startElection() {
 		/* no answer after timeout */
 		case <- timeoutWaitAnswer:
 			close(timeoutWaitAnswer)
-			coordinator = localName
-			sendCoordinatorMessage()
+			unicorn = localName
+			sendunicornMessage()
 			i = 1
 		/* get answer within time out */
         case message := <-receivedAnswerChannel:
 			/* receive an answer */
 			if message.Content == currentTime {
 				i = 1
-				var timeoutWaitCoordinator chan bool = make(chan bool, 1)
+				var timeoutWaitunicorn chan bool = make(chan bool, 1)
 				go func() {
-					time.Sleep(time.Millisecond * time.Duration(WAITING_COORDINATOR_MESSAGE_TIMEOUT))
-					timeoutWaitCoordinator <- true
+					time.Sleep(time.Millisecond * time.Duration(WAITING_unicorn_MESSAGE_TIMEOUT))
+					timeoutWaitunicorn <- true
 				}()
 				select {
-				case <- timeoutWaitCoordinator:
+				case <- timeoutWaitunicorn:
 					startElection()
-				case <- receivedCoordinatorChannel:
-					coordinator = localName
+				case <- receivedunicornChannel:
+					unicorn = localName
 					startHealthCheck()
 				}
 			}

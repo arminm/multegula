@@ -21,10 +21,12 @@ const QUEUE_SIZE int = 100
 const ELECTION string = "ELECTION"
 /* The answer message */
 const ANSWER string = "ANSWER"
-/* The coordinator message */	
-const COORDINATOR string = "COORDINATOR"
-/* The coordinator hear beat message */
-const MSG_ALIVE string = "MSG_ALIVE"
+/* The unicorn message */	
+const UNICORN string = "UNICORN"
+/* Nodes request if unicorn is alive */
+const ARE_YOU_ALIVE string = "ARE_YOU_ALIVE"
+/* The unicorn heart beat message */
+const IAM_ALIVE string = "IAM_ALIVE"
 /* The end of message types for bully algorithm */
 
 const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
