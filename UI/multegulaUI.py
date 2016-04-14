@@ -52,7 +52,7 @@ def keyPressed(event) :
 
             # send name up to Multegula!
             toSend = PyMessage()
-            toSend.src = myName
+            toSend.src = "UI"
             toSend.kind = MsgType.MSG_MYNAME
             toSend.content = myName
             toSend.multicast = False
@@ -71,7 +71,7 @@ def keyPressed(event) :
                 if myPaddle.direction != Direction.DIR_LEFT and myPaddle.canMove(Direction.DIR_LEFT):
                     # create and send message
                     toSend = PyMessage()
-                    toSend.src = myName
+                    toSend.src = "UI"
                     toSend.kind = MsgType.MSG_PADDLE_DIR
                     toSend.content = MsgPayload.MSG_PADDLE_DIR_LEFT
                     toSend.multicast = True
@@ -89,7 +89,7 @@ def keyPressed(event) :
                 if myPaddle.direction != Direction.DIR_RIGHT and myPaddle.canMove(Direction.DIR_RIGHT):
                     # create and send message
                     toSend = PyMessage()
-                    toSend.src = canvas.data['myName']
+                    toSend.src = "UI"
                     toSend.kind = MsgType.MSG_PADDLE_DIR
                     toSend.content = MsgPayload.MSG_PADDLE_DIR_RIGHT
                     toSend.multicast = True
@@ -116,7 +116,7 @@ def keyReleased(event) :
                     #create and send message
                     content = str(canvas.data[canvas.data['myName']].paddle.center) + '|' + str(canvas.data[canvas.data['myName']].paddle.width)
                     toSend = PyMessage()
-                    toSend.src = canvas.data['myName']
+                    toSend.src = "UI"
                     toSend.kind = MsgType.MSG_PADDLE_POS
                     toSend.content = content
                     toSend.multicast = True
@@ -163,7 +163,6 @@ def mousePressed(event) :
 
 
 def react(canvas, received) :
-    print("UI: ", received.toString())
     if received.kind == MsgType.MSG_PADDLE_DIR:
         if received.content[MsgIndex.MSG_PADDLE_DIR] == MsgPayload.MSG_PADDLE_DIR_LEFT:
             canvas.data[received.src].paddle.direction = Direction.DIR_LEFT

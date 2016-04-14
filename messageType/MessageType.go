@@ -19,3 +19,12 @@ const ANSWER string = "answer"
 /* The coordinator message */	
 const COORDINATOR string = "coordinator"
 /* The end of message types for bully algorithm */
+
+const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
+const MSG_PADDLE_DIR string = "MSG_PADDLE_DIR"
+
+const UI_MULTICAST_DEST string = "EVERYBODY"
+const UI_MULTEGULA_DEST string = "MULTEGULA"
+const MSG_MYNAME string = "MSG_MYNAME"
+
+const UI_SOURCE string = "UI"
