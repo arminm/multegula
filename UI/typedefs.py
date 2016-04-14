@@ -112,20 +112,23 @@ class Tilt(Enum) :
 
 ### MsgType - defines the message types
 class MsgType() :
-    MSG_MYNAME = 'MSG_MYNAME'
-    MSG_PADDLE_DIR = "MSG_PADDLE_DIR"
-    MSG_PADDLE_POS = "MSG_PADDLE_POS"
+    MSG_GAME_TYPE   = 'MSG_GAME_TYPE'
+    MSG_MYNAME      = 'MSG_MYNAME'
+    MSG_PADDLE_DIR  = "MSG_PADDLE_DIR"
+    MSG_PADDLE_POS  = "MSG_PADDLE_POS"
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
-    MSG_PADDLE_DIR_LEFT = 'LEFT'
-    MSG_PADDLE_DIR_RIGHT = 'RIGHT'
+    GAME_TYPE_SINGLE    = 'SINGLE'
+    GAME_TYPE_MULTI     = 'MULTI'
+    PADDLE_DIR_LEFT     = 'LEFT'
+    PADDLE_DIR_RIGHT    = 'RIGHT'
 
 ### MsgIndex - defines the the standard placement of payload values
 class MsgIndex() :
-    MSG_PADDLE_DIR = 0
-    MSG_PADDLE_POS_CENTER = 0
-    MSG_PADDLE_POS_WIDTH = 1
+    PADDLE_DIR = 0
+    PADDLE_POS_CENTER = 0
+    PADDLE_POS_WIDTH = 1
 
 
 

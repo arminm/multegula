@@ -30,7 +30,7 @@ const MULTEGULA_DEST string = "MULTEGULA"
 const UI_SOURCE string = "UI"
 
 /*** MESSAGE PAYLOAD CONSTANTS ***/
-const GAME_TYPE_MULTI 	string = "MULTIPLAYER"
+const GAME_TYPE_MULTI 	string = "MULTI"
 const GAME_TYPE_SINGLE	string = "SINGLE"
 
 /* 
@@ -329,19 +329,19 @@ func main() {
 		localNodeName := uiGetLocalName()
 		fmt.Println("My name is:", localNodeName)
 
-		// determine the game type
-		//gameType := uiGetGameType()
+		// determine the game type (multi or single player)
+		gameType := uiGetGameType()
 
-		configName := skinnyParseMainArguments(args)
-		messagePasser.InitMessagePasser(configName, localNodeName)
-		fmt.Println("Multegula: made message passer for", localNodeName)
-		// main loop - this runs the Multegula in all it's glory
+		if gameType == GAME_TYPE_MULTI {
+			configName := skinnyParseMainArguments(args)
+			messagePasser.InitMessagePasser(configName, localNodeName)
 
-		/* start the routine waiting for messages coming from UI */
-		go PyBridgeReceiver()
-		go BullyReceiver()
-		go inboundDispatcher()
-		outboundDispatcher()
+			/* start the routine waiting for messages coming from UI */
+			go PyBridgeReceiver()
+			go BullyReceiver()
+			go inboundDispatcher()
+			outboundDispatcher()
+		}
 	}
 }
 

@@ -73,7 +73,7 @@ def keyPressed(event) :
                     toSend = PyMessage()
                     toSend.src =  myName
                     toSend.kind = MsgType.MSG_PADDLE_DIR
-                    toSend.content = MsgPayload.MSG_PADDLE_DIR_LEFT
+                    toSend.content = MsgPayload.PADDLE_DIR_LEFT
                     toSend.multicast = True
                     canvas.data['bridge'].sendMessage(toSend)
 
@@ -91,7 +91,7 @@ def keyPressed(event) :
                     toSend = PyMessage()
                     toSend.src = myName
                     toSend.kind = MsgType.MSG_PADDLE_DIR
-                    toSend.content = MsgPayload.MSG_PADDLE_DIR_RIGHT
+                    toSend.content = MsgPayload.PADDLE_DIR_RIGHT
                     toSend.multicast = True
                     canvas.data['bridge'].sendMessage(toSend)
 
@@ -139,12 +139,13 @@ def mousePressed(event) :
             canvas.data['gameType'] = GameType.SINGLE_PLAYER
             initPlayers(canvas)
 
-            # toSend = PyMessage()
-            # toSend.src = canvas.data['myName']
-            # toSend.kind = MsgType.MSG_GAME_TYPE
-            # toSend.content = content
-            # toSend.multicast = False
-            # canvas.data['bridge'].sendMessage(toSend)
+            # send message to Multegula
+            toSend = PyMessage()
+            toSend.src = canvas.data['myName']
+            toSend.kind = MsgType.MSG_GAME_TYPE
+            toSend.content = MsgPayload.GAME_TYPE_SINGLE
+            toSend.multicast = False
+            canvas.data['bridge'].sendMessage(toSend)
 
             # initialize game
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
@@ -159,6 +160,14 @@ def mousePressed(event) :
             canvas.data['gameType'] = GameType.MULTI_PLAYER
             initPlayers(canvas)
 
+            # send message to multegula
+            toSend = PyMessage()
+            toSend.src = canvas.data['myName']
+            toSend.kind = MsgType.MSG_GAME_TYPE
+            toSend.content = MsgPayload.GAME_TYPE_MULTI
+            toSend.multicast = False
+            canvas.data['bridge'].sendMessage(toSend)
+            
             # initialize game
             canvas.data['currentScreen'] = Screens.SCRN_GAME
             canvas.data['ball'].reset()
@@ -171,15 +180,15 @@ def mousePressed(event) :
 
 def react(canvas, received) :
     if received.kind == MsgType.MSG_PADDLE_DIR:
-        if received.content[MsgIndex.MSG_PADDLE_DIR] == MsgPayload.MSG_PADDLE_DIR_LEFT:
+        if received.content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_LEFT:
             canvas.data[received.src].paddle.direction = Direction.DIR_LEFT
-        elif received.content[MsgIndex.MSG_PADDLE_DIR] == MsgPayload.MSG_PADDLE_DIR_RIGHT:
+        elif received.content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_RIGHT:
             canvas.data[received.src].paddle.direction = Direction.DIR_RIGHT
 
     elif received.kind == MsgType.MSG_PADDLE_POS: 
         canvas.data[received.src].paddle.direction = Direction.DIR_STOP
-        canvas.data[received.src].paddle.center = int(received.content[MsgIndex.MSG_PADDLE_POS_CENTER])
-        canvas.data[received.src].paddle.width = int(received.content[MsgIndex.MSG_PADDLE_POS_WIDTH])
+        canvas.data[received.src].paddle.center = int(received.content[MsgIndex.PADDLE_POS_CENTER])
+        canvas.data[received.src].paddle.width = int(received.content[MsgIndex.PADDLE_POS_WIDTH])
 
 
 ### receiveAll - get all messages from the GoBrige
