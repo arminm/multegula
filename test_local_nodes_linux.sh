@@ -1,4 +1,9 @@
 #!/bin/bash
+###########################################################
+#Multegula - test_local_nodes_linux.sh                    #
+#Testing Script for Multegula Multicaster                 #
+#Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He#
+###########################################################
 
 NODES=(armin lunwen daniel garrett)
 

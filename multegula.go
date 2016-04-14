@@ -11,16 +11,54 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
-
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/messagePasser"
 )
 
-// constants
-const UI_MULTICAST_DEST string = "EVERYBODY"
-const UI_MULTEGULA_DEST string = "MULTEGULA"
-const MSG_MYNAME string = "MSG_MYNAME"
+
+/*** MESSAGE TYPE CONSTANTS ***/
+const MSG_GAME_TYPE 	string = "MSG_GAME_TYPE"
+const MSG_MYNAME 		string = "MSG_MYNAME"
+const MSG_PADDLE_POS 	string = "MSG_PADDLE_POS"
+const MSG_PADDLE_DIR 	string = "MSG_PADDLE_DIR"
+
+/*** MESSAGE DESTINATION CONSTANTS ***/
+const MULTICAST_DEST string = "EVERYBODY"
+const MULTEGULA_DEST string = "MULTEGULA"
+
+/*** MESSAGE SOURCE CONTENTS ***/
+const UI_SOURCE string = "UI"
+
+/*** MESSAGE PAYLOAD CONSTANTS ***/
+const GAME_TYPE_MULTI 	string = "MULTI"
+const GAME_TYPE_SINGLE	string = "SINGLE"
+
+/* 
+ * This is the sendChannel for message dispatcher.
+ * Any components like UI or bully algorithm will
+ * put messages into this channel if they whan to
+ * send message out. Message dispatcher will get
+ * messages out from this channel and send them
+ * to messagePasser
+ */
+var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, messagePasser.QUEUE_SIZE)
+
+/*
+ * get message out from sendChannel
+ * @return the message got from sendChannel
+ */
+func getMessageFromSendChannel() messagePasser.Message {
+	message := <- sendChannel
+	return message
+}
+
+/*
+ * put message into sendChannel
+ * @param message - message to be put into sendChannel
+ */
+func putMessageIntoSendChannel(message messagePasser.Message) {
+	sendChannel <- message
+}
 
 /*
  * get the operation, send or receive
@@ -132,7 +170,7 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 func uiGetLocalName() (localName string) {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-		if strings.EqualFold(message.Kind, MSG_MYNAME) {
+		if message.Kind == MSG_MYNAME {
 			localName = message.Content
 			break
 		}
@@ -140,48 +178,68 @@ func uiGetLocalName() (localName string) {
 	return localName
 }
 
-/* receive message from PyBridge and send to messagePasser */
-func uiReceiveAndReact() {
+/*
+ * retreives game type from the UI
+ */
+func uiGetGameType() (gameType string) {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-
-		fmt.Println("Multegula: UI message received - ", message)
-		if strings.EqualFold(message.Destination, UI_MULTICAST_DEST) {
-			messagePasser.Multicast(&message)
-		} else if strings.EqualFold(message.Destination, UI_MULTEGULA_DEST) {
-			fmt.Println("TODO: Handle any messages meant only for Multegula.")
-		} else {
-			fmt.Println("TODO: Handle any messages from the UI that have invalid destinations")
-		}		
-	}
-
-}
-
-
-/* receive message from PyBridge and send to messagePasser */
-func networkReceiveAndReact() {
-	for {
-		message := messagePasser.Receive()
-		fmt.Println("Multegula: received network message -", message)
-		switch message.Kind {
-		case "MSG_PADDLE_POS":
-			bridges.SendToPyBridge(message)
-		case "MSG_PADDLE_DIR":
-			bridges.SendToPyBridge(message)
+		if message.Kind == MSG_GAME_TYPE {
+			gameType = message.Content
+			break
 		}
-		/*
-		if message.Kind == "MSG_PADDLE_POS" {
-			fmt.Println("it worked")
-		}*/
 	}
-
+	return gameType	
 }
 
-/* receive message from MessagePasser and send to PyBridge */
-func pyBridgeSend() {
+/* wait for incoming messages from the UI */
+func PyBridgeReceiver() {
 	for {
+		message := bridges.ReceiveFromPyBridge()
+        go putMessageIntoSendChannel(message)
+	}
+}
+
+/* wait for incoming messages from the bully algorithm */
+func BullyReceiver() {
+	/*
+	for {
+		message := bully.Receive()
+		go puMessageIntoSendChannel(message)
+	}
+	*/
+	return
+}
+
+/* receive message from messagePasser and route to correct location */
+func inboundDispatcher() {
+	for {
+		// get message from MessagePasser
 		message := messagePasser.Receive()
-		bridges.SendToPyBridge(message)
+
+		// Based on the type of message, determine where it needs routed
+		switch message.Kind {
+		case MSG_PADDLE_POS:
+			bridges.SendToPyBridge(message)
+		case MSG_PADDLE_DIR:
+			bridges.SendToPyBridge(message);
+		}
+	}
+}
+
+/* Handles all outbound messages  */
+func outboundDispatcher() {
+	for {
+		// get message from the send channel
+		message := getMessageFromSendChannel()
+
+		// based on it's destination, determine which messagePasser
+		//	routine is appropriate
+		if message.Destination == MULTICAST_DEST {
+			messagePasser.Multicast(&message)
+		} else {
+			messagePasser.Send(message)
+		}
 	}
 }
 
@@ -262,25 +320,28 @@ func main() {
 			}
 		}
 	} else {
-		configName := skinnyParseMainArguments(args)
-
-		// get the the local node name from the UI
-		// NOTE: this will be required when we move to the bootstrap server method, for now
-		//	this must match the config file.
+		/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
+		// initialize communication with the UI
 		fmt.Printf("Port is:%d\n", *portFlag)
 		bridges.InitPyBridge(*portFlag)
+
+		// get the localname
 		localNodeName := uiGetLocalName()
-		fmt.Println("Multegula: GOT NAME FROM UI:", localNodeName)
-		messagePasser.InitMessagePasser(configName, localNodeName)
-		fmt.Println("Multegula: made message passer for", localNodeName)
-		// main loop - this runs the Multegula in all it's glory
+		fmt.Println("My name is:", localNodeName)
 
-		go uiReceiveAndReact()
-		go networkReceiveAndReact()
+		// determine the game type (multi or single player)
+		gameType := uiGetGameType()
 
-		for {
+		if gameType == GAME_TYPE_MULTI {
+			configName := skinnyParseMainArguments(args)
+			messagePasser.InitMessagePasser(configName, localNodeName)
+
+			/* start the routine waiting for messages coming from UI */
+			go PyBridgeReceiver()
+			go BullyReceiver()
+			go inboundDispatcher()
+			outboundDispatcher()
 		}
-
 	}
 }
 

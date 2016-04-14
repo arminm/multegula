@@ -10,30 +10,21 @@
 
 package messageType
 
-type MessageType int
+/* The beginning of message types for bully algorithm */
+/* These kinds of message will be used in bully algorithm */
+/* The election message */
+const ELECTION string = "election"
+/* The answer message */
+const ANSWER string = "answer"
+/* The coordinator message */	
+const COORDINATOR string = "coordinator"
+/* The end of message types for bully algorithm */
 
-const (
-	/* The beginning of message types for bully algorithm */
-	/* These kinds of message will be used in bully algorithm */
-	/* The election message */
-	ELECTION MessageType = 1 + iota
-	/* The answer message */
-	ANSWER
-	/* The coordinator message */	
-	COORDINATOR
-	/* The end of message types for bully algorithm */
-)
+const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
+const MSG_PADDLE_DIR string = "MSG_PADDLE_DIR"
 
-var messageTypes = [...]string{
+const UI_MULTICAST_DEST string = "EVERYBODY"
+const UI_MULTEGULA_DEST string = "MULTEGULA"
+const MSG_MYNAME string = "MSG_MYNAME"
 
-	/* The beginning of message type values for bully algorithm */
-	"election",
-	"answer",
-	"coordinator",
-	/* The end of message type values for bully algorithm */
-
-}
-
-func (messageType MessageType) String() string {
-	return messageTypes[messageType - 1]
-}
+const UI_SOURCE string = "UI"

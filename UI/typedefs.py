@@ -109,3 +109,27 @@ class GameType(Enum) :
 class Tilt(Enum) :
     VERT    = 0
     HORZ    = 1
+
+### MsgType - defines the message types
+class MsgType() :
+    MSG_GAME_TYPE   = 'MSG_GAME_TYPE'
+    MSG_MYNAME      = 'MSG_MYNAME'
+    MSG_PADDLE_DIR  = "MSG_PADDLE_DIR"
+    MSG_PADDLE_POS  = "MSG_PADDLE_POS"
+
+### MsgPayload - defines standard message payloads
+class MsgPayload() :
+    GAME_TYPE_SINGLE    = 'SINGLE'
+    GAME_TYPE_MULTI     = 'MULTI'
+    PADDLE_DIR_LEFT     = 'LEFT'
+    PADDLE_DIR_RIGHT    = 'RIGHT'
+
+### MsgIndex - defines the the standard placement of payload values
+class MsgIndex() :
+    PADDLE_DIR = 0
+    PADDLE_POS_CENTER = 0
+    PADDLE_POS_WIDTH = 1
+
+
+
+
