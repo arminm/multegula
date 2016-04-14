@@ -200,28 +200,25 @@ func messageDispatcher(localNodeName string) {
 		switch message.Kind {
 		// paddle position update (when a player's paddle has stopped moving)
 		case MSG_PADDLE_POS:
-			// message from UI -> multicast
+			// message from UI -> multicast. message from network -> send to UI
 			if message.Source == UI_SOURCE {
 				message.Source = localNodeName
 				messagePasser.Multicast(&message)
-			} 
-			// message from the network -> send to UI
-			else {
+			} else {
 				bridges.SendToPyBridge(message)
 			}
 
 		// paddle direction update (when a payer starts moving a paddle)
 		case MSG_PADDLE_DIR:
-			// message from UI -> multicast
+			// message from UI -> multicast. message from network -> send to UI
 			if message.Source == UI_SOURCE {
 				message.Source = localNodeName
 				messagePasser.Multicast(&message)				
-			} 
-			// message from the network -> send to UI
-			else {
+			} else {
 				bridges.SendToPyBridge(message)
 			}
 		default:
+			continue
 		}
 	}
 }
