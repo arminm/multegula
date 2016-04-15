@@ -128,8 +128,10 @@ func receiveConnections() {
 			fmt.Printf("We have %v connections now!\n", len(connections))
 		case <-timeoutTimer.C:
 			//This is the case that handles our timeouts if we don't get enough players
-			fmt.Printf("Timed out, starting with %v players!\n", len(connections))
-			startAGame()
+			if len(connections) >= MIN_PLAYERS_PER_GAME {
+				fmt.Printf("Timed out, starting with %v players!\n", len(connections))
+				startAGame()
+			}
 		}
 
 		if len(connections) == MIN_PLAYERS_PER_GAME {
