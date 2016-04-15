@@ -207,7 +207,7 @@ func BullyReceiver() {
 	
 	for {
 		message := bullySelection.GetMessageFromSendChannel()
-		go puMessageIntoSendChannel(message)
+		go putMessageIntoSendChannel(message)
 	}
 	
 	return
