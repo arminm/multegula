@@ -77,7 +77,7 @@ func putMessageToSendChannel(message messagePasser.Message) {
  * @return	the message got from sendChannel
  */
 func GetMessageFromSendChannel() messagePasser.Message {
-	message := <-sendChannel
+	message := <- sendChannel
     return message
 }
 
@@ -100,7 +100,7 @@ func PutMessageToReceiveChannel(message messagePasser.Message) {
  * @return	the message got from receiveChannel
  */
 func getMessageFromReceiveChannel() messagePasser.Message {
-	message := <-receiveChannel
+	message := <- receiveChannel
     return message
 }
 
@@ -222,7 +222,7 @@ func getCurrentTime() string {
 	return currentTime.String()
 }
 
-func sendHealthCheckMessage(timestamp string) {
+func sendHealthCheckRequestMessage(timestamp string) {
     go putMessageToSendChannel(messagePasser.Message{
         Source: localName,
         Destination: unicorn,
@@ -233,10 +233,13 @@ func sendHealthCheckMessage(timestamp string) {
 
 /* check the liveness of unicorn */
 func startHealthCheck() {
+	/* when unicorn failure detected, set i to 1,
+	 * because there is no need for health check anymore.
+	 */
     var i int = -1
     for i < 0 {
         currentTime := getCurrentTime()
-        sendHealthCheckMessage(currentTime)
+        sendHealthCheckRequestMessage(currentTime)
         var waitHealthCheckReplyTimeout chan bool = make(chan bool, 1)
         go func(){
             time.Sleep(time.Duration(TIMEOUT) * time.Millisecond)
@@ -245,7 +248,9 @@ func startHealthCheck() {
         var j int = -1
         for j < 0 {
             select {
-            /* no reply after timeout, break loop and start election */
+            /* no reply after timeout, unicorn failure detected,
+             * break loop and start election
+             */
             case <- waitHealthCheckReplyTimeout:
                 j = 1
                 i = 1
@@ -259,6 +264,9 @@ func startHealthCheck() {
                     j = 1
                     time.Sleep(time.Duration(TIME_BETWEEN_HEALTH_CHECK) * time.Millisecond)
                 }
+                /* 
+                 * otherwise, drop out-dated health check reply
+                 */
             }
         }
     }
@@ -269,6 +277,7 @@ func startElection() {
 	currentTime := getCurrentTime()
 	sendElectionMessage(currentTime)
     electionIsStarted = true
+    /* wait for answers from other nodes within timeout */
 	var timeoutWaitAnswer chan bool = make(chan bool, 1)
 	go func() {
 		time.Sleep(time.Duration(TIMEOUT) * time.Millisecond)
@@ -277,7 +286,7 @@ func startElection() {
 	var i int = -1
 	for i < 0 {
 		select {
-		/* no answer after timeout */
+		/* no answer after timeout, the node it self is unicorn */
 		case <- timeoutWaitAnswer:
 			close(timeoutWaitAnswer)
 			unicorn = localName
@@ -286,7 +295,9 @@ func startElection() {
 			i = 1
 		/* get answer within time out */
         case message := <-receivedAnswerChannel:
-			/* receive an answer */
+			/* receive a valide answer
+			 * break the loop and wait for unicorn
+			 */
 			if message.Content == currentTime {
 				i = 1
 				var timeoutWaitUnicorn chan bool = make(chan bool, 1)
@@ -295,14 +306,23 @@ func startElection() {
 					timeoutWaitUnicorn <- true
 				}()
 				select {
+				/* no unicorn message received after timeout,
+				 * start another election process
+				 */
 				case <- timeoutWaitUnicorn:
 					startElection()
+				/* recieve an unicorn message within timeout,
+				 * start health check
+				 */
                 case unicornMessage := <- receivedUnicornChannel:
 					unicorn = unicornMessage.Content
                     electionIsStarted = false
 					startHealthCheck()
 				}
 			}
+			/*
+			 * otherwise, drop out-dated answer message
+			 */
 		}
 	}
 }
@@ -318,6 +338,6 @@ func startElection() {
 func InitBullySelection(name string, names []string) {
 	localName = name
 	frontNodes, latterNodes = getFrontAndLatterNodes(names, localName)
-	dispatchMessage()
+	go dispatchMessage()
     startElection()
 }
