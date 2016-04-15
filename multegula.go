@@ -14,6 +14,7 @@ import (
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/messagePasser"
 	"github.com/arminm/multegula/messageType"
+	"github.com/arminm/multegula/bullySelection"
 )
 
 
@@ -203,12 +204,12 @@ func PyBridgeReceiver() {
 
 /* wait for incoming messages from the bully algorithm */
 func BullyReceiver() {
-	/*
+	
 	for {
-		message := bully.Receive()
+		message := bullySelection.GetMessageFromSendChannel()
 		go puMessageIntoSendChannel(message)
 	}
-	*/
+	
 	return
 }
 
@@ -223,7 +224,17 @@ func inboundDispatcher() {
 		case MSG_PADDLE_POS:
 			bridges.SendToPyBridge(message)
 		case MSG_PADDLE_DIR:
-			bridges.SendToPyBridge(message);
+			bridges.SendToPyBridge(message)
+		case messageType.ELECTION:
+			bullySelection.PutMessageToReceiveChannel()
+		case messageType.ANSWER:
+			bullySelection.PutMessageToReceiveChannel()
+		case messageType.UNICORN:
+			bullySelection.PutMessageToReceiveChannel()
+		case messageType.ARE_YOU_ALIVE:
+			bullySelection.PutMessageToReceiveChannel()
+		case messageType.IAM_ALIVE:
+			bullySelection.PutMessageToReceiveChannel()
 		}
 	}
 }
