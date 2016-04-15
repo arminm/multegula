@@ -226,15 +226,15 @@ func inboundDispatcher() {
 		case MSG_PADDLE_DIR:
 			bridges.SendToPyBridge(message)
 		case messageType.ELECTION:
-			bullySelection.PutMessageToReceiveChannel()
+			bullySelection.PutMessageToReceiveChannel(message)
 		case messageType.ANSWER:
-			bullySelection.PutMessageToReceiveChannel()
+			bullySelection.PutMessageToReceiveChannel(message)
 		case messageType.UNICORN:
-			bullySelection.PutMessageToReceiveChannel()
+			bullySelection.PutMessageToReceiveChannel(message)
 		case messageType.ARE_YOU_ALIVE:
-			bullySelection.PutMessageToReceiveChannel()
+			bullySelection.PutMessageToReceiveChannel(message)
 		case messageType.IAM_ALIVE:
-			bullySelection.PutMessageToReceiveChannel()
+			bullySelection.PutMessageToReceiveChannel(message)
 		}
 	}
 }
