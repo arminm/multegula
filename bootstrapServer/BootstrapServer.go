@@ -16,10 +16,15 @@ import (
 )
 
 // constants
+const MIN_PLAYERS_PER_GAME int = 2
 const MAX_PLAYERS_PER_GAME int = 4
+const timeOutDuration = 30 * time.Second
 
 //Declare a map of connections to nodes
 var connections = make(map[net.Addr]net.Conn)
+var addConnectionChannel = make(chan net.Conn, 10)
+var removeConnectionChannel = make(chan net.Conn, 10)
+var timeoutTimer *time.Timer = time.NewTimer(time.Second)
 
 /*
  * Handle Connections
@@ -41,8 +46,8 @@ func handleConnection(conn net.Conn) {
 		if err != nil {
 			if err.Error() == "EOF" {
 				fmt.Println("Got disconnected from", conn.RemoteAddr())
-				delete(connections, conn.RemoteAddr())
-				fmt.Printf("We have %v connections now!\n", len(connections))
+				// Set conn to be removed
+				removeConnectionChannel <- conn
 				break
 			} else {
 				fmt.Println("Not disconnecting but got error:", err.Error())
@@ -60,16 +65,13 @@ func handleConnection(conn net.Conn) {
 			//Tell the client that we've acknowledged their connection.
 			//Client will now wait to receive their group message.
 			conn.Write([]byte("WELCOME_CLIENT\n"))
-			//Keep track of connections.
-			connections[conn.RemoteAddr()] = conn
-			fmt.Printf("We have %v connections now!\n", len(connections))
+			// set conn to be added
+			addConnectionChannel <- conn
+
 			return
 		} else {
 			conn.Write([]byte("ERR_INCORRECT_IDENTIFICATION\n"))
 			fmt.Printf("Didn't receive correct hello. Disconnecting client.\n")
-			delete(connections, conn.RemoteAddr())
-			//Closing the connection is having problems right now, not sure why.
-			//We can just have the clients do this as long as the map is clear.
 			conn.Close()
 			return
 		}
@@ -93,51 +95,11 @@ func main() {
 		panic(err)
 	}
 
+	// Start the routine that manages connections and calls startAGame()
+	go receiveConnections()
+
 	//Loop forever
 	for {
-		//Only run this if we have at least 2 connections
-		for len(connections) >= 2 {
-			//Set our timeout values
-			timeout := time.After(30 * time.Second)
-			tick := time.Tick(500 * time.Millisecond)
-
-			fmt.Printf("At least two connections established, starting countdown to game.\n")
-			//Once we have 4 connections, we can spin off a game
-			//But timeout after 30 seconds if we have at least one connection...
-		TIMELOOP:
-			for {
-				select {
-				//This is the case that handles our timeouts if we don't get enough players
-				case <-timeout:
-					fmt.Printf("Timed out, starting with %v players!\n", len(connections))
-					break TIMELOOP
-				//This case handles "ticks" while we're waiting for four players.
-				//If this condition gets satisfied first, it will break the for loop.
-				case <-tick:
-					if len(connections) >= MAX_PLAYERS_PER_GAME {
-						break TIMELOOP
-					}
-				}
-			}
-			//Give everyone their player list
-			for connection := range connections {
-				connections[connection].Write([]byte("PLAYER_LIST_BEGIN\n"))
-				for peerConnection := range connections {
-					connections[connection].Write([]byte(peerConnection.String() + "\n"))
-				}
-				connections[connection].Write([]byte("PLAYER_LIST_END\n"))
-				connections[connection].Close()
-			}
-
-			//Clear the map
-			for connection := range connections {
-				delete(connections, connection)
-				//Closing the connection is having problems right now, not sure why.
-				//We can just have the clients do this as long as the map is clear.
-				//connections[connection].Close()
-
-			}
-		}
 		//Begin accepting connections
 		conn, err := ln.Accept()
 		if err != nil {
@@ -147,6 +109,58 @@ func main() {
 		//Spawn thread to handle connections
 		fmt.Println("Connection received from:", conn.RemoteAddr())
 		go handleConnection(conn)
+	}
+}
 
+/*
+ * The routine to manage connections and trigger startAGame
+ */
+func receiveConnections() {
+	timeoutTimer.Stop()
+	for {
+		select {
+		//wait for new connections or disconnections, and for a timeout if there's one
+		case connection := <-addConnectionChannel:
+			connections[connection.RemoteAddr()] = connection
+			fmt.Printf("We have %v connections now!\n", len(connections))
+		case connection := <-removeConnectionChannel:
+			delete(connections, connection.RemoteAddr())
+			fmt.Printf("We have %v connections now!\n", len(connections))
+		case <-timeoutTimer.C:
+			//This is the case that handles our timeouts if we don't get enough players
+			fmt.Printf("Timed out, starting with %v players!\n", len(connections))
+			startAGame()
+		}
+
+		if len(connections) == MIN_PLAYERS_PER_GAME {
+			//Reset our timeoutTimer
+			fmt.Println("Two connections established, starting countdown to game.")
+			timeoutTimer.Reset(timeOutDuration)
+		} else if len(connections) == MAX_PLAYERS_PER_GAME {
+			// Stop the timeoutTimer
+			timeoutTimer.Stop()
+			startAGame()
+		}
+	}
+}
+
+/*
+ * The synchronous function to start a game with 2-4 players and clear
+ * the connections map for next games.
+ */
+func startAGame() {
+	//Give everyone their player list
+	for connection := range connections {
+		connections[connection].Write([]byte("PLAYER_LIST_BEGIN\n"))
+		for peerConnection := range connections {
+			connections[connection].Write([]byte(peerConnection.String() + "\n"))
+		}
+		connections[connection].Write([]byte("PLAYER_LIST_END\n"))
+		connections[connection].Close()
+	}
+
+	//Clear the map
+	for connection := range connections {
+		delete(connections, connection)
 	}
 }
