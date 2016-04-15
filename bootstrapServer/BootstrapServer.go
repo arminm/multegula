@@ -98,7 +98,7 @@ func main() {
 		//Only run this if we have at least 2 connections
 		for len(connections) >= 2 {
 			//Set our timeout values
-			timeout := time.After(5 * time.Second)
+			timeout := time.After(30 * time.Second)
 			tick := time.Tick(500 * time.Millisecond)
 
 			fmt.Printf("At least two connections established, starting countdown to game.\n")
@@ -107,9 +107,12 @@ func main() {
 		TIMELOOP:
 			for {
 				select {
+				//This is the case that handles our timeouts if we don't get enough players
 				case <-timeout:
 					fmt.Printf("Timed out, starting with %v players!\n", len(connections))
 					break TIMELOOP
+				//This case handles "ticks" while we're waiting for four players.
+				//If this condition gets satisfied first, it will break the for loop.
 				case <-tick:
 					if len(connections) >= MAX_PLAYERS_PER_GAME {
 						break TIMELOOP
