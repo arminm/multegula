@@ -116,10 +116,12 @@ func main() {
  * The routine to manage connections and trigger startAGame
  */
 func receiveConnections() {
+	// Make sure the timer is not running.
 	timeoutTimer.Stop()
+
 	for {
+		//wait for new connections or disconnections, or for a timeout if there's one
 		select {
-		//wait for new connections or disconnections, and for a timeout if there's one
 		case connection := <-addConnectionChannel:
 			connections[connection.RemoteAddr()] = connection
 			fmt.Printf("We have %v connections now!\n", len(connections))
