@@ -7,23 +7,33 @@
 package main
 
 import (
-	"bufio"
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/arminm/multegula/messagePasser"
 )
+
+type ClientInfo struct {
+	Conn *net.Conn
+	Node *messagePasser.Node
+}
 
 // constants
 const MIN_PLAYERS_PER_GAME int = 2
 const MAX_PLAYERS_PER_GAME int = 4
 const timeOutDuration = 30 * time.Second
+const CHANNEL_SIZE = 10
 
 //Declare a map of connections to nodes
-var connections = make(map[net.Addr]net.Conn)
-var addConnectionChannel = make(chan net.Conn, 10)
-var removeConnectionChannel = make(chan net.Conn, 10)
+var connections = make(map[net.Addr]*net.Conn)
+var nodes = make(map[net.Addr]*messagePasser.Node)
+var addClientChannel = make(chan ClientInfo, CHANNEL_SIZE)
+var removeClientChannel = make(chan ClientInfo, CHANNEL_SIZE)
 var timeoutTimer *time.Timer = time.NewTimer(time.Second)
 
 /*
@@ -34,46 +44,35 @@ var timeoutTimer *time.Timer = time.NewTimer(time.Second)
  *
  **/
 func handleConnection(conn net.Conn) {
-	bufc := bufio.NewReader(conn)
-
-	//Introduce ourselves to the client with these strings
-	conn.Write([]byte("MULTEGULA_BOOTSTRAP_SERVER\n"))
-	conn.Write([]byte("CLIENT_SAY_HELLO_NOW\n"))
-
+	// keep track of having already added a connection to keep the loop running
+	// in case the client got disconnected, so we can remove the added connection
+	// from our maps. If the disconnect happens before we add the conn to our maps
+	// then we just simply return from the function.
+	haveAddedConnection := false
 	for {
-		//Then the client should respond with its introduction message.
-		raw, _, err := bufc.ReadLine()
+		nodePtr, err := receiveNode(conn)
 		if err != nil {
 			if err.Error() == "EOF" {
 				fmt.Println("Got disconnected from", conn.RemoteAddr())
-				// Set conn to be removed
-				removeConnectionChannel <- conn
-				break
 			} else {
-				fmt.Println("Not disconnecting but got error:", err.Error())
-				continue
+				fmt.Println("Disconnecting:", conn.RemoteAddr())
 			}
-		}
-
-		//Accept the client's message, add them to
-		message := string(raw)
-		fmt.Printf("Got message from: %v:%v\n", conn.RemoteAddr(), message)
-
-		//Check to ensure it was valid.
-		//The \n seems to mess this up little bit when using nc, maybe we can put it back in for network comms.
-		if message == "MULTEGULA_CLIENT_HELLO" {
-			//Tell the client that we've acknowledged their connection.
-			//Client will now wait to receive their group message.
-			conn.Write([]byte("WELCOME_CLIENT\n"))
-			// set conn to be added
-			addConnectionChannel <- conn
-
+			if haveAddedConnection {
+				removeClientChannel <- ClientInfo{&conn, nil}
+			}
 			return
-		} else {
-			conn.Write([]byte("ERR_INCORRECT_IDENTIFICATION\n"))
-			fmt.Printf("Didn't receive correct hello. Disconnecting client.\n")
+		} else if (*nodePtr == messagePasser.Node{}) {
+			fmt.Println("Received empty Node.")
 			conn.Close()
 			return
+		}
+		if haveAddedConnection == false {
+			// we have to set the public ip of the client, since the client itself
+			// doesn't know what their public ip is.
+			ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
+			(*nodePtr).IP = ip
+			addClientChannel <- ClientInfo{&conn, nodePtr}
+			haveAddedConnection = true
 		}
 	}
 }
@@ -122,12 +121,27 @@ func receiveConnections() {
 	for {
 		//wait for new connections or disconnections, or for a timeout if there's one
 		select {
-		case connection := <-addConnectionChannel:
-			connections[connection.RemoteAddr()] = connection
-			fmt.Printf("We have %v connections now!\n", len(connections))
-		case connection := <-removeConnectionChannel:
-			delete(connections, connection.RemoteAddr())
-			fmt.Printf("We have %v connections now!\n", len(connections))
+		case clientInfo := <-addClientChannel:
+			// check for duplicates
+			if !duplicateNameExists(nodes, clientInfo.Node.Name) {
+				connAddr := (*clientInfo.Conn).RemoteAddr()
+				connections[connAddr] = clientInfo.Conn
+				nodes[connAddr] = clientInfo.Node
+
+				fmt.Printf("We have %v connections now!\n", len(connections))
+				fmt.Printf("New Client: %+v\n", clientInfo.Node)
+			} else {
+				fmt.Println("Closing connection! Duplicate Node Name: ", clientInfo.Node.Name)
+				(*clientInfo.Conn).Close()
+			}
+		case clientInfo := <-removeClientChannel:
+			connAddr := (*clientInfo.Conn).RemoteAddr()
+			if node, ok := nodes[connAddr]; ok {
+				fmt.Printf("Removing Client: %+v\n", node)
+				delete(connections, connAddr)
+				delete(nodes, connAddr)
+				fmt.Printf("We have %v connections now!\n", len(connections))
+			}
 		case <-timeoutTimer.C:
 			//This is the case that handles our timeouts if we don't get enough players
 			if len(connections) >= MIN_PLAYERS_PER_GAME {
@@ -149,22 +163,64 @@ func receiveConnections() {
 }
 
 /*
+ * check for duplicate names in a map of nodes
+ */
+func duplicateNameExists(existingNodes map[net.Addr]*messagePasser.Node, newNodeName string) bool {
+	for _, node := range existingNodes {
+		if node.Name == newNodeName {
+			return true
+		}
+	}
+	return false
+}
+
+/*
  * The synchronous function to start a game with 2-4 players and clear
  * the connections map for next games.
  */
 func startAGame() {
 	//Give everyone their player list
-	for connection := range connections {
-		connections[connection].Write([]byte("PLAYER_LIST_BEGIN\n"))
-		for peerConnection := range connections {
-			connections[connection].Write([]byte(peerConnection.String() + "\n"))
-		}
-		connections[connection].Write([]byte("PLAYER_LIST_END\n"))
-		connections[connection].Close()
+	for connAddr, connection := range connections {
+		fmt.Println("Sending Peers to:", nodes[connAddr].Name)
+		sendNodes(nodesForClient(connAddr), *connection)
+		(*connection).Close()
 	}
 
-	//Clear the map
-	for connection := range connections {
-		delete(connections, connection)
+	//Clear the maps
+	for connAddr := range connections {
+		delete(connections, connAddr)
+		delete(nodes, connAddr)
 	}
+}
+
+// returns the list of peer nodes excluding the client
+func nodesForClient(clientAddr net.Addr) *[]messagePasser.Node {
+	peerNodes := []messagePasser.Node{}
+	for connAddr := range connections {
+		if connAddr != clientAddr {
+			peerNodes = append(peerNodes, *nodes[connAddr])
+		}
+	}
+	return &peerNodes
+}
+
+/*
+ * sends nodes by encoding the array of nodes
+ */
+func sendNodes(nodes *[]messagePasser.Node, conn net.Conn) {
+	encoder := gob.NewEncoder(conn)
+	encoder.Encode(*nodes)
+}
+
+/*
+ * received a single node struct
+ */
+func receiveNode(conn net.Conn) (*messagePasser.Node, error) {
+	dec := gob.NewDecoder(conn)
+	node := &messagePasser.Node{}
+	err := dec.Decode(node)
+	if err != nil {
+		return node, err
+	}
+	return node, nil
 }
