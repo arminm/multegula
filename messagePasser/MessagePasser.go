@@ -558,18 +558,17 @@ func openConfigFile(configName string) *os.File {
  * decode the config file
  * @param configName the name of config file
  */
-func decodeConfigFile(configName string) {
-
+func DecodeConfigFile(configName string, config *Configuration) {
 	for {
 		file := openConfigFile(configName)
 		decoder := json.NewDecoder(file)
-		err := decoder.Decode(&config)
+		err := decoder.Decode(config)
 		if err == nil {
 			var nodes Nodes = config.Nodes
 			sort.Sort(nodes)
 			break
 		}
-		fmt.Println("Error: cannot decode the config file, please make sure it's a correct cofig file.")
+		fmt.Println("Error: cannot decode the config file, please make sure it's a correct config file.")
 		configName = getConfigName()
 	}
 }
@@ -604,23 +603,23 @@ func findLocalNodeFromConfig(localName string) {
 /*
  * initialize MessagePasser, this is a public method
  **/
-func InitMessagePasser(configName string, localName string) {	
-	decodeConfigFile(configName)
+func InitMessagePasser(configName string, localName string) {
+	DecodeConfigFile(configName, &config)
 	findLocalNodeFromConfig(localName)
 	initRules()
 
 	// keep track of group seqNum for multicasting
 	seqNums[config.Group[0]] = 0
-	// initialize the vectorTimeStamp 
+	// initialize the vectorTimeStamp
 	vectorTimeStamp = make([]int, len(config.Nodes))
 
-	// separate Node names 
+	// separate Node names
 	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
 
 	//TODO: Don't wait for connections
 	// wait for connections setup before proceeding
 	wg.Add(2)
-	// setup TCP connections 
+	// setup TCP connections
 	go acceptConnection(frontNodes, localNode)
 	go sendConnection(latterNodes, localNode)
 	wg.Wait()
