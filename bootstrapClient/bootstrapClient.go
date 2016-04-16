@@ -1,3 +1,9 @@
+////////////////////////////////////////////////////////////
+//Multegula - BootstrapClient.go
+//Bootstrapping/Grouping Client for Multegula
+//Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
+////////////////////////////////////////////////////////////
+
 package bootstrapClient
 
 import (
@@ -5,7 +11,6 @@ import (
 	"fmt"
 	"net"
 	"time"
-
 	"github.com/arminm/multegula/messagePasser"
 )
 

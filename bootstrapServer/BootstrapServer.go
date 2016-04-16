@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"github.com/arminm/multegula/messagePasser"
 )
 
@@ -26,7 +25,7 @@ type ClientInfo struct {
 // constants
 const MIN_PLAYERS_PER_GAME int = 2
 const MAX_PLAYERS_PER_GAME int = 4
-const timeOutDuration = 30 * time.Second
+const TIMEOUT_DURATION = 30 * time.Second
 const CHANNEL_SIZE = 10
 
 //Declare a map of connections to nodes
@@ -153,7 +152,7 @@ func receiveConnections() {
 		if len(connections) == MIN_PLAYERS_PER_GAME {
 			//Reset our timeoutTimer
 			fmt.Println("Two connections established, starting countdown to game.")
-			timeoutTimer.Reset(timeOutDuration)
+			timeoutTimer.Reset(TIMEOUT_DURATION)
 		} else if len(connections) == MAX_PLAYERS_PER_GAME {
 			// Stop the timeoutTimer
 			timeoutTimer.Stop()
