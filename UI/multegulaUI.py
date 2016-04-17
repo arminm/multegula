@@ -187,6 +187,7 @@ def react(canvas, received) :
     kind = received.kind
     name = received.src
     content = received.content
+    print("received: " + received.toString())
 
     # MSG_PADDLE_DIR
     if kind == MsgType.MSG_PADDLE_DIR :
@@ -281,7 +282,7 @@ def playerUpdate(name, status, info, canvas) :
         if status == PlayerReturnStatus.BALL_MISSED :
             # get message content fields
             SCORE = canvas.data[name].score + LOST_LIFE_POINTS
-            LIVES = cavnas.data[name].lives + LOST_LIFE_LIVES
+            LIVES = canvas.data[name].lives + LOST_LIFE_LIVES
 
             # form message
             toSend.kind = MsgType.MSG_BALL_MISSED
@@ -393,6 +394,8 @@ def redrawAll(canvas) :
         (status, info) = canvas.data['WeST'].update(canvas)
         playerUpdate('WeST', status, info, canvas)
         canvas.data['level'].update(canvas)
+        canvas.data['ball'].updateGame(canvas)
+
 
     # GAME OVER SCREEN
     elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER : 
@@ -440,9 +443,9 @@ def initPlayers(canvas):
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.MULTI_PLAYER)
-        canvas.data['NoRTH'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH', GameType.MULTI_PLAYER)
-        canvas.data['eaST'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST', GameType.MULTI_PLAYER)
-        canvas.data['WeST'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST', GameType.MULTI_PLAYER) 
+        canvas.data['NoRTH'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH', GameType.MULTI_PLAYER)
+        canvas.data['eaST'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST', GameType.MULTI_PLAYER)
+        canvas.data['WeST'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST', GameType.MULTI_PLAYER) 
 
 ### run - run the program
 def runUI(cmd_line_args) :

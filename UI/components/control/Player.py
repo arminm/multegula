@@ -197,27 +197,27 @@ class Player :
         # deflect off NORTH paddle
         if(paddleOrientation == Orientation.DIR_NORTH) :
             speedFactor = (ballCenterX - paddleCenter) / paddleWidth
-            xVelocity = speed * speedFactor * offsetFactor + offset
+            xVelocity = round(speed * speedFactor * offsetFactor + offset)
             yVelocity = speed        
 
         
         # deflect off SOUTH paddle
         elif(paddleOrientation == Orientation.DIR_SOUTH) :
             speedFactor = (ballCenterX - paddleCenter) / paddleWidth
-            xVelocity = speed * speedFactor * offsetFactor + offset
+            xVelocity = round(speed * speedFactor * offsetFactor + offset)
             yVelocity = (-speed)
 
         # deflect off EAST paddle
         elif(paddleOrientation == Orientation.DIR_EAST) :
             speedFactor = (ballCenterY - paddleCenter) / paddleWidth
             xVelocity = (-speed)
-            yVelocity = speed * speedFactor * offsetFactor + offset
+            yVelocity = round(speed * speedFactor * offsetFactor + offset)
         
         # deflect off WEST paddle
         elif(paddleOrientation == Orientation.DIR_WEST) :
             speedFactor = (ballCenterY - paddleCenter) / paddleWidth
             xVelocity = speed
-            yVelocity = speed * speedFactor * offsetFactor + offset
+            yVelocity = round(speed * speedFactor * offsetFactor + offset)
 
         return [xVelocity, yVelocity]
  

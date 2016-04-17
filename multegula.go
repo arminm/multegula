@@ -22,6 +22,9 @@ const MSG_GAME_TYPE string = "MSG_GAME_TYPE"
 const MSG_MYNAME string = "MSG_MYNAME"
 const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
 const MSG_PADDLE_DIR string = "MSG_PADDLE_DIR"
+const MSG_BALL_MISSED string = "MSG_BALL_MISSED"
+const MSG_BALL_DEFLECTED string = "MSG_BALL_DEFLECTED"
+const MSG_BLOCK_BROKEN string = "MSG_BLOCK_BROKEN"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVERYBODY"
@@ -224,6 +227,13 @@ func inboundDispatcher() {
 			bridges.SendToPyBridge(message)
 		case MSG_PADDLE_DIR:
 			bridges.SendToPyBridge(message)
+		case MSG_BALL_MISSED:
+			bridges.SendToPyBridge(message)
+		case MSG_BALL_DEFLECTED:
+			bridges.SendToPyBridge(message)
+		case MSG_BLOCK_BROKEN:
+			bridges.SendToPyBridge(message)
+
 		}
 	}
 }
