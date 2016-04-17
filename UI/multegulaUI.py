@@ -216,9 +216,9 @@ def react(canvas, received) :
         canvas.data[name].score = int(content[MsgIndex.BALL_DEFLECTED_SCORE])
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(int(content[MsgIndex.BALL_DEFLECTED_XCENTER]), int(content[MsgIndex.BALL_DEFLECTED_YCENTER]))
-        canvas.data['ball'].radius = int(content[MsgIndex.BALL_DEFLECTED_RADIUS])
-        canvas.data['ball'].setVelocity(int(content[MsgIndex.BALL_DEFLECTED_XSPEED]), int(content[MsgIndex.BALL_DEFLECTED_YSPEED]))
+        canvas.data['ball'].setCenter(int(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT, int(content[MsgIndex.BALL_DEFLECTED_YCENTER])) / FP_MULT
+        canvas.data['ball'].radius = int(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
+        canvas.data['ball'].setVelocity(int(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT, int(content[MsgIndex.BALL_DEFLECTED_YSPEED])) / FP_MULT
         canvas.data['ball'].randomColor()
 
     # MSG_BLOCK_BROKEN
@@ -227,9 +227,9 @@ def react(canvas, received) :
         canvas.data[name].lives = int(content[MsgIndex.BLOCK_BROKEN_LIVES])  
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(int(content[MsgIndex.BLOCK_BROKEN_XCENTER]), int(content[MsgIndex.BLOCK_BROKEN_YCENTER]))
-        canvas.data['ball'].radius = int(content[MsgIndex.BLOCK_BROKEN_RADIUS])
-        canvas.data['ball'].setVelocity(int(content[MsgIndex.BLOCK_BROKEN_XSPEED]), int(content[MsgIndex.BLOCK_BROKEN_YSPEED]))
+        canvas.data['ball'].setCenter(int(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT, int(content[MsgIndex.BLOCK_BROKEN_YCENTER])) / FP_MULT
+        canvas.data['ball'].radius = int(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
+        canvas.data['ball'].setVelocity(int(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT, int(content[MsgIndex.BLOCK_BROKEN_YSPEED])) / FP_MULT
         canvas.data['ball'].randomColor()
         canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
         canvas.data['level'].updated = True
@@ -246,11 +246,11 @@ def receiveAll(canvas) :
 
 def playerUpdate(name, status, info, canvas) :
     # single player game -> directly update appropriate game information
-    if status != PlayerReturnStatus.NO_STATUS and canvas.data['gameType'] == GameType.SINGLE_PLAYER :
+    if canvas.data['gameType'] == GameType.SINGLE_PLAYER :
         # ball missed -> update status and reset
         if status == PlayerReturnStatus.BALL_MISSED :
             canvas.data[name].score += LOST_LIFE_POINTS
-            canvas.data[name].lives -= LOST_LIFE_LIVES
+            canvas.data[name].lives += LOST_LIFE_LIVES
             canvas.data[name].statusUpdate = True
             canvas.data['ball'].reset()
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
@@ -273,10 +273,7 @@ def playerUpdate(name, status, info, canvas) :
             canvas.data['level'].updated = True
 
     # multiplayer game -> send update to competitors
-    elif status != PlayerReturnStatus.NO_STATUS and canvas.data['gameType'] == GameType.MULTI_PLAYER :
-        # create message
-        toSend = PyMessage()
-        toSend.src = name
+    elif canvas.data['gameType'] == GameType.MULTI_PLAYER :
 
         # ball missed -> created MSG_BALL_MISSED
         if status == PlayerReturnStatus.BALL_MISSED :
@@ -285,51 +282,64 @@ def playerUpdate(name, status, info, canvas) :
             LIVES = canvas.data[name].lives + LOST_LIFE_LIVES
 
             # form message
+            toSend = PyMessage()
+            toSend.src = name
             toSend.kind = MsgType.MSG_BALL_MISSED
             toSend.content = str(SCORE) + '|' + str(LIVES)
             toSend.multicast = True 
+            # send message
+            canvas.data['bridge'].sendMessage(toSend)
 
         # ball deflected -> create MSG_BALL_DEFLECTED
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
             ball  = canvas.data['ball']
             # get message content fields
-            XCENTER = ball.xCenter 
-            YCENTER = ball.yCenter
-            RADIUS = ball.radius
-            XSPEED = info[0]
-            YSPEED = info[1]
+            RADIUS = round(ball.radius * FP_MULT)
+            XSPEED = round(info[0] * FP_MULT)
+            YSPEED = round(info[1] * FP_MULT)
+            XCENTER = round((ball.xCenter + XSPEED) * FP_MULT)
+            YCENTER = round((ball.yCenter + YSPEED) * FP_MULT)
             SCORE = canvas.data[name].score + DEFLECT_POINTS
 
             # form message
+            toSend = PyMessage()
+            toSend.src = name
             toSend.kind = MsgType.MSG_BALL_DEFLECTED
             toSend.content = (str(XCENTER) + '|' + str(YCENTER) + '|' + 
                                 str(RADIUS) + '|' + str(XSPEED) + '|' + 
                                 str(YSPEED) + '|' + str(SCORE))
             toSend.multicast = True
+            # send message
+            canvas.data['bridge'].sendMessage(toSend)
+
+        elif status == PlayerReturnStatus.WALL_BALL_DEFLECTED :
+            canvas.data['ball'].setVelocity(info[0], info[1])  
+            canvas.data['ball'].randomColor()
 
         # block broken -> create MSG_BLOCK_BROKEN
         elif status == PlayerReturnStatus.BLOCK_BROKEN :
             ball  = canvas.data['ball']
             # get message content fields
-            XCENTER = ball.xCenter 
-            YCENTER = ball.yCenter
-            RADIUS = ball.radius
-            XSPEED = info[0]
-            YSPEED = info[1]
+            RADIUS = round(ball.radius * FP_MULT)
+            XSPEED = round(info[0] * FP_MULT)
+            YSPEED = round(info[1] * FP_MULT)
+            XCENTER = round((ball.xCenter + XSPEED) * FP_MULT)
+            YCENTER = round((ball.yCenter + YSPEED) * FP_MULT)
             SCORE = canvas.data[name].score + BREAK_POINTS
             LIVES = canvas.data[name].lives #TODO: update with power up
             BLOCK = info[2]
 
             # form message
+            toSend = PyMessage()
+            toSend.src = name
             toSend.kind = MsgType.MSG_BLOCK_BROKEN
             toSend.content = (str(XCENTER) + '|' + str(YCENTER) + '|' + 
                                 str(RADIUS) + '|' + str(XSPEED) + '|' + 
                                 str(YSPEED) + '|' + str(SCORE) + '|' +
                                 str(LIVES) + '|' + str(BLOCK))
             toSend.multicast = True
-
-        # send message
-        canvas.data['bridge'].sendMessage(toSend)
+            # send message
+            canvas.data['bridge'].sendMessage(toSend)
 
 
 ### redrawAll - draw the game screen
@@ -355,10 +365,11 @@ def redrawAll(canvas) :
     elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE :
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
-        canvas.data[canvas.data['myName']].update(canvas)
-        canvas.data['NoRTH'].update(canvas)
-        canvas.data['eaST'].update(canvas)
-        canvas.data['WeST'].update(canvas)
+        # canvas.data[canvas.data['myName']].update(canvas)
+        for player in canvas.data['competitors'] :
+            (status, info) = canvas.data[player].update(canvas)
+            playerUpdate(player, status, info, canvas)
+
         canvas.data['pauseScreen'].draw(canvas)
 
     ### GAME SCREEN
@@ -366,33 +377,25 @@ def redrawAll(canvas) :
         canvas.data['gameScreen'].draw(canvas)
 
         # update actual player
-        (myStatus, myInfo) = canvas.data[canvas.data['myName']].update(canvas)
-        playerUpdate(canvas.data['myName'], myStatus, myInfo, canvas)
+        # (myStatus, myInfo) = canvas.data[canvas.data['myName']].update(canvas)
+        # playerUpdate(canvas.data['myName'], myStatus, myInfo, canvas)
 
         # update all other players
-        (status, info) = canvas.data['NoRTH'].update(canvas)
-        playerUpdate('NoRTH', status, info, canvas)
-        (status, info) = canvas.data['eaST'].update(canvas)
-        playerUpdate('eaST', status, info, canvas)
-        (status, info) = canvas.data['WeST'].update(canvas)
-        playerUpdate('WeST', status, info, canvas)
+        for player in canvas.data['competitors'] :
+            (status, info) = canvas.data[player].update(canvas)
+            playerUpdate(player, status, info, canvas)
+
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
 
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.MULTI_PLAYER):
         canvas.data['gameScreen'].draw(canvas)
 
-        # update actual player
-        (myStatus, myInfo) = canvas.data[canvas.data['myName']].update(canvas)
-        playerUpdate(canvas.data['myName'], myStatus, myInfo, canvas)
+        competitors = canvas.data['competitors']
+        for player in competitors :
+            (status, info) = canvas.data[player].update(canvas)
+            playerUpdate(player, status, info, canvas)
 
-        # update all other players
-        (status, info) = canvas.data['NoRTH'].update(canvas)
-        playerUpdate('NoRTH', status, info, canvas)
-        (status, info) = canvas.data['eaST'].update(canvas)
-        playerUpdate('eaST', status, info, canvas)
-        (status, info) = canvas.data['WeST'].update(canvas)
-        playerUpdate('WeST', status, info, canvas)
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
 
@@ -437,15 +440,17 @@ def initPlayers(canvas):
     myName = canvas.data['myName']
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.SINGLE_PLAYER)
-        canvas.data['NoRTH'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'NoRTH', GameType.SINGLE_PLAYER)
-        canvas.data['eaST'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'eaST', GameType.SINGLE_PLAYER)
-        canvas.data['WeST'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'WeST', GameType.SINGLE_PLAYER)
+        canvas.data['armin'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'armin', GameType.MULTI_PLAYER)
+        canvas.data['lunwen'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'lunwen', GameType.MULTI_PLAYER)
+        canvas.data['garrett'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'garrett', GameType.MULTI_PLAYER)
+        canvas.data['competitors'] = [myName, 'armin', 'lunwen', 'garrett']
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.MULTI_PLAYER)
-        canvas.data['NoRTH'] = Player(Orientation.DIR_NORTH, PlayerState.COMP, 'NoRTH', GameType.MULTI_PLAYER)
-        canvas.data['eaST'] = Player(Orientation.DIR_EAST, PlayerState.COMP, 'eaST', GameType.MULTI_PLAYER)
-        canvas.data['WeST'] = Player(Orientation.DIR_WEST, PlayerState.COMP, 'WeST', GameType.MULTI_PLAYER) 
+        canvas.data['armin'] = Player(Orientation.DIR_NORTH, PlayerState.WALL, 'armin', GameType.MULTI_PLAYER)
+        canvas.data['lunwen'] = Player(Orientation.DIR_EAST, PlayerState.WALL, 'lunwen', GameType.MULTI_PLAYER)
+        canvas.data['garrett'] = Player(Orientation.DIR_WEST, PlayerState.WALL, 'garrett', GameType.MULTI_PLAYER) 
+        canvas.data['competitors'] = [myName, 'armin', 'lunwen', 'garrett']
 
 ### run - run the program
 def runUI(cmd_line_args) :

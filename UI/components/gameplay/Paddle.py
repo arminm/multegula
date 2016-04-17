@@ -24,7 +24,10 @@ class Paddle :
         self.speed = PADDLE_SPEED_INIT 
         self.direction = Direction.DIR_STOP
         self.center = X_CENTER
-        self.width = PADDLE_WIDTH_INIT
+        if state == PlayerState.WALL :
+            self.width = PADDLE_WIDTH_MAX
+        else :
+            self.width = PADDLE_WIDTH_INIT
         self.color = 'black'
         self.randomColor()
         self.redraw = False
@@ -108,10 +111,10 @@ class Paddle :
     def update(self, canvas) :
         state = self.state
 
-        if((state == PlayerState.USER) or (state == PlayerState.AI)) :
+        if state == PlayerState.USER or state == PlayerState.AI :
             self.move()
             self.draw(canvas)
-        elif(state == PlayerState.COMP) :
+        elif state == PlayerState.COMP or state == PlayerState.WALL :
             self.draw(canvas)
 
     ### getInfo - get pertinent information about the paddle

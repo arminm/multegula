@@ -174,12 +174,15 @@ class Player :
                     (topEdge < ((ballCenterX - ballRadius) <= bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge))) :
                 ballBounce = True
 
-
         # # reset ball, apply appropriate scoring
-        if ballReset :
+        if ballReset and self.state != PlayerState.WALL:
             return (PlayerReturnStatus.BALL_MISSED, [])
-        elif ballBounce :
+        elif ballBounce and self.state != PlayerState.WALL:
             return (PlayerReturnStatus.BALL_DEFLECTED, self.deflectBallVelocity(canvas))
+        elif ballBounce and self.state == PlayerState.WALL:
+            return (PlayerReturnStatus.WALL_BALL_DEFLECTED, self.deflectBallVelocity(canvas))
+        elif self.state == PlayerState.WALL:
+            return (PlayerReturnStatus.WALL_NO_STATUS, [])
         return (PlayerReturnStatus.NO_STATUS, [])
 
     ### deflectBallVelocity - 
@@ -193,31 +196,44 @@ class Player :
         # get ball/paddle info
         (paddleCenter, paddleWidth, paddleDir, paddleOrientation) = self.paddle.getInfo()
         (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
+        (xVelocity, yVelocity) = canvas.data['ball'].getVelocity()
 
         # deflect off NORTH paddle
         if(paddleOrientation == Orientation.DIR_NORTH) :
-            speedFactor = (ballCenterX - paddleCenter) / paddleWidth
-            xVelocity = round(speed * speedFactor * offsetFactor + offset)
-            yVelocity = speed        
+            if self.state == PlayerState.WALL :
+                yVelocity = (-yVelocity)
+            else :
+                speedFactor = (ballCenterX - paddleCenter) / paddleWidth
+                xVelocity = round(speed * speedFactor * offsetFactor + offset, RD_FACT)
+                yVelocity = speed        
 
         
         # deflect off SOUTH paddle
         elif(paddleOrientation == Orientation.DIR_SOUTH) :
-            speedFactor = (ballCenterX - paddleCenter) / paddleWidth
-            xVelocity = round(speed * speedFactor * offsetFactor + offset)
-            yVelocity = (-speed)
+            if self.state == PlayerState.WALL :
+                yVelocity = (-yVelocity)
+            else :
+                speedFactor = (ballCenterX - paddleCenter) / paddleWidth
+                xVelocity = round(speed * speedFactor * offsetFactor + offset, RD_FACT)
+                yVelocity = (-speed)
 
         # deflect off EAST paddle
         elif(paddleOrientation == Orientation.DIR_EAST) :
-            speedFactor = (ballCenterY - paddleCenter) / paddleWidth
-            xVelocity = (-speed)
-            yVelocity = round(speed * speedFactor * offsetFactor + offset)
+            if self.state == PlayerState.WALL :
+                xVelocity = (-xVelocity)
+            else :
+                speedFactor = (ballCenterY - paddleCenter) / paddleWidth
+                xVelocity = (-speed)
+                yVelocity = round(speed * speedFactor * offsetFactor + offset, RD_FACT)
         
         # deflect off WEST paddle
         elif(paddleOrientation == Orientation.DIR_WEST) :
-            speedFactor = (ballCenterY - paddleCenter) / paddleWidth
-            xVelocity = speed
-            yVelocity = round(speed * speedFactor * offsetFactor + offset)
+            if self.state == PlayerState.WALL :
+                xVelocity = (-xVelocity)
+            else : 
+                speedFactor = (ballCenterY - paddleCenter) / paddleWidth
+                xVelocity = speed
+                yVelocity = round(speed * speedFactor * offsetFactor + offset, RD_FACT)
 
         return [xVelocity, yVelocity]
  
@@ -265,14 +281,16 @@ class Player :
     def update(self, canvas) :
         # initialze return status to NONE
         returnStatus = PlayerReturnStatus.NO_STATUS
-        self.displayStatus(canvas)
+
+        if self.state != PlayerState.WALL :
+            self.displayStatus(canvas)
 
         # if this is an AI, then updae the motion of the paddles via the AI routine
         if self.state == PlayerState.AI :
             self.AI(canvas)
 
         # update player for motion and deflection
-        if self.state == PlayerState.USER or self.state == PlayerState.AI :
+        if self.state == PlayerState.USER or self.state == PlayerState.AI or self.state == PlayerState.WALL:
 
             # update the paddle
             self.paddle.update(canvas)

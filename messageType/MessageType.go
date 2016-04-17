@@ -20,11 +20,22 @@ const ANSWER string = "answer"
 const COORDINATOR string = "coordinator"
 /* The end of message types for bully algorithm */
 
-const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
-const MSG_PADDLE_DIR string = "MSG_PADDLE_DIR"
+/*** MESSAGE TYPE CONSTANTS ***/
+const MSG_GAME_TYPE string      = "MGT"
+const MSG_MYNAME string         = "MMN"
+const MSG_PADDLE_POS string     = "MPP"
+const MSG_PADDLE_DIR string     = "MPD"
+const MSG_BALL_MISSED string    = "MBM"
+const MSG_BALL_DEFLECTED string = "MBD"
+const MSG_BLOCK_BROKEN string   = "MBB"
 
-const UI_MULTICAST_DEST string = "EVERYBODY"
-const UI_MULTEGULA_DEST string = "MULTEGULA"
-const MSG_MYNAME string = "MSG_MYNAME"
+/*** MESSAGE DESTINATION CONSTANTS ***/
+const MULTICAST_DEST string = "EVR1"
+const MULTEGULA_DEST string = "MULT"
 
+/*** MESSAGE SOURCE CONTENTS ***/
 const UI_SOURCE string = "UI"
+
+/*** MESSAGE PAYLOAD CONSTANTS ***/
+const GAME_TYPE_MULTI string = "M"
+const GAME_TYPE_SINGLE string = "S"
