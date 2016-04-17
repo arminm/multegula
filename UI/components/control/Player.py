@@ -64,74 +64,73 @@ class Player :
         (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
         (xVelocity, yVelocity) = canvas.data['ball'].getVelocity()
         blocks = canvas.data['level'].blocks;
-        broken = -1;
+        broken = False;
+        returnInfo = []
 
         # ball moving NORTH WEST
         if(xVelocity < 0) and (yVelocity <= 0) :
-            for i, block in enumerate(blocks) :
+            for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
                     if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballCenterX <= blkRight) :
-                        canvas.data['ball'].setVelocity(xVelocity, (-yVelocity))
-                        broken = i;
+                        returnInfo = [xVelocity, (-yVelocity), blockIndex]
+                        broken =True;
                         break
                     elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballCenterY <= blkBottom) :
-                        canvas.data['ball'].setVelocity((-xVelocity), yVelocity)
-                        broken = i;
+                        returnInfo = [(-xVelocity), yVelocity, blockIndex]
+                        broken = True;
                         break                                     
 
         # ball moving NORTH EAST
-        elif(xVelocity > 0) and (yVelocity < 0) :
-            for i, block in enumerate(blocks) :
+        elif(xVelocity >= 0) and (yVelocity <= 0) :
+            for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
                     if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballCenterX <= blkRight) :
-                        canvas.data['ball'].setVelocity(xVelocity, (-yVelocity))
-                        broken = i;
+                        returnInfo = [xVelocity, (-yVelocity), blockIndex]
+                        broken = True
                         break
                     elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballCenterY <= blkBottom) :
-                        canvas.data['ball'].setVelocity((-xVelocity), yVelocity)
-                        broken = i;
+                        returnInfo = [(-xVelocity), yVelocity, blockIndex]
+                        broken = True;
                         break                                   
           
         # ball moving SOUTH WEST
         elif(xVelocity < 0) and (yVelocity > 0) :
-            for i, block in enumerate(blocks) :
+            for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
                     if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballCenterX <= blkRight) :
-                        canvas.data['ball'].setVelocity(xVelocity, (-yVelocity))
-                        broken = i;
+                        returnInfo = [xVelocity, (-yVelocity), blockIndex]
+                        broken = True;
                         break
                     elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballCenterY <= blkBottom) :
-                        canvas.data['ball'].setVelocity((-xVelocity), yVelocity)
-                        broken = i;
+                        returnInfo = [(-xVelocity), yVelocity, blockIndex]
+                        broken = True;
                         break
 
         # ball moving SOUTH EAST
-        elif(xVelocity > 0) and (yVelocity > 0) :
-            for i, block in enumerate(blocks) :
+        elif(xVelocity >= 0) and (yVelocity > 0) :
+            for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
                     if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballCenterX <= blkRight) :
-                        canvas.data['ball'].setVelocity(xVelocity, (-yVelocity))
-                        broken = i;
+                        returnInfo = [xVelocity, (-yVelocity), blockIndex]
+                        broken = True;
                         break
                     elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballCenterY <= blkBottom) :
-                        canvas.data['ball'].setVelocity((-xVelocity), yVelocity)
-                        broken = i;
+                        returnInfo = [(-xVelocity), yVelocity, blockIndex]
+                        broken = True;
                         break
 
-        if broken >= 0:
-            canvas.data['level'].blocks[broken].disable()
-            canvas.data['level'].updated = True 
-            self.score += 5;    
-            self.statusUpdate = True
+        if broken == True :
+            return (PlayerReturnStatus.BLOCK_BROKEN, returnInfo)
+        return (PlayerReturnStatus.NO_STATUS, [])
 
 
-    ### updateBall method - 
+    ### deflectBall method - 
     ##  Check to see if the ball is off the playing field or is being deflected by the player's paddle.
-    def updateBall(self, canvas) :
+    def deflectBall(self, canvas) :
         # get canvas/paddle/ball info
         ORIENTATION = self.ORIENTATION
         (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
@@ -176,29 +175,16 @@ class Player :
                 ballBounce = True
 
 
-        # reset ball, apply appropriate scoring
-        if(ballReset) :
-            canvas.data['ball'].reset()
-            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-            canvas.data['nextScreen'] = Screens.SCRN_GAME
-            self.lives -= 1
-            self.score -= 20
-            self.statusUpdate = True
-            return True;
-        # bounce ball, apply appropriate scoring
-        elif(ballBounce) :
-            self.deflectOffPaddle(canvas)    
-            self.score += 3 
-            self.statusUpdate = True
-            canvas.data['ball'].lastToTouch = self.name;
-            return True;
-        else:
-            return False;
-        # implicit else - do nothing
+        # # reset ball, apply appropriate scoring
+        if ballReset :
+            return (PlayerReturnStatus.BALL_MISSED, [])
+        elif ballBounce :
+            return (PlayerReturnStatus.BALL_DEFLECTED, self.deflectBallVelocity(canvas))
+        return (PlayerReturnStatus.NO_STATUS, [])
 
-    ### deflectOffPaddle - 
+    ### deflectBallVelocity - 
     ##  Deflect ball off of a paddle and determine the new direction off the ball
-    def deflectOffPaddle(self, canvas) :
+    def deflectBallVelocity(self, canvas) :
         # initialize speed and random offset variables
         speed = BALL_SPEED_INIT
         offsetFactor = random.uniform(1, 1.1)
@@ -232,9 +218,8 @@ class Player :
             speedFactor = (ballCenterY - paddleCenter) / paddleWidth
             xVelocity = speed
             yVelocity = speed * speedFactor * offsetFactor + offset
-            
-        canvas.data['ball'].setVelocity(xVelocity, yVelocity)  
-        canvas.data['ball'].randomColor()
+
+        return [xVelocity, yVelocity]
  
 
     def setStatus(self, canvas) :
@@ -278,22 +263,28 @@ class Player :
 
     ### general purpose update
     def update(self, canvas) :
-        # Human player update
-        if(self.state == PlayerState.USER) :
-            self.paddle.update(canvas)
-            if not(self.updateBall(canvas)) and (canvas.data['ball'].lastToTouch == self.name):
-                self.breakBlock(canvas);
-            self.displayStatus(canvas)
-        # Artificial player update
-        elif(self.state == PlayerState.AI) :
+        # initialze return status to NONE
+        returnStatus = PlayerReturnStatus.NO_STATUS
+        self.displayStatus(canvas)
+
+        # if this is an AI, then updae the motion of the paddles via the AI routine
+        if self.state == PlayerState.AI :
             self.AI(canvas)
+
+        # update player for motion and deflection
+        if self.state == PlayerState.USER or self.state == PlayerState.AI :
+
+            # update the paddle
             self.paddle.update(canvas)
-            if not(self.updateBall(canvas)) and (canvas.data['ball'].lastToTouch == self.name):
-                self.breakBlock(canvas);
-            self.displayStatus(canvas)
-        # Only competitor update
+            (status, payload) = self.deflectBall(canvas)
+
+            if status == PlayerReturnStatus.NO_STATUS and canvas.data['ball'].lastToTouch == self.name :
+                (status, payload) = self.breakBlock(canvas)
+
+            return (status, payload)
+
         elif(self.state == PlayerState.COMP) :
             self.paddle.draw(canvas)
-            self.displayStatus(canvas)
+            return (PlayerReturnStatus.NO_STATUS, [])
 
 
