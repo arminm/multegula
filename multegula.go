@@ -11,16 +11,17 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
+	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/messagePasser"
 )
 
-
 /*** MESSAGE TYPE CONSTANTS ***/
-const MSG_GAME_TYPE 	string = "MSG_GAME_TYPE"
-const MSG_MYNAME 		string = "MSG_MYNAME"
-const MSG_PADDLE_POS 	string = "MSG_PADDLE_POS"
-const MSG_PADDLE_DIR 	string = "MSG_PADDLE_DIR"
+const MSG_GAME_TYPE string = "MSG_GAME_TYPE"
+const MSG_MYNAME string = "MSG_MYNAME"
+const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
+const MSG_PADDLE_DIR string = "MSG_PADDLE_DIR"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVERYBODY"
@@ -30,10 +31,10 @@ const MULTEGULA_DEST string = "MULTEGULA"
 const UI_SOURCE string = "UI"
 
 /*** MESSAGE PAYLOAD CONSTANTS ***/
-const GAME_TYPE_MULTI 	string = "MULTI"
-const GAME_TYPE_SINGLE	string = "SINGLE"
+const GAME_TYPE_MULTI string = "MULTI"
+const GAME_TYPE_SINGLE string = "SINGLE"
 
-/* 
+/*
  * This is the sendChannel for message dispatcher.
  * Any components like UI or bully algorithm will
  * put messages into this channel if they whan to
@@ -48,7 +49,7 @@ var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, me
  * @return the message got from sendChannel
  */
 func getMessageFromSendChannel() messagePasser.Message {
-	message := <- sendChannel
+	message := <-sendChannel
 	return message
 }
 
@@ -189,24 +190,24 @@ func uiGetGameType() (gameType string) {
 			break
 		}
 	}
-	return gameType	
+	return gameType
 }
 
 /* wait for incoming messages from the UI */
 func PyBridgeReceiver() {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-        go putMessageIntoSendChannel(message)
+		go putMessageIntoSendChannel(message)
 	}
 }
 
 /* wait for incoming messages from the bully algorithm */
 func BullyReceiver() {
 	/*
-	for {
-		message := bully.Receive()
-		go puMessageIntoSendChannel(message)
-	}
+		for {
+			message := bully.Receive()
+			go puMessageIntoSendChannel(message)
+		}
 	*/
 	return
 }
@@ -222,7 +223,7 @@ func inboundDispatcher() {
 		case MSG_PADDLE_POS:
 			bridges.SendToPyBridge(message)
 		case MSG_PADDLE_DIR:
-			bridges.SendToPyBridge(message);
+			bridges.SendToPyBridge(message)
 		}
 	}
 }
@@ -278,13 +279,31 @@ func skinnyParseMainArguments(args []string) (configName string) {
 /* the Main function of the Multegula application */
 func main() {
 	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
 	portFlag := flag.Int("port", 44444, "Local port number for Python-Go bridge.")
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
 	args := flag.Args()
 
+	// for testing the bootstrapping
+	if *bootstrapTestFlag {
+		config := messagePasser.Configuration{}
+		messagePasser.DecodeConfigFile("localConfig", &config)
+		localName := getLocalName()
+		_, localNode, err := messagePasser.FindNodeByName(config.Nodes, localName)
+		fmt.Println("Contacting the bootstrap server...")
+		nodes, err := bootstrapClient.GetNodes(localNode)
+		if err != nil {
+			fmt.Println("Got error:", err)
+		} else {
+			fmt.Printf("Got nodes: %+v\n", nodes)
+		}
+		return
+	}
+
 	if *testFlag {
 		configName, localNodeName := parseMainArguments(args)
+
 		fmt.Print("--------------------------------\n")
 		fmt.Println("Initing with localName:", localNodeName)
 		messagePasser.InitMessagePasser(configName, localNodeName)
