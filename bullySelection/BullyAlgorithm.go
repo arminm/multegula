@@ -15,6 +15,7 @@ package bullySelection
 import (
 	"time"
     "fmt"
+    "sync"
 	"github.com/arminm/multegula/messagePasser"
 	"github.com/arminm/multegula/messageType"
 )
@@ -27,17 +28,17 @@ import (
  * transmission delay and message processing delay. It is counted
  * in millisecond.
  */
-const TIMEOUT int = 2000
+const TIMEOUT int = 1000
 
 /* The time period between two health check */
-const TIME_BETWEEN_HEALTH_CHECK = 5000
+const TIME_BETWEEN_HEALTH_CHECK = 2000
 
 /* This is the time a node will wait after sending out an answer
  * message. If it receives unicorn message within this time
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_UNICORN_MESSAGE_TIMEOUT int = 4000
+const WAITING_UNICORN_MESSAGE_TIMEOUT int = 2000
 
 /* The name of node */
 var localName string
@@ -51,6 +52,7 @@ var frontNodes []string
 /* Nodes whose names are greater than local name in the group */
 var latterNodes []string
 
+
 /*
  * Indicate wheather this node has already started an election.
  * When a node starts an election, set this value to true.
@@ -58,6 +60,9 @@ var latterNodes []string
  * because en election has finished when receiving an unicorn message
  */
 var electionIsStarted bool = false
+
+/* Only one routine is allowed to change the value of electionIsStarted */
+var mutex = &sync.Mutex{}
 
 /* The queue for messages to be sent, messages in this queue
  * will be passed to messagePasser by mutegula
@@ -133,14 +138,14 @@ func dispatchMessage() {
             }
         /* receive health check message, reply if node is unicorn */
         case messageType.ARE_YOU_ALIVE:
-            if unicorn == localName {
+//            if unicorn == localName {
                 go putMessageToSendChannel(messagePasser.Message{
                     Source: localName,
                     Destination: message.Source,
                     Content: message.Content,
                     Kind: messageType.IAM_ALIVE,
                 })
-            }
+//            }
         case messageType.IAM_ALIVE:
             go func() {
                 receivedHeadCheckReplyChannel <- message
@@ -287,6 +292,7 @@ func startElection() {
     if electionIsStarted {
         return
     }
+    mutex.Lock()
     electionIsStarted = true
 	currentTime := getCurrentTime()
     fmt.Println("Start an election at " + currentTime)
@@ -330,7 +336,7 @@ func startElection() {
                     electionIsStarted = false
                     fmt.Println("No unicorn message received, start another election.")
                     close(timeoutWaitUnicorn)
-					startElection()
+					go startElection()
 				/* recieve an unicorn message within timeout,
 				 * start health check
 				 */
@@ -338,7 +344,7 @@ func startElection() {
                     electionIsStarted = false
 					unicorn = unicornMessage.Content
                     fmt.Printf("Received unicorn message from %s\n", unicorn)
-					startHealthCheck()
+					go startHealthCheck()
 				}
 			}
 			/*
@@ -346,6 +352,7 @@ func startElection() {
 			 */
 		}
 	}
+    mutex.Unlock()
 }
 
 /*
