@@ -27,17 +27,17 @@ import (
  * transmission delay and message processing delay. It is counted
  * in millisecond.
  */
-const TIMEOUT int = 5000
+const TIMEOUT int = 2000
 
 /* The time period between two health check */
-const TIME_BETWEEN_HEALTH_CHECK = 10000
+const TIME_BETWEEN_HEALTH_CHECK = 5000
 
 /* This is the time a node will wait after sending out an answer
  * message. If it receives unicorn message within this time
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_UNICORN_MESSAGE_TIMEOUT int = 2000
+const WAITING_UNICORN_MESSAGE_TIMEOUT int = 4000
 
 /* The name of node */
 var localName string
@@ -284,10 +284,13 @@ func startHealthCheck() {
 
 /* Start election */
 func startElection() {
+    if electionIsStarted {
+        return
+    }
+    electionIsStarted = true
 	currentTime := getCurrentTime()
     fmt.Println("Start an election at " + currentTime)
 	sendElectionMessage(currentTime)
-    electionIsStarted = true
     /* wait for answers from other nodes within timeout */
 	var timeoutWaitAnswer chan bool = make(chan bool, 1)
 	go func() {
@@ -299,12 +302,12 @@ func startElection() {
 		select {
 		/* no answer after timeout, the node it self is unicorn */
 		case <- timeoutWaitAnswer:
+            electionIsStarted = false
             fmt.Println("Time out without answer received")
 			close(timeoutWaitAnswer)
             fmt.Printf("Set self %s as unicorn\n", localName)
 			unicorn = localName
 			sendUnicornMessage()
-            electionIsStarted = false
 			i = 1
 		/* get answer within time out */
         case message := <-receivedAnswerChannel:
@@ -324,6 +327,7 @@ func startElection() {
 				 * start another election process
 				 */
 				case <- timeoutWaitUnicorn:
+                    electionIsStarted = false
                     fmt.Println("No unicorn message received, start another election.")
                     close(timeoutWaitUnicorn)
 					startElection()
@@ -331,9 +335,9 @@ func startElection() {
 				 * start health check
 				 */
                 case unicornMessage := <- receivedUnicornChannel:
+                    electionIsStarted = false
 					unicorn = unicornMessage.Content
                     fmt.Printf("Received unicorn message from %s\n", unicorn)
-                    electionIsStarted = false
 					startHealthCheck()
 				}
 			}
