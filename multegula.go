@@ -9,7 +9,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"reflect"
+//	"reflect"
 	"strconv"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/messagePasser"
@@ -204,13 +204,10 @@ func PyBridgeReceiver() {
 
 /* wait for incoming messages from the bully algorithm */
 func BullyReceiver() {
-	
 	for {
 		message := bullySelection.GetMessageFromSendChannel()
 		go putMessageIntoSendChannel(message)
 	}
-	
-	return
 }
 
 /* receive message from messagePasser and route to correct location */
@@ -289,7 +286,8 @@ func skinnyParseMainArguments(args []string) (configName string) {
 
 /* the Main function of the Multegula application */
 func main() {
-	testFlag := flag.Bool("test", false, "Test Mode Flag")
+//	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	testFlag := flag.Bool("test", true, "Test Mode Flag")
 	portFlag := flag.Int("port", 44444, "Local port number for Python-Go bridge.")
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
@@ -307,9 +305,14 @@ func main() {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
-		go receiveRoutine()
+	//	go receiveRoutine()
+		go BullyReceiver()
+		go inboundDispatcher()
+        /* start bully algorithm */
+        go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
+		outboundDispatcher()
 
-		fmt.Println("Please select the operation you want to do:")
+/*		fmt.Println("Please select the operation you want to do:")
 		for {
 			fmt.Println("Getting operation")
 			operation := getOperation()
@@ -330,7 +333,7 @@ func main() {
 			} else {
 				fmt.Println("Operation not recognized. Please try again.")
 			}
-		}
+		}*/
 	} else {
 		/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
 		// initialize communication with the UI
@@ -352,6 +355,8 @@ func main() {
 			go PyBridgeReceiver()
 			go BullyReceiver()
 			go inboundDispatcher()
+            /* start bully algorithm */
+            go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
 			outboundDispatcher()
 		}
 	}

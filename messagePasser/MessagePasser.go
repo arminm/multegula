@@ -253,6 +253,21 @@ func getFrontAndLatterNodes(nodes []Node, localNode Node) (map[string]Node, map[
 }
 
 /*
+ * Get all nodes' name from messagePasser
+ * This function should be deleted when
+ * node names are got from BootstrapServer
+ * @param nodes all nodes
+ * @return all nodes' names
+ */
+ func GetNodeNames() []string {
+     var names []string
+     for _, node := range config.Nodes {
+        names = append(names, node.Name)
+     }
+     return names
+ }
+
+/*
  * accepts connections from other nodes and stores
  * connections into connections map, after accepting
  * all connections from all other nodes in the group,
