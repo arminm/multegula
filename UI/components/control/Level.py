@@ -66,7 +66,7 @@ class Level :
         # if the level has been updated -> redraw the blocks
         if not(self.first) and self.updated :
             for block in self.blocks :
-                if(block.enabled == True):
+                if block.enabled == True:
                     complete = False;
                 canvas.delete(block.ID)
             self.setBlocks(canvas)
@@ -85,7 +85,7 @@ class Level :
         levelComplete = self.draw(canvas);
 
         # current level complete and there is at least one more level to be played
-        if levelComplete and ((self.currentLevel + 1) < self.MAX_LEVELS):
+        if levelComplete and (self.currentLevel + 1) < self.MAX_LEVELS :
             self.currentLevel += 1;
             self.blocks = self.levels[self.currentLevel];
             self.first = True;
@@ -94,7 +94,7 @@ class Level :
             canvas.data['ball'].reset()
 
         # current level is complete and there are no more levels to be played ... Game over!
-        elif levelComplete and ((self.currentLevel + 1) == self.MAX_LEVELS):
+        elif levelComplete and (self.currentLevel + 1) == self.MAX_LEVELS:
             canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER;
 
 

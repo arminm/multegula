@@ -18,8 +18,8 @@ DELIMITER = '##'
 PAYLOAD_DELIMITER = '|'
 LOCALHOST_IP = 'localhost'
 DEFAULT_SRC = 'UNSET'
-MULTICAST_DEST = 'EVERYBODY'
-MULTEGULA_DEST = 'MULTEGULA'
+MULTICAST_DEST = 'EVR1'
+MULTEGULA_DEST = 'MULT'
 DEFAULT_PORT = 44444
 ##########################
 
@@ -104,6 +104,7 @@ class GoBridge :
 
 			# assemble the string version of the message
 			toSend = pyMessage.assemble()
+			print("toSend: " + toSend)
 
 			try:	
 				self.GoSocket.send(toSend.encode(encoding='utf-8'))

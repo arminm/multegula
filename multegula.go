@@ -18,21 +18,24 @@ import (
 )
 
 /*** MESSAGE TYPE CONSTANTS ***/
-const MSG_GAME_TYPE string = "MSG_GAME_TYPE"
-const MSG_MYNAME string = "MSG_MYNAME"
-const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
-const MSG_PADDLE_DIR string = "MSG_PADDLE_DIR"
+const MSG_GAME_TYPE string 		= "MGT"
+const MSG_MYNAME string 		= "MMN"
+const MSG_PADDLE_POS string 	= "MPP"
+const MSG_PADDLE_DIR string 	= "MPD"
+const MSG_BALL_MISSED string 	= "MBM"
+const MSG_BALL_DEFLECTED string = "MBD"
+const MSG_BLOCK_BROKEN string 	= "MBB"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
-const MULTICAST_DEST string = "EVERYBODY"
-const MULTEGULA_DEST string = "MULTEGULA"
+const MULTICAST_DEST string = "EVR1"
+const MULTEGULA_DEST string = "MULT"
 
 /*** MESSAGE SOURCE CONTENTS ***/
 const UI_SOURCE string = "UI"
 
 /*** MESSAGE PAYLOAD CONSTANTS ***/
-const GAME_TYPE_MULTI string = "MULTI"
-const GAME_TYPE_SINGLE string = "SINGLE"
+const GAME_TYPE_MULTI string = "M"
+const GAME_TYPE_SINGLE string = "S"
 
 /*
  * This is the sendChannel for message dispatcher.
@@ -217,13 +220,19 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
-
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
 		case MSG_PADDLE_POS:
 			bridges.SendToPyBridge(message)
 		case MSG_PADDLE_DIR:
 			bridges.SendToPyBridge(message)
+		case MSG_BALL_MISSED:
+			bridges.SendToPyBridge(message)
+		case MSG_BALL_DEFLECTED:
+			bridges.SendToPyBridge(message)
+		case MSG_BLOCK_BROKEN:
+			bridges.SendToPyBridge(message)
+
 		}
 	}
 }

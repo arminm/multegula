@@ -40,9 +40,10 @@ BUTTON_MARGIN = (CANVAS_WIDTH // 10) - (CANVAS_WIDTH // 11)
 # paddle sizing 
 PADDLE_MARGIN = CANVAS_HEIGHT // 20
 PADDLE_HEIGHT = CANVAS_HEIGHT // 50  
-PADDLE_MIN = PADDLE_MARGIN + (2*PADDLE_HEIGHT)
-PADDLE_MAX = CANVAS_WIDTH - PADDLE_MARGIN - (2*PADDLE_HEIGHT) 
+PADDLE_MIN = PADDLE_MARGIN + PADDLE_HEIGHT
+PADDLE_MAX = CANVAS_WIDTH - PADDLE_MARGIN - PADDLE_HEIGHT
 PADDLE_WIDTH_INIT = CANVAS_WIDTH // 6
+PADDLE_WIDTH_MAX = (PADDLE_MAX - PADDLE_MIN) // 2
 
 # block sizing
 BLOCK_WIDTH = CANVAS_WIDTH // 10
@@ -51,6 +52,16 @@ BLOCK_HEIGHT = CANVAS_HEIGHT // 50
 # speed constants
 BALL_SPEED_INIT = CANVAS_WIDTH // 110
 PADDLE_SPEED_INIT = CANVAS_WIDTH // 80
+
+# score int constants
+LOST_LIFE_POINTS = -20
+LOST_LIFE_LIVES = -1
+DEFLECT_POINTS  = 3
+BREAK_POINTS = 5
+
+# fixed point multiplier / rounding factor
+FP_MULT = 10
+RD_FACT = 1
 
 ### Orientation - for the location of players/paddles
 class Orientation(Enum) :
@@ -99,6 +110,7 @@ class PlayerState(Enum) :
     USER        = 0 # controlled by this player
     AI          = 1 # controlling it self
     COMP        = 2 # controlled by a COMPetitor
+    WALL        = 3 # player is a wall
 
 ### GameType - define the two game types
 class GameType(Enum) :
@@ -112,23 +124,50 @@ class Tilt(Enum) :
 
 ### MsgType - defines the message types
 class MsgType() :
-    MSG_GAME_TYPE   = 'MSG_GAME_TYPE'
-    MSG_MYNAME      = 'MSG_MYNAME'
-    MSG_PADDLE_DIR  = "MSG_PADDLE_DIR"
-    MSG_PADDLE_POS  = "MSG_PADDLE_POS"
+    MSG_GAME_TYPE   = 'MGT'
+    MSG_MYNAME      = 'MMN'
+    MSG_PADDLE_DIR  = 'MPD'
+    MSG_PADDLE_POS  = 'MPP'
+    MSG_BALL_MISSED = 'MBM'
+    MSG_BALL_DEFLECTED = 'MBD'
+    MSG_BLOCK_BROKEN = 'MBB'
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
-    GAME_TYPE_SINGLE    = 'SINGLE'
-    GAME_TYPE_MULTI     = 'MULTI'
-    PADDLE_DIR_LEFT     = 'LEFT'
-    PADDLE_DIR_RIGHT    = 'RIGHT'
+    GAME_TYPE_SINGLE    = 'S'
+    GAME_TYPE_MULTI     = 'M'
+    PADDLE_DIR_LEFT     = 'L'
+    PADDLE_DIR_RIGHT    = 'R'
 
 ### MsgIndex - defines the the standard placement of payload values
 class MsgIndex() :
-    PADDLE_DIR = 0
-    PADDLE_POS_CENTER = 0
-    PADDLE_POS_WIDTH = 1
+    PADDLE_DIR              = 0
+    PADDLE_POS_CENTER       = 0
+    PADDLE_POS_WIDTH        = 1
+    BALL_MISSED_SCORE       = 0
+    BALL_MISSED_LIVES       = 1
+    BALL_DEFLECTED_XCENTER  = 0
+    BALL_DEFLECTED_YCENTER  = 1
+    BALL_DEFLECTED_RADIUS   = 2
+    BALL_DEFLECTED_XSPEED   = 3
+    BALL_DEFLECTED_YSPEED   = 4
+    BALL_DEFLECTED_SCORE    = 5
+    BLOCK_BROKEN_XCENTER    = 0
+    BLOCK_BROKEN_YCENTER    = 1
+    BLOCK_BROKEN_RADIUS     = 2
+    BLOCK_BROKEN_XSPEED     = 3
+    BLOCK_BROKEN_YSPEED     = 4
+    BLOCK_BROKEN_SCORE      = 5
+    BLOCK_BROKEN_LIVES      = 6
+    BLOCK_BROKEN_BLOCK      = 7
+
+class PlayerReturnStatus() :
+    NO_STATUS       = 0
+    WALL_NO_STATUS  = 1
+    BALL_MISSED     = 2
+    BALL_DEFLECTED  = 3
+    WALL_BALL_DEFLECTED = 4
+    BLOCK_BROKEN    = 5
 
 
 
