@@ -18,7 +18,7 @@ sleep 1
 
 #Start multegula.go and wait for it to come up.
 #Defaults to port 44444 if port isn't received.
-go run multegula.go -uiport=${1:-44444} -gameport=${1:-11111} &
+go run multegula.go -uiport=${1:-44444} -gameport=${2:-1111} &
 sleep 4
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
