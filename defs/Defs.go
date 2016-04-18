@@ -1,11 +1,7 @@
 ////////////////////////////////////////////////////////////
-//Multegula - MessageType.go
-//Multicasting Message Passer for Multegula
+//Multegula - Defs.go
+//This file defines all constants used in this project
 //Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He
-////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////
-// This file defines all message types used in this project
 ////////////////////////////////////////////////////////////
 
 package defs
@@ -13,6 +9,10 @@ package defs
 import (
     "time"
 )
+
+//Our bootstrap server.  Uncomment below for local testing.
+const SERVER_DNS string = "multegula.dyndns.org:55555"
+//const SERVER_DNS string = "localhost:55555"
 
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
