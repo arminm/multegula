@@ -8,11 +8,9 @@ package messagePasser
 
 import (
 	"encoding/gob"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
-	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -43,14 +41,6 @@ func (slice Nodes) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
-/* DNS Configuration */
-type Configuration struct {
-	BootstrapServer []string //BootstrapServer DNS
-	LocalName       []string // Local DNS
-	Group           []string // Group DNS
-	Nodes           []Node   // List of available nodes
-}
-
 /* Message structure
  * before message transported through TCP connection, it will
  * be converted to string in the format of: Source##Destination##Content##Kind
@@ -69,13 +59,9 @@ type Message struct {
 var wg sync.WaitGroup
 
 /*
- * local instance holding the parsed config info.
+ * local instance holding the peer nodes.
  */
-var config Configuration = Configuration{}
-
-func Config() Configuration {
-	return config
-}
+var peerNodes Nodes
 
 /* map stores connections to each node
  * <key, value> = <name, connection>
@@ -208,7 +194,7 @@ func Multicast(message *Message) {
 		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 	}
 
-	for _, node := range config.Nodes {
+	for _, node := range peerNodes {
 		sendMessageTCP(node.Name, message)
 	}
 }
@@ -386,7 +372,7 @@ func deliverMessage(message Message) {
 		if messageHasBeenReceived(message) {
 			return
 		}
-		sourceIndex, _, _ := FindNodeByName(config.Nodes, message.Source)
+		sourceIndex, _, _ := FindNodeByName(peerNodes, message.Source)
 		if isMessageReady(message, sourceIndex, &vectorTimeStamp) {
 			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
@@ -413,7 +399,7 @@ func deliverMessage(message Message) {
 func checkHoldbackQueue() {
 	var messageToDeliver *Message
 	for i, msg := range holdbackQueue {
-		sourceIndex, _, _ := FindNodeByName(config.Nodes, msg.Source)
+		sourceIndex, _, _ := FindNodeByName(peerNodes, msg.Source)
 		if isMessageReady(msg, sourceIndex, &vectorTimeStamp) {
 			messageToDeliver = &msg
 			Delete(&holdbackQueue, i)
@@ -505,20 +491,6 @@ func Receive() Message {
 }
 
 /*
- * Prompts the user for the configuration file's name
- * @return configuration file's name string
- */
-func getConfigName() string {
-	var configName string
-	fmt.Println("What's the config file's name? (ex. config)")
-	fmt.Scanf("%s", &configName)
-	if len(configName) == 0 {
-		configName = "config" // default name
-	}
-	return configName
-}
-
-/*
  * Prompts the user for the local Node's name
  * @return local Node's name string
  */
@@ -533,42 +505,6 @@ func getLocalName() string {
 }
 
 /*
- * open config file
- * @param configName the name of config file
- * @return the handler of config file
- */
-func openConfigFile(configName string) *os.File {
-	filePath := "./messagePasser/" + configName + ".json"
-	file, err := os.Open(filePath)
-	for err != nil {
-		fmt.Println("Error: cannot find or open the config file, please set config file again.")
-		configName = getConfigName()
-		filePath = "./messagePasser/" + configName + ".json"
-		file, err = os.Open(filePath)
-	}
-	return file
-}
-
-/*
- * decode the config file
- * @param configName the name of config file
- */
-func DecodeConfigFile(configName string, config *Configuration) {
-	for {
-		file := openConfigFile(configName)
-		decoder := json.NewDecoder(file)
-		err := decoder.Decode(config)
-		if err == nil {
-			var nodes Nodes = config.Nodes
-			sort.Sort(nodes)
-			break
-		}
-		fmt.Println("Error: cannot decode the config file, please make sure it's a correct config file.")
-		configName = getConfigName()
-	}
-}
-
-/*
  * print out all nodes' name
  */
 func printNodesName(nodes []Node) {
@@ -579,37 +515,26 @@ func printNodesName(nodes []Node) {
 }
 
 /*
- * find the localName from config file
- * @param localName the name of local node
- */
-func findLocalNodeFromConfig(localName string) {
-	for {
-		var err error
-		localIndex, localNode, err = FindNodeByName(config.Nodes, localName)
-		if err == nil {
-			break
-		}
-		fmt.Println("Error: cannot find the local node's name in config file, please set the local name again.")
-		printNodesName(config.Nodes)
-		localName = getLocalName()
-	}
-}
-
-/*
  * initialize MessagePasser, this is a public method
  **/
-func InitMessagePasser(configName string, localName string) {
-	DecodeConfigFile(configName, &config)
-	findLocalNodeFromConfig(localName)
+func InitMessagePasser(nodes Nodes, localName string) {
+	peerNodes = nodes
+	sort.Sort(peerNodes)
+	var err error
+	localIndex, localNode, err = FindNodeByName(peerNodes, localName)
+	if err != nil {
+		panic(err)
+	}
+
 	initRules()
 
 	// keep track of group seqNum for multicasting
-	seqNums[config.Group[0]] = 0
+	seqNums[localName] = 0
 	// initialize the vectorTimeStamp
-	vectorTimeStamp = make([]int, len(config.Nodes))
+	vectorTimeStamp = make([]int, len(peerNodes))
 
 	// separate Node names
-	frontNodes, latterNodes := getFrontAndLatterNodes(config.Nodes, localNode)
+	frontNodes, latterNodes := getFrontAndLatterNodes(peerNodes, localNode)
 
 	//TODO: Don't wait for connections
 	// wait for connections setup before proceeding
