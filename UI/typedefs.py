@@ -60,8 +60,8 @@ DEFLECT_POINTS  = 3
 BREAK_POINTS = 5
 
 # fixed point multiplier / rounding factor
-FP_MULT = 100
-RD_FACT = 2
+FP_MULT = 10
+RD_FACT = 1
 
 ### Orientation - for the location of players/paddles
 class Orientation(Enum) :

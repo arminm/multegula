@@ -216,9 +216,9 @@ def react(canvas, received) :
         canvas.data[name].score = int(content[MsgIndex.BALL_DEFLECTED_SCORE])
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(int(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT, int(content[MsgIndex.BALL_DEFLECTED_YCENTER])) / FP_MULT
-        canvas.data['ball'].radius = int(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
-        canvas.data['ball'].setVelocity(int(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT, int(content[MsgIndex.BALL_DEFLECTED_YSPEED])) / FP_MULT
+        canvas.data['ball'].setCenter(float(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT, float(content[MsgIndex.BALL_DEFLECTED_YCENTER]) / FP_MULT)
+        canvas.data['ball'].radius = float(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
+        canvas.data['ball'].setVelocity(float(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT, float(content[MsgIndex.BALL_DEFLECTED_YSPEED]) / FP_MULT)
         canvas.data['ball'].randomColor()
 
     # MSG_BLOCK_BROKEN
@@ -227,9 +227,9 @@ def react(canvas, received) :
         canvas.data[name].lives = int(content[MsgIndex.BLOCK_BROKEN_LIVES])  
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(int(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT, int(content[MsgIndex.BLOCK_BROKEN_YCENTER])) / FP_MULT
-        canvas.data['ball'].radius = int(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
-        canvas.data['ball'].setVelocity(int(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT, int(content[MsgIndex.BLOCK_BROKEN_YSPEED])) / FP_MULT
+        canvas.data['ball'].setCenter(float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT, float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT)
+        canvas.data['ball'].radius = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
+        canvas.data['ball'].setVelocity(int(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT, float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT)
         canvas.data['ball'].randomColor()
         canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
         canvas.data['level'].updated = True
@@ -297,8 +297,8 @@ def playerUpdate(name, status, info, canvas) :
             RADIUS = round(ball.radius * FP_MULT)
             XSPEED = round(info[0] * FP_MULT)
             YSPEED = round(info[1] * FP_MULT)
-            XCENTER = round((ball.xCenter + XSPEED) * FP_MULT)
-            YCENTER = round((ball.yCenter + YSPEED) * FP_MULT)
+            XCENTER = round((ball.xCenter + info[0]) * FP_MULT)
+            YCENTER = round((ball.yCenter + info[1]) * FP_MULT)
             SCORE = canvas.data[name].score + DEFLECT_POINTS
 
             # form message
@@ -323,8 +323,8 @@ def playerUpdate(name, status, info, canvas) :
             RADIUS = round(ball.radius * FP_MULT)
             XSPEED = round(info[0] * FP_MULT)
             YSPEED = round(info[1] * FP_MULT)
-            XCENTER = round((ball.xCenter + XSPEED) * FP_MULT)
-            YCENTER = round((ball.yCenter + YSPEED) * FP_MULT)
+            XCENTER = round((ball.xCenter + info[0]) * FP_MULT)
+            YCENTER = round((ball.yCenter + info[1]) * FP_MULT)
             SCORE = canvas.data[name].score + BREAK_POINTS
             LIVES = canvas.data[name].lives #TODO: update with power up
             BLOCK = info[2]

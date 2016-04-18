@@ -34,8 +34,8 @@ const MULTEGULA_DEST string = "MULT"
 const UI_SOURCE string = "UI"
 
 /*** MESSAGE PAYLOAD CONSTANTS ***/
-const GAME_TYPE_MULTI string = "MULTI"
-const GAME_TYPE_SINGLE string = "SINGLE"
+const GAME_TYPE_MULTI string = "M"
+const GAME_TYPE_SINGLE string = "S"
 
 /*
  * This is the sendChannel for message dispatcher.
@@ -220,7 +220,6 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
-
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
 		case MSG_PADDLE_POS:

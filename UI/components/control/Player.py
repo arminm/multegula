@@ -72,11 +72,13 @@ class Player :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
-                    if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballCenterX <= blkRight) :
+                    # hit bottom of the block
+                    if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballRight) and (ballLeft <= blkRight) :
                         returnInfo = [xVelocity, (-yVelocity), blockIndex]
                         broken =True;
                         break
-                    elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballCenterY <= blkBottom) :
+                    # hit right side of the block
+                    elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballBottom) and (ballTop <= blkBottom) :
                         returnInfo = [(-xVelocity), yVelocity, blockIndex]
                         broken = True;
                         break                                     
@@ -85,12 +87,14 @@ class Player :
         elif(xVelocity >= 0) and (yVelocity <= 0) :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
+                    # hit bottom of the block
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
-                    if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballCenterX <= blkRight) :
+                    if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballRight) and (ballLeft <= blkRight) :
                         returnInfo = [xVelocity, (-yVelocity), blockIndex]
                         broken = True
                         break
-                    elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballCenterY <= blkBottom) :
+                    # hit left side of the block
+                    elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballBottom) and (ballTop <= blkBottom) :
                         returnInfo = [(-xVelocity), yVelocity, blockIndex]
                         broken = True;
                         break                                   
@@ -99,12 +103,14 @@ class Player :
         elif(xVelocity < 0) and (yVelocity > 0) :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
+                    # hit top of the block
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
-                    if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballCenterX <= blkRight) :
+                    if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballRight) and (ballLeft <= blkRight) :
                         returnInfo = [xVelocity, (-yVelocity), blockIndex]
                         broken = True;
                         break
-                    elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballCenterY <= blkBottom) :
+                    # hit right of the block
+                    elif (ballLeft <= blkRight) and (ballRight > blkRight) and (blkTop <= ballBottom) and (ballTop <= blkBottom) :
                         returnInfo = [(-xVelocity), yVelocity, blockIndex]
                         broken = True;
                         break
@@ -114,11 +120,13 @@ class Player :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
-                    if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballCenterX <= blkRight) :
+                    # hit top of the block
+                    if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballRight) and (ballLeft <= blkRight) :
                         returnInfo = [xVelocity, (-yVelocity), blockIndex]
                         broken = True;
                         break
-                    elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballCenterY <= blkBottom) :
+                    # hit left side of the block
+                    elif (ballRight >= blkLeft) and (ballLeft < blkRight) and (blkTop <= ballBottom) and (ballTop <= blkBottom) :
                         returnInfo = [(-xVelocity), yVelocity, blockIndex]
                         broken = True;
                         break
