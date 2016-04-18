@@ -11,8 +11,13 @@ import (
 	"fmt"
 	"net"
 	"time"
+
 	"github.com/arminm/multegula/messagePasser"
 )
+
+const SERVER_DNS string = "multegula.dyndns.org:55555"
+
+// const SERVER_DNS string = "127.0.0.1:55555"
 
 /*
  * Get Nodes
@@ -23,7 +28,7 @@ func GetNodes(localNode messagePasser.Node) (*[]messagePasser.Node, error) {
 	var err error
 	for {
 		//TODO: Make this configurable
-		conn, err = net.Dial("tcp", "127.0.0.1:55555")
+		conn, err = net.Dial("tcp", SERVER_DNS)
 		if err == nil {
 			break
 		}
