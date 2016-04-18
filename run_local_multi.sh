@@ -15,7 +15,7 @@ sleep 1
 #=======================================
 # BOOTSTRAP SERVER
 #=======================================
-go run bootstrapServer/bootstrapServer.go -port=${1:-55555}
+go run bootstrapServer/bootstrapServer.go -port=${1:-55555} &
 
 
 #=======================================
