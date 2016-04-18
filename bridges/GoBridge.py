@@ -10,44 +10,8 @@ import time #Needed for labeling date/time
 import datetime #Needed for labeling date/time
 import queue #Needed for receive queue
 import sys #Needed to exit
+from UI.typedefs import *
 #####################
-
-########PARAMETERS########
-BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
-DELIMITER = '##'
-PAYLOAD_DELIMITER = '|'
-LOCALHOST_IP = 'localhost'
-DEFAULT_SRC = 'UNSET'
-MULTICAST_DEST = 'EVR1'
-MULTEGULA_DEST = 'MULT'
-DEFAULT_PORT = 44444
-##########################
-
-# PyMessage class 
-class PyMessage :
-	### __init__ - initialize and return an empty PyMessage
-	def __init__(self):
-		self.kind = ''
-		self.src = ''
-		self.dest = ''
-		self.content = None
-		self.multicast = False
-
-	### crack - crack a PyMessage from the the 'received' string
-	def crack(self, received):
-		receivedArray = str(received).split(DELIMITER)
-		self.src = receivedArray[0].replace("b'", '')
-		self.dest = receivedArray[1]
-		self.content = receivedArray[2].split(PAYLOAD_DELIMITER)
-		self.kind = receivedArray[3].replace("\\n'", '')
-
-	### assemble - assemble the message and return
-	def assemble(self):
-		return self.src + DELIMITER + self.dest + DELIMITER + self.content + DELIMITER + self.kind + '\n'
-
-	### toString - return a visually appealing string relective of the contents in the message
-	def toString(self):
-		return 'source: ' + self.src + ', type: ' + self.kind + ', content: ' + str(self.content)
 
 # GoBridge class
 class GoBridge :
