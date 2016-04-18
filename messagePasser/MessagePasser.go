@@ -387,10 +387,10 @@ func receiveMessageFromConn(conn net.Conn) {
  * messages that might be ready now.
  */
 func deliverMessage(message Message) {
-	if messageHasBeenReceived(message) {
-		return
-	}
 	if message.Destination == multicastDestStr {
+		if messageHasBeenReceived(message) {
+			return
+		}
 		sourceIndex, _, _ := FindNodeByName(config.Nodes, message.Source)
 		if isMessageReady(message, sourceIndex, &vectorTimeStamp) {
 			addMessageToReceiveChannel(message)
