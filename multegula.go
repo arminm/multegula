@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/defs"
@@ -236,70 +237,53 @@ func outboundDispatcher() {
 /*
  * parses main arguments passed in through command-line
  */
-func parseMainArguments(args []string) (configName string, localNodeName string) {
-
+func parseMainArguments(args []string) string {
+	var localNodeName string
 	if len(args) > 0 {
-		configName = args[0]
-	} else {
-		configName = getConfigName()
-	}
-	fmt.Println("Config Name:", configName)
-
-	if len(args) > 1 {
 		localNodeName = args[1]
 	} else {
 		localNodeName = getLocalName()
 	}
 	fmt.Println("Local Node Name:", localNodeName)
-	return configName, localNodeName
-}
-
-func skinnyParseMainArguments(args []string) (configName string) {
-
-	if len(args) > 0 {
-		configName = args[0]
-	} else {
-		configName = getConfigName()
-	}
-	fmt.Println("Config Name:", configName)
-	return configName
+	return localNodeName
 }
 
 /* the Main function of the Multegula application */
 func main() {
 	testFlag := flag.Bool("test", false, "Test Mode Flag")
 	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
-	portFlag := flag.Int("port", 44444, "Local port number for Python-Go bridge.")
+	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
+	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
 	args := flag.Args()
 
+	// nodes used for testing purposes only
+	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
+
 	// for testing the bootstrapping
 	if *bootstrapTestFlag {
-		config := messagePasser.Configuration{}
-		messagePasser.DecodeConfigFile("localConfig", &config)
 		localName := getLocalName()
-		_, localNode, err := messagePasser.FindNodeByName(config.Nodes, localName)
+		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
 		fmt.Println("Contacting the bootstrap server...")
-		nodes, err := bootstrapClient.GetNodes(localNode)
+		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Got error:", err)
 		} else {
-			fmt.Printf("Got nodes: %+v\n", nodes)
+			fmt.Printf("Got peers: %+v\n", peers)
 		}
 		return
 	}
 
 	if *testFlag {
-		configName, localNodeName := parseMainArguments(args)
+		localNodeName := parseMainArguments(args)
 
 		fmt.Print("--------------------------------\n")
 		fmt.Println("Initing with localName:", localNodeName)
-		messagePasser.InitMessagePasser(configName, localNodeName)
+		messagePasser.InitMessagePasser(nodes, localNodeName)
 
-		configuration := messagePasser.Config()
 		fmt.Println("Available Nodes:")
-		for id, node := range configuration.Nodes {
+		for id, node := range nodes {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
@@ -310,7 +294,7 @@ func main() {
 			fmt.Println("Getting operation")
 			operation := getOperation()
 			if operation == 0 {
-				message := getMessage(configuration.Nodes, localNodeName)
+				message := getMessage(nodes, localNodeName)
 				messagePasser.Send(message)
 			} else if operation == 1 {
 				var message messagePasser.Message = nonBlockingReceive()
@@ -320,37 +304,46 @@ func main() {
 					fmt.Printf("Received: %+v\n\n", message)
 				}
 			} else if operation == 2 {
-				message := getMessage(configuration.Nodes, localNodeName)
+				message := getMessage(nodes, localNodeName)
 				messagePasser.Multicast(&message)
 				fmt.Println("Did multicast")
 			} else {
 				fmt.Println("Operation not recognized. Please try again.")
 			}
 		}
-	} else {
-		/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
-		// initialize communication with the UI
-		fmt.Printf("Port is:%d\n", *portFlag)
-		bridges.InitPyBridge(*portFlag)
-
-		// get the localname
-		localNodeName := uiGetLocalName()
-		fmt.Println("My name is:", localNodeName)
-
-		// determine the game type (multi or single player)
-		gameType := uiGetGameType()
-
-		if gameType == defs.GAME_TYPE_MULTI {
-			configName := skinnyParseMainArguments(args)
-			messagePasser.InitMessagePasser(configName, localNodeName)
-
-			/* start the routine waiting for messages coming from UI */
-			go PyBridgeReceiver()
-			go BullyReceiver()
-			go inboundDispatcher()
-			outboundDispatcher()
-		}
 	}
+
+	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
+	// initialize communication with the UI
+	fmt.Printf("Port is:%d\n", *uiPortFlag)
+	bridges.InitPyBridge(*uiPortFlag)
+
+	// get the localname
+	localNodeName := uiGetLocalName()
+	fmt.Println("My name is:", localNodeName)
+
+	// determine the game type (multi or single player)
+	gameType := uiGetGameType()
+
+	if gameType == defs.GAME_TYPE_MULTI {
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
+		peers, err := bootstrapClient.GetNodes(localNode)
+		if err != nil {
+			fmt.Println("Couldn't get peers:", err)
+			panic(err)
+		}
+
+		*peers = append(*peers, localNode)
+		fmt.Printf("Got peers: %+v\n", *peers)
+		messagePasser.InitMessagePasser(*peers, localNodeName)
+
+		/* start the routine waiting for messages coming from UI */
+		go PyBridgeReceiver()
+		go BullyReceiver()
+		go inboundDispatcher()
+		outboundDispatcher()
+	}
+
 }
 
 /* testing functions */
