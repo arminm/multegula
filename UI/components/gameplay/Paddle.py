@@ -36,18 +36,18 @@ class Paddle :
 
     ### increase/decrease speed methods
     def increaseSpeed(self) :
-        self.speed *= 1.1
+        self.speed = round(self.speed * 1.1, RD_FACT)
 
     def decreaseSpeed(self) :
-        self.speed *= 0.9
+        self.speed = round(self.speed * 0.9, RD_FACT)
 
     ### increase/decrease width methods
     def increaseWidth(self) :
-        self.width *= 1.1
+        self.width = round(self.width * 1.1, RD_FACT)
         self.redraw = True
 
     def decreaseWidth(self) :
-        self.width -= 0.9
+        self.width = round(self.width * 0.9, RD_FACT)
         self.redraw = True
 
     ### get/set COLOR methods

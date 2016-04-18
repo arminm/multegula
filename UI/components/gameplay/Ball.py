@@ -16,21 +16,21 @@ class Ball :
         self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow']
 
         # dynamic fields
-        self.xCenter = CANVAS_WIDTH // 2
-        self.yCenter = CANVAS_HEIGHT // 2
-        self.radius = CANVAS_WIDTH // 50
+        self.xCenter = round(CANVAS_WIDTH / 2, RD_FACT)
+        self.yCenter = round(CANVAS_HEIGHT / 2, RD_FACT)
+        self.radius = round(CANVAS_WIDTH / 50, RD_FACT)
         self.color = 'green'
         self.xVelocity = 0
-        self.yVelocity = CANVAS_WIDTH // 110
+        self.yVelocity = round(CANVAS_WIDTH / 110, RD_FACT)
         self.first = True
         self.lastToTouch = ''
 
     ### reset - reset dynamic ball location/speed properties 
     def reset(self) :
         self.randomXVelocity()
-        self.yVelocity = round(random.choice([-1, 1])*CANVAS_WIDTH // 110, RD_FACT)
-        self.xCenter = CANVAS_WIDTH // 2
-        self.yCenter = CANVAS_HEIGHT // 2
+        self.yVelocity = round(random.choice([-1, 1])*CANVAS_WIDTH / 110, RD_FACT)
+        self.xCenter = round(CANVAS_WIDTH / 2, RD_FACT)
+        self.yCenter = round(CANVAS_HEIGHT / 2, RD_FACT)
         self.randomColor()
         self.lastToTouch = '';
 
@@ -53,10 +53,10 @@ class Ball :
 
     ### get/set RADIUS methods
     def increaseRadius(self) :
-        self.radius *= 1.1
+        self.radius = round(self.radius * 1.1, RD_FACT)
 
     def decreaseRadius(self) :
-        self.radius *= 0.9
+        self.radius = round(self.radius * 0.9, RD_FACT)
 
     ### get/set VELOCITY methods
     def setVelocity(self, xVelocity, yVelocity) :
@@ -64,24 +64,24 @@ class Ball :
         self.yVelocity = yVelocity
 
     def increaseVelocity(self) :
-        self.xVelocity *= 1.1
-        self.yVelocity *= 1.1
+        self.xVelocity = round(self.xVelocity * 1.1, RD_FACT)
+        self.yVelocity = round(self.yVelocity * 1.1, RD_FACT)
 
     def decreaseVelocity(self) :
-        self.xVelocity *= 0.9
-        self.yVelocity *= 0.9
+        self.xVelocity = round(self.xVelocity * 0.9, RD_FACT)
+        self.yVelocity = round(self.yVelocity * 0.9, RD_FACT)
 
     def randomXVelocity(self) :
-        speed = CANVAS_WIDTH // 110
+        speed = CANVAS_WIDTH / 110
         factor = random.random()
         factor *= random.randint(-2, 2)
         self.xVelocity = round(speed*factor, RD_FACT)
 
     def randomYVelocity(self) :
-        speed = CANVAS_WIDTH // 110
+        speed = CANVAS_WIDTH / 110
         factor = random.random()
         factor *= random.randint(-2, 2)
-        self.yVelocity = speed*factor  
+        self.yVelocity = round(speed*factor, RD_FACT)
 
     def getVelocity(self) :
         return (self.xVelocity, self.yVelocity) 
@@ -114,11 +114,11 @@ class Ball :
         if ((yCenter + radius) >= CANVAS_HEIGHT) and (yVelocity > 0) :
             self.randomXVelocity()
             self.randomColor()
-            self.yVelocity -= (2*yVelocity)
+            self.yVelocity = (-yVelocity)
         # Bounce ball off of top wall...
         elif ((yCenter - radius) <= 0) and (yVelocity < 0) :
             self.randomColor()
-            self.yVelocity -= (2*yVelocity)
+            self.yVelocity = (-yVelocity)
         # Move the ball
         else : 
             self.yCenter += yVelocity
@@ -127,11 +127,11 @@ class Ball :
         # Bounce ball off left wall
         if ((xCenter - radius) <= 0) and (xVelocity < 0) :
             self.randomColor()
-            self.xVelocity -= (xVelocity*2)
+            self.xVelocity = (-xVelocity)
         # Bounce ball off right wall
         elif ((xCenter + radius) >= CANVAS_WIDTH) and (xVelocity > 0) :
             self.randomColor()
-            self.xVelocity -= (xVelocity*2)
+            self.xVelocity = (-xVelocity)
         # Move ball
         else : 
             self.xCenter += xVelocity 

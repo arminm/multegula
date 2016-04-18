@@ -40,9 +40,9 @@ class Player :
 
         # determine which direction the ball in from the center of the paddle based on the
         #   current orientation.
-        if((paddleOrientation == Orientation.DIR_NORTH) or (paddleOrientation == Orientation.DIR_SOUTH)) :
+        if paddleOrientation == Orientation.DIR_NORTH or paddleOrientation == Orientation.DIR_SOUTH :
             direction = paddleCenter - ballCenterX
-        elif((paddleOrientation == Orientation.DIR_WEST) or (paddleOrientation == Orientation.DIR_EAST)) :
+        elif paddleOrientation == Orientation.DIR_WEST or paddleOrientation == Orientation.DIR_EAST :
             direction = paddleCenter - ballCenterY
 
         # MOVE the paddle -
@@ -51,10 +51,10 @@ class Player :
         if((abs(direction) > offset) and (paddleDir == Direction.DIR_STOP) and (chance == 1)) : 
             if(direction < offset) :
                 self.paddle.direction = Direction.DIR_RIGHT
-            elif(direction > offset) :
+            elif direction > offset :
                 self.paddle.direction = Direction.DIR_LEFT
         ## otherwise, if it's your lucky day -> stop the paddle
-        elif(chance == 0) :
+        elif chance == 0 :
             self.paddle.direction = Direction.DIR_STOP
 
     ### breakBlock --
@@ -68,7 +68,7 @@ class Player :
         returnInfo = []
 
         # ball moving NORTH WEST
-        if(xVelocity < 0) and (yVelocity <= 0) :
+        if xVelocity < 0 and yVelocity <= 0 :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
@@ -131,6 +131,7 @@ class Player :
                         broken = True;
                         break
 
+        # if there was a broken block - return appropriate information
         if broken == True :
             return (PlayerReturnStatus.BLOCK_BROKEN, returnInfo)
         return (PlayerReturnStatus.NO_STATUS, [])
@@ -146,48 +147,48 @@ class Player :
         (paddleCenter, paddleWidth, paddleDir, paddleOrientation) = self.paddle.getInfo()
 
         # initialize flags
-        ballReset = False
-        ballBounce = False
+        ballMissed = False
+        ballDeflected = False
 
         # ball out of bounds/deflected on NORTH edge/paddle
         if(ORIENTATION == Orientation.DIR_NORTH) :
             if((ballCenterY - ballRadius) <= 0) :
-                ballReset = True
+                ballMissed = True
             elif(((leftEdge <= (ballCenterX + ballRadius) < rightEdge) and (topEdge <= (ballCenterY - ballRadius) < bottomEdge)) or 
                     (leftEdge < ((ballCenterX - ballRadius) <= rightEdge) and (topEdge <= (ballCenterY - ballRadius) < bottomEdge))) :
-                ballBounce = True
+                ballDeflected = True
 
         # ball out of bounds/deflected on the SOUTH edge/paddle
         elif(ORIENTATION == Orientation.DIR_SOUTH) :
             if((ballCenterY + ballRadius) >= CANVAS_HEIGHT) : 
-                ballReset = True
+                ballMissed = True
             elif(((leftEdge <= (ballCenterX + ballRadius) < rightEdge) and (topEdge <= (ballCenterY + ballRadius) < bottomEdge)) or 
                     (leftEdge < ((ballCenterX - ballRadius) <= rightEdge) and (topEdge <= (ballCenterY + ballRadius) < bottomEdge))) :
-                ballBounce = True
+                ballDeflected = True
 
         # ball out of bounds/deflected on the EAST edge/paddle
         elif(ORIENTATION == Orientation.DIR_EAST) :
             if((ballCenterX + ballRadius) >= CANVAS_WIDTH) :
-                ballReset = True
+                ballMissed = True
             elif(((topEdge <= (ballCenterY + ballRadius) < bottomEdge) and (leftEdge <= (ballCenterX + ballRadius) < rightEdge)) or
                     (topEdge < ((ballCenterX - ballRadius) <= bottomEdge) and (leftEdge <= (ballCenterX + ballRadius) < rightEdge))) :
-                ballBounce = True
+                ballDeflected = True
 
         # ball out of bounds/deflected on the WEST edge/paddle
         elif(ORIENTATION == Orientation.DIR_WEST) :
             # out of play
             if((ballCenterX - ballRadius) <= 0) :
-                ballReset = True
+                ballMissed = True
             elif(((topEdge <= (ballCenterY + ballRadius) < bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge)) or
                     (topEdge < ((ballCenterX - ballRadius) <= bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge))) :
-                ballBounce = True
+                ballDeflected = True
 
         # # reset ball, apply appropriate scoring
-        if ballReset and self.state != PlayerState.WALL:
+        if ballMissed and self.state != PlayerState.WALL:
             return (PlayerReturnStatus.BALL_MISSED, [])
-        elif ballBounce and self.state != PlayerState.WALL:
+        elif ballDeflected and self.state != PlayerState.WALL:
             return (PlayerReturnStatus.BALL_DEFLECTED, self.deflectBallVelocity(canvas))
-        elif ballBounce and self.state == PlayerState.WALL:
+        elif ballDeflected and self.state == PlayerState.WALL:
             return (PlayerReturnStatus.WALL_BALL_DEFLECTED, self.deflectBallVelocity(canvas))
         elif self.state == PlayerState.WALL:
             return (PlayerReturnStatus.WALL_NO_STATUS, [])
@@ -215,7 +216,6 @@ class Player :
                 xVelocity = round(speed * speedFactor * offsetFactor + offset, RD_FACT)
                 yVelocity = speed        
 
-        
         # deflect off SOUTH paddle
         elif(paddleOrientation == Orientation.DIR_SOUTH) :
             if self.state == PlayerState.WALL :
@@ -245,7 +245,8 @@ class Player :
 
         return [xVelocity, yVelocity]
  
-
+    ### setStatus method -
+    ##  Place the status text for the player on the canvas
     def setStatus(self, canvas) :
         # get canvas info
         ORIENTATION = self.ORIENTATION
@@ -304,11 +305,14 @@ class Player :
             self.paddle.update(canvas)
             (status, payload) = self.deflectBall(canvas)
 
+            # if the ball hasn't been deflected or missed, determine if a block has been broken
             if status == PlayerReturnStatus.NO_STATUS and canvas.data['ball'].lastToTouch == self.name :
                 (status, payload) = self.breakBlock(canvas)
 
+            # return information to the UI
             return (status, payload)
 
+        # if this player is a competitor, just draw it
         elif(self.state == PlayerState.COMP) :
             self.paddle.draw(canvas)
             return (PlayerReturnStatus.NO_STATUS, [])
