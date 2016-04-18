@@ -7,7 +7,7 @@
 
 #NOTES: run.sh will accept an arbitrary TCP port number for
 #multiple local instances  (for testing)
-#Use like this: "./run.sh <UI Port> <Game Port>". 
+#Use like this: "./run.sh <UI Port> <Game Port>".
 #Defaults are:              44444     1111
 #Arguments are optional.
 
@@ -18,7 +18,7 @@ sleep 1
 
 #Start multegula.go and wait for it to come up.
 #Defaults to port 44444 if port isn't received.
-go run multegula.go -uiport=${1:-44444} -gameport=${2:-1111} &
+go run multegula.go -uiport=${1:-44444} -gameport=${2:-11111} &
 sleep 4
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
