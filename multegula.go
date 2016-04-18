@@ -11,32 +11,11 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
+	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
 )
-
-/*** Default ports ***/
-const DEFAULT_UI_PORT int = 44444
-const DEFAULT_GAME_PORT int = 11111
-
-/*** MESSAGE TYPE CONSTANTS ***/
-const MSG_GAME_TYPE string = "MSG_GAME_TYPE"
-const MSG_MYNAME string = "MSG_MYNAME"
-const MSG_PADDLE_POS string = "MSG_PADDLE_POS"
-const MSG_PADDLE_DIR string = "MSG_PADDLE_DIR"
-
-/*** MESSAGE DESTINATION CONSTANTS ***/
-const MULTICAST_DEST string = "EVERYBODY"
-const MULTEGULA_DEST string = "MULTEGULA"
-
-/*** MESSAGE SOURCE CONTENTS ***/
-const UI_SOURCE string = "UI"
-
-/*** MESSAGE PAYLOAD CONSTANTS ***/
-const GAME_TYPE_MULTI string = "MULTI"
-const GAME_TYPE_SINGLE string = "SINGLE"
 
 /*
  * This is the sendChannel for message dispatcher.
@@ -46,7 +25,7 @@ const GAME_TYPE_SINGLE string = "SINGLE"
  * messages out from this channel and send them
  * to messagePasser
  */
-var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, messagePasser.QUEUE_SIZE)
+var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
 /*
  * get message out from sendChannel
@@ -175,7 +154,7 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 func uiGetLocalName() (localName string) {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-		if message.Kind == MSG_MYNAME {
+		if message.Kind == defs.MSG_MYNAME {
 			localName = message.Content
 			break
 		}
@@ -189,7 +168,7 @@ func uiGetLocalName() (localName string) {
 func uiGetGameType() (gameType string) {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-		if message.Kind == MSG_GAME_TYPE {
+		if message.Kind == defs.MSG_GAME_TYPE {
 			gameType = message.Content
 			break
 		}
@@ -221,13 +200,19 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
-
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
-		case MSG_PADDLE_POS:
+		case defs.MSG_PADDLE_POS:
 			bridges.SendToPyBridge(message)
-		case MSG_PADDLE_DIR:
+		case defs.MSG_PADDLE_DIR:
 			bridges.SendToPyBridge(message)
+		case defs.MSG_BALL_MISSED:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_BALL_DEFLECTED:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_BLOCK_BROKEN:
+			bridges.SendToPyBridge(message)
+
 		}
 	}
 }
@@ -240,7 +225,7 @@ func outboundDispatcher() {
 
 		// based on it's destination, determine which messagePasser
 		//	routine is appropriate
-		if message.Destination == MULTICAST_DEST {
+		if message.Destination == defs.MULTICAST_DEST {
 			messagePasser.Multicast(&message)
 		} else {
 			messagePasser.Send(message)

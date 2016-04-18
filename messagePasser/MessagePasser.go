@@ -18,11 +18,6 @@ import (
 	"time"
 )
 
-/* the size of queue: sendQueue, receivedQueue,
- * sendDelayedQueue and receiveDelayedQueue
- **/
-const QUEUE_SIZE int = 100
-
 // Node structure to hold each node's information
 type Node struct {
 	Name string
