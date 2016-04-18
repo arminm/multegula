@@ -22,17 +22,11 @@ type ClientInfo struct {
 	Node *messagePasser.Node
 }
 
-// constants
-const MIN_PLAYERS_PER_GAME int = 2
-const MAX_PLAYERS_PER_GAME int = 4
-const TIMEOUT_DURATION = 30 * time.Second
-const CHANNEL_SIZE = 10
-
 //Declare a map of connections to nodes
 var connections = make(map[net.Addr]*net.Conn)
 var nodes = make(map[net.Addr]*messagePasser.Node)
-var addClientChannel = make(chan ClientInfo, CHANNEL_SIZE)
-var removeClientChannel = make(chan ClientInfo, CHANNEL_SIZE)
+var addClientChannel = make(chan ClientInfo, defs.CHANNEL_SIZE)
+var removeClientChannel = make(chan ClientInfo, defs.CHANNEL_SIZE)
 var timeoutTimer *time.Timer = time.NewTimer(time.Second)
 
 /*
@@ -143,17 +137,17 @@ func receiveConnections() {
 			}
 		case <-timeoutTimer.C:
 			//This is the case that handles our timeouts if we don't get enough players
-			if len(connections) >= MIN_PLAYERS_PER_GAME {
+			if len(connections) >= defs.MIN_PLAYERS_PER_GAME {
 				fmt.Printf("Timed out, starting with %v players!\n", len(connections))
 				startAGame()
 			}
 		}
 
-		if len(connections) == MIN_PLAYERS_PER_GAME {
+		if len(connections) == defs.MIN_PLAYERS_PER_GAME {
 			//Reset our timeoutTimer
 			fmt.Println("Two connections established, starting countdown to game.")
-			timeoutTimer.Reset(TIMEOUT_DURATION)
-		} else if len(connections) == MAX_PLAYERS_PER_GAME {
+			timeoutTimer.Reset(defs.TIMEOUT_DURATION)
+		} else if len(connections) == defs.MAX_PLAYERS_PER_GAME {
 			// Stop the timeoutTimer
 			timeoutTimer.Stop()
 			startAGame()

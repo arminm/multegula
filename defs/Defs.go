@@ -8,7 +8,11 @@
 // This file defines all message types used in this project
 ////////////////////////////////////////////////////////////
 
-package messageType
+package defs
+
+import (
+    "time"
+)
 
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
@@ -19,6 +23,17 @@ const ANSWER string = "answer"
 /* The coordinator message */	
 const COORDINATOR string = "coordinator"
 /* The end of message types for bully algorithm */
+const DELIMITER string = "##"
+
+
+/* MessagePasser */
+const QUEUE_SIZE int = 200
+
+/* Bootstrap Server */
+const MIN_PLAYERS_PER_GAME int = 2
+const MAX_PLAYERS_PER_GAME int = 4
+const TIMEOUT_DURATION = 30 * time.Second
+const CHANNEL_SIZE = 10
 
 /*** MESSAGE TYPE CONSTANTS ***/
 const MSG_GAME_TYPE string      = "MGT"
