@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/defs"
@@ -251,8 +252,8 @@ func parseMainArguments(args []string) string {
 func main() {
 	testFlag := flag.Bool("test", false, "Test Mode Flag")
 	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
-	uiPortFlag := flag.Int("uiport", DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
-	gamePortFlag := flag.Int("gameport", DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
+	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
+	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
 	args := flag.Args()
@@ -324,7 +325,7 @@ func main() {
 	// determine the game type (multi or single player)
 	gameType := uiGetGameType()
 
-	if gameType == GAME_TYPE_MULTI {
+	if gameType == defs.GAME_TYPE_MULTI {
 		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
