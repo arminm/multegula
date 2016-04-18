@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
 )
 
