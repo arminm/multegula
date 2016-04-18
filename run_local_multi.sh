@@ -10,6 +10,14 @@ killall go 2> /dev/null
 killall multegula 2> /dev/null
 killall BootstrapServer 2> /dev/null
 sleep 1
+
+
+#=======================================
+# BOOTSTRAP SERVER
+#=======================================
+go run bootstrapServer/bootstrapServer.go -port=${1:-55555}
+
+
 #=======================================
 # CLIENT 1
 #=======================================
