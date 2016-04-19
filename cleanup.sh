@@ -18,6 +18,8 @@ pkill -9 BootstrapServer 2> /dev/null
 ####################################
 pkill -9 -f python 2> /dev/null
 pkill -9 -f python3 2> /dev/null
+pkill -9 -f Python 2> /dev/null
+pkill -9 -f Python3 2> /dev/null
 #################################
 
 echo "The light is green, the trap is clean."
