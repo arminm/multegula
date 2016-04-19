@@ -18,8 +18,10 @@ brew install python3 golang git
 mkdir -p ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git
-export GOPATH=$HOME/go  
 cd multegula/
+
+#Add this to .bashrc or .bash_profile:
+export GOPATH=$HOME/go 
 ```
 
 #### Ubuntu Linux 16.04 LTS:  
@@ -28,13 +30,15 @@ sudo apt-get install python3-tk golang git
 mkdir -p ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git  
-export GOPATH=$HOME/go
 cd multegula/
+
+#Add this to .bashrc or .bash_profile:
+export GOPATH=$HOME/go 
 ```
 
 #### Windows 7 or Newer:  
 ```
-Install Go 1.6 - https://golang.org/dl/
+Install Go 1.6 or newer - https://golang.org/dl/
 Install Python 3.5.1 (includes pip) - https://www.python.org/downloads/
 	BE SURE TO CHECK "Add Python 3.5 to PATH"
 Open a command prompt and run the following: 

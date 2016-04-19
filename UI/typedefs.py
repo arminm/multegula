@@ -8,8 +8,8 @@ from enum import Enum
 
 ### CONSTANT VALUES
 # canvas dimensions
-CANVAS_WIDTH = 700;
-CANVAS_HEIGHT = 700;
+CANVAS_WIDTH = 350;
+CANVAS_HEIGHT = 350;
 X_THIRD = CANVAS_WIDTH // 4
 X_CENTER = CANVAS_WIDTH // 2
 X_2THIRD = X_THIRD*3
@@ -115,6 +115,7 @@ class Screens(Enum) :
   SCRN_PAUSE = 3
   SCRN_GAME = 4
   SCRN_GAME_OVER = 5
+  SCRN_JOIN = 6
 
 ### PlayerState - define different player states
 class PlayerState(Enum) :
@@ -142,6 +143,7 @@ class MsgType() :
     MSG_BALL_MISSED = 'MBM'
     MSG_BALL_DEFLECTED = 'MBD'
     MSG_BLOCK_BROKEN = 'MBB'
+    MSG_PLAYER_LOC = 'MPL'
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :

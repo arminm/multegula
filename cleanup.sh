@@ -11,6 +11,7 @@ pkill -9 go 2> /dev/null
 pkill -9 multegula 2> /dev/null
 pkill -9 bootstrap 2> /dev/null
 pkill -9 BootstrapServer 2> /dev/null
+pkill -9 -f multegulaUI.py 2> /dev/null
 
 ####################################
 ##To be EXTRA clean - maybe remove these for release.
@@ -18,6 +19,8 @@ pkill -9 BootstrapServer 2> /dev/null
 ####################################
 pkill -9 -f python 2> /dev/null
 pkill -9 -f python3 2> /dev/null
+pkill -9 -f Python 2> /dev/null
+pkill -9 -f Python3 2> /dev/null
 #################################
 
 echo "The light is green, the trap is clean."
