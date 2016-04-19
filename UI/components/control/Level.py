@@ -24,13 +24,13 @@ class Level :
         self.updated = False
 
         # Read all level files
-        for level in glob.glob('UI/levels/*.mlev',recursive=True):
+        for level in glob.glob('UI/levels/*.py',recursive=True):
         	self.readLevel(level)
     
         # set first level
         self.blocks = self.levels[0]
 
-    ### readLevel - parse level as defined in mlev file
+    ### readLevel - parse level as defined in py level file
     def readLevel(self, levelpath) :
         # make a blank level
         thisLevel = []
