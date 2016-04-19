@@ -14,7 +14,15 @@
 #Cleanup any running go
 killall go 2> /dev/null
 killall multegula 2> /dev/null
-sleep 1
+killall bootstrap 2> /dev/null
+killall BootstrapServer 2> /dev/null
+
+####################################
+##To be EXTRA clean - maybe remove these for release
+####################################
+killall python 2> /dev/null
+killall python3 2> /dev/null
+#################################
 
 #Start multegula.go and wait for it to come up.
 #Defaults to port 44444 if port isn't received.
