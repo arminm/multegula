@@ -6,16 +6,17 @@
 ###########################################################
 
 #Cleanup any running go
-killall go 2> /dev/null
-killall multegula 2> /dev/null
-killall bootstrap 2> /dev/null
-killall BootstrapServer 2> /dev/null
+pkill -9 go 2> /dev/null
+pkill -9 multegula 2> /dev/null
+pkill -9 bootstrap 2> /dev/null
+pkill -9 BootstrapServer 2> /dev/null
 
 ####################################
-##To be EXTRA clean - maybe remove these for release
+##To be EXTRA clean - maybe remove these for release.
+##We don't want users accidentally killing important processes.
 ####################################
-killall python 2> /dev/null
-killall python3 2> /dev/null
+pkill -9 -f python 2> /dev/null
+pkill -9 -f python3 2> /dev/null
 #################################
 sleep 1
 
