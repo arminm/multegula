@@ -8,6 +8,7 @@
 #Cleanup any running go
 killall go 2> /dev/null
 killall multegula 2> /dev/null
+killall bootstrap 2> /dev/null
 killall BootstrapServer 2> /dev/null
 sleep 1
 
