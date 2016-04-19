@@ -197,12 +197,9 @@ def react(canvas, received) :
 
     # MSG_PADDLE_DIR
     elif kind == MsgType.MSG_PADDLE_DIR :
-        print(myName + " paddle dir...")
         if content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_LEFT:
-            print(myName + " left...")
             canvas.data[name].paddle.direction = Direction.DIR_LEFT
         elif content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_RIGHT:
-            print(myName + " right...")
             canvas.data[name].paddle.direction = Direction.DIR_RIGHT
 
     # MSG_PADDLE_POS
