@@ -1,13 +1,13 @@
 # 18-842 Distributed Systems // Spring 2016.
 # Multegula - A P2P block breaking game.
-# GameOver.py.
+# JoinScreen.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
 from UI.typedefs import *
 
 # GAMEOVER class
-class GameOver :
+class JoinScreen :
     ### __init__ - initialize and return a GameScreen
     def __init__(self) :
         self.first = True
@@ -22,8 +22,8 @@ class GameOver :
         self.title  = canvas.create_text(X_CENTER, Y_LOC_TITLE, text = 'MULTEGULA',
                                         font = ('Courier', XL_TEXT_SIZE))
 
-        self.title  = canvas.create_text(X_CENTER, Y_CENTER, text = 'GAME OVER.',
-                                        font = ('Courier', L_TEXT_SIZE))
+        self.title  = canvas.create_text(X_CENTER, Y_CENTER, text = 'Please wait while a game is formed...',
+                                        font = ('Courier', M_TEXT_SIZE))
 
     ### draw -  manages the drawing of the background
     def draw(self, canvas) :

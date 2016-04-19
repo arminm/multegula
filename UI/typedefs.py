@@ -115,6 +115,7 @@ class Screens(Enum) :
   SCRN_PAUSE = 3
   SCRN_GAME = 4
   SCRN_GAME_OVER = 5
+  SCRN_JOIN = 6
 
 ### PlayerState - define different player states
 class PlayerState(Enum) :

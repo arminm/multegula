@@ -20,11 +20,12 @@ from UI.components.gameplay.Block import *
 from UI.components.gameplay.Paddle import *
 from UI.components.directive.Button import *
 from UI.components.directive.TextField import *
-from UI.components.screens.SplashScreen import *
-from UI.components.screens.MenuScreen import *
-from UI.components.screens.PauseScreen import *
 from UI.components.screens.GameOver import *
 from UI.components.screens.GameScreen import *
+from UI.components.screens.JoinScreen import *
+from UI.components.screens.MenuScreen import *
+from UI.components.screens.PauseScreen import *
+from UI.components.screens.SplashScreen import *
 from UI.typedefs import *
 
 ### keyPressed - handle keypressed events
@@ -162,7 +163,6 @@ def mousePressed(event) :
         elif canvas.data['joinButton'].clicked(event.x, event.y) :
             # initialize players
             canvas.data['gameType'] = GameType.MULTI_PLAYER
-            initPlayers(canvas)
 
             # send message to multegula
             toSend = PyMessage()
@@ -173,7 +173,7 @@ def mousePressed(event) :
             canvas.data['bridge'].sendMessage(toSend)
 
             # initialize game
-            canvas.data['currentScreen'] = Screens.SCRN_GAME
+            canvas.data['currentScreen'] = Screens.SCRN_JOIN
             canvas.data['ball'].reset()
             canvas.delete(ALL)
 
@@ -189,8 +189,12 @@ def react(canvas, received) :
     content = received.content
     print("received: " + received.toString())
 
+    if kind == MsgType.MSG_PLAYER_LOC :
+        initPlayers(canvas, int(content[0]), content[1:])
+        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+        
     # MSG_PADDLE_DIR
-    if kind == MsgType.MSG_PADDLE_DIR :
+    elif kind == MsgType.MSG_PADDLE_DIR :
         if content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_LEFT:
             canvas.data[name].paddle.direction = Direction.DIR_LEFT
         elif content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_RIGHT:
@@ -361,6 +365,9 @@ def redrawAll(canvas) :
         canvas.data['soloButton'].draw(canvas)
         canvas.data['joinButton'].draw(canvas)
 
+    elif canvas.data['currentScreen'] == Screens.SCRN_JOIN :
+        canvas.data['joinScreen'].draw(canvas)
+
     ### PAUSE SCREEN
     elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE :
         canvas.data['gameScreen'].draw(canvas)
@@ -375,10 +382,6 @@ def redrawAll(canvas) :
     ### GAME SCREEN
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.SINGLE_PLAYER):
         canvas.data['gameScreen'].draw(canvas)
-
-        # update actual player
-        # (myStatus, myInfo) = canvas.data[canvas.data['myName']].update(canvas)
-        # playerUpdate(canvas.data['myName'], myStatus, myInfo, canvas)
 
         # update all other players
         for player in canvas.data['competitors'] :
@@ -431,12 +434,13 @@ def init(canvas) :
     canvas.data['pauseScreen']  = PauseScreen()
     canvas.data['splashScreen'] = SplashScreen()
     canvas.data['gameOverScreen'] = GameOver()  
+    canvas.data['joinScreen']   = JoinScreen()  
 
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
     canvas.data['level'] = Level()
 
-def initPlayers(canvas):
+def initPlayers(canvas, number=1, info=[]):
     myName = canvas.data['myName']
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.SINGLE_PLAYER)
@@ -447,10 +451,16 @@ def initPlayers(canvas):
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.MULTI_PLAYER)
-        canvas.data['armin'] = Player(Orientation.DIR_NORTH, PlayerState.WALL, 'armin', GameType.MULTI_PLAYER)
-        canvas.data['lunwen'] = Player(Orientation.DIR_EAST, PlayerState.WALL, 'lunwen', GameType.MULTI_PLAYER)
-        canvas.data['garrett'] = Player(Orientation.DIR_WEST, PlayerState.WALL, 'garrett', GameType.MULTI_PLAYER) 
-        canvas.data['competitors'] = [myName, 'armin', 'lunwen', 'garrett']
+        myIndex = info.index(myName);
+        if number == 4 :
+            eastIndex = (myIndex + 1) % 4
+            northIndex = (myIndex + 2) % 4
+            westIndex = (myIndex + 3) % 4
+
+            canvas.data[info[eastIndex]] = Player(Orientation.DIR_EAST, PlayerState.COMP, info[eastIndex], GameType.MULTI_PLAYER)
+            canvas.data[info[northIndex]] = Player(Orientation.DIR_NORTH, PlayerState.COMP, info[northIndex], GameType.MULTI_PLAYER)
+            canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.COMP, info[westIndex], GameType.MULTI_PLAYER)
+            canvas.data['competitors'] = info
 
 ### run - run the program
 def runUI(cmd_line_args) :
