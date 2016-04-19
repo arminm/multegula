@@ -9,7 +9,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"reflect"
+//	"reflect"
 	"sort"
 	"strconv"
 	"github.com/arminm/multegula/bootstrapClient"
@@ -287,7 +287,7 @@ func parseMainArguments(args []string) string {
 
 /* the Main function of the Multegula application */
 func main() {
-	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	testFlag := flag.Bool("test", true, "Test Mode Flag")
 	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
 	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
 	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
@@ -324,9 +324,14 @@ func main() {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
-		go receiveRoutine()
+		//go receiveRoutine()
+		go BullyReceiver()
+		go inboundDispatcher()
+        /* start bully algorithm */
+        go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
+		outboundDispatcher()
 
-		fmt.Println("Please select the operation you want to do:")
+/*		fmt.Println("Please select the operation you want to do:")
 		for {
 			fmt.Println("Getting operation")
 			operation := getOperation()
@@ -347,7 +352,7 @@ func main() {
 			} else {
 				fmt.Println("Operation not recognized. Please try again.")
 			}
-		}
+		}/*/
 	}
 
 	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
