@@ -12,7 +12,7 @@ import (
 //	"reflect"
 	"strconv"
 
-	"github.com/arminm/multegula/bootstrapClient"
+//	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
@@ -269,7 +269,7 @@ func main() {
 	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
 
 	// for testing the bootstrapping
-	if *bootstrapTestFlag {
+	/*if *bootstrapTestFlag {
 		localName := getLocalName()
 		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
 		fmt.Println("Contacting the bootstrap server...")
@@ -280,7 +280,7 @@ func main() {
 			fmt.Printf("Got peers: %+v\n", peers)
 		}
 		return
-	}
+	}*/
 
 	if *testFlag {
 		localNodeName := parseMainArguments(args)
@@ -336,7 +336,7 @@ func main() {
 		// determine the game type (multi or single player)
 		gameType := uiGetGameType()
 
-		if gameType == GAME_TYPE_MULTI {
+		if gameType == defs.GAME_TYPE_MULTI {
 			configName := skinnyParseMainArguments(args)
 			messagePasser.InitMessagePasser(configName, localNodeName)
 

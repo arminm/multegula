@@ -247,9 +247,10 @@ func getFrontAndLatterNodes(nodes []Node, localNode Node) (map[string]Node, map[
  */
  func GetNodeNames() []string {
      var names []string
-     for _, node := range config.Nodes {
-        names = append(names, node.Name)
-     }
+     names = append(names, "armin")
+     names = append(names, "lunwen")
+     names = append(names, "daniel")
+     names = append(names, "garrett")
      return names
  }
 
