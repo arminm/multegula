@@ -9,10 +9,10 @@ package main
 import (
 	"flag"
 	"fmt"
-//	"reflect"
+	"reflect"
+	"sort"
 	"strconv"
-
-//	"github.com/arminm/multegula/bootstrapClient"
+	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
@@ -178,6 +178,36 @@ func uiGetGameType() (gameType string) {
 	return gameType
 }
 
+/* 
+ * sets the orientation of the players to alphabetical
+ */
+func uiSetCompetitorLocation(myName string, peers *[]messagePasser.Node) {
+	var toSend messagePasser.Message;
+	var nodeNames = []string{};
+
+	// loop through all nodes and pull out names
+	for _, node := range *peers {
+		nodeNames = append(nodeNames, node.Name);
+	}
+
+	// sort and get length
+	sort.Strings(nodeNames);
+	length := len(nodeNames);
+
+	// create content of message
+	content := fmt.Sprintf("%d", length);
+	for _, name := range nodeNames {
+		content = fmt.Sprintf("%v%v%v", content, defs.PAYLOAD_DELIMITER, name)
+	}
+
+	// create message and send message
+	toSend.Source = myName;
+	toSend.Destination = myName;
+	toSend.Kind = defs.MSG_PLAYER_LOC;
+	toSend.Content = content;
+	bridges.SendToPyBridge(toSend);
+}
+
 /* wait for incoming messages from the UI */
 func PyBridgeReceiver() {
 	for {
@@ -257,10 +287,10 @@ func parseMainArguments(args []string) string {
 
 /* the Main function of the Multegula application */
 func main() {
-//	testFlag := flag.Bool("test", false, "Test Mode Flag")
-	testFlag := flag.Bool("test", true, "Test Mode Flag")
-	portFlag := flag.Int("port", 44444, "Local port number for Python-Go bridge.")
-
+	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
+	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
+	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
 	args := flag.Args()
@@ -269,10 +299,10 @@ func main() {
 	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
 
 	// for testing the bootstrapping
-	/*if *bootstrapTestFlag {
+	if *bootstrapTestFlag {
 		localName := getLocalName()
 		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
-		fmt.Println("Contacting the bootstrap server...")
+		fmt.Println("[MULTEGULA CORE] Contacting the bootstrap server...")
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Got error:", err)
@@ -280,7 +310,7 @@ func main() {
 			fmt.Printf("Got peers: %+v\n", peers)
 		}
 		return
-	}*/
+	}
 
 	if *testFlag {
 		localNodeName := parseMainArguments(args)
@@ -294,14 +324,9 @@ func main() {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
-	//	go receiveRoutine()
-		go BullyReceiver()
-		go inboundDispatcher()
-        /* start bully algorithm */
-        go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
-		outboundDispatcher()
+		go receiveRoutine()
 
-/*		fmt.Println("Please select the operation you want to do:")
+		fmt.Println("Please select the operation you want to do:")
 		for {
 			fmt.Println("Getting operation")
 			operation := getOperation()
@@ -322,33 +347,45 @@ func main() {
 			} else {
 				fmt.Println("Operation not recognized. Please try again.")
 			}
-		}*/
-	} else {
-		/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
-		// initialize communication with the UI
-		fmt.Printf("Port is:%d\n", *portFlag)
-		bridges.InitPyBridge(*portFlag)
-
-		// get the localname
-		localNodeName := uiGetLocalName()
-		fmt.Println("My name is:", localNodeName)
-
-		// determine the game type (multi or single player)
-		gameType := uiGetGameType()
-
-		if gameType == defs.GAME_TYPE_MULTI {
-			configName := skinnyParseMainArguments(args)
-			messagePasser.InitMessagePasser(configName, localNodeName)
-
-			/* start the routine waiting for messages coming from UI */
-			go PyBridgeReceiver()
-			go BullyReceiver()
-			go inboundDispatcher()
-            /* start bully algorithm */
-            go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
-			outboundDispatcher()
 		}
 	}
+
+	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
+	// initialize communication with the UI
+	fmt.Printf("[MULTEGULA CORE] UI Port flag is: %d\n", *uiPortFlag)
+	bridges.InitPyBridge(*uiPortFlag)
+
+	// get the localname
+	localNodeName := uiGetLocalName()
+	fmt.Println("[MULTEGULA CORE] My name is:", localNodeName)
+
+	// determine the game type (multi or single player)
+	gameType := uiGetGameType()
+
+	if gameType == defs.GAME_TYPE_MULTI {
+		// get fellow players
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
+		peers, err := bootstrapClient.GetNodes(localNode)
+		if err != nil {
+			fmt.Println("[MULTEGULA CORE] Couldn't get peers:", err)
+			panic(err)
+		}
+		*peers = append(*peers, localNode)
+
+		// set competitor location
+		uiSetCompetitorLocation(localNode.Name, peers)
+
+		// initialize message passer
+		messagePasser.InitMessagePasser(*peers, localNodeName)
+		fmt.Println(localNodeName, "[MULTEGULA CORE] Made messagepasser.")
+
+		/* start the routine waiting for messages coming from UI */
+		go PyBridgeReceiver()
+		go BullyReceiver()
+		go inboundDispatcher()
+		outboundDispatcher()
+	}
+
 }
 
 /* testing functions */
