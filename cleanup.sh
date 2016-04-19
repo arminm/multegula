@@ -13,10 +13,11 @@ pkill -9 bootstrap 2> /dev/null
 pkill -9 BootstrapServer 2> /dev/null
 
 ####################################
-##To be EXTRA clean - maybe remove these for release
+##To be EXTRA clean - maybe remove these for release.
+##We don't want users accidentally killing important processes.
 ####################################
-pkill -9 python 2> /dev/null
-pkill -9 python3 2> /dev/null
+pkill -9 -f python 2> /dev/null
+pkill -9 -f python3 2> /dev/null
 #################################
 
 echo "The light is green, the trap is clean."
