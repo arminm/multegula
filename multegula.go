@@ -298,7 +298,7 @@ func main() {
 	if *bootstrapTestFlag {
 		localName := getLocalName()
 		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
-		fmt.Println("Contacting the bootstrap server...")
+		fmt.Println("[MULTEGULA CORE] Contacting the bootstrap server...")
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Got error:", err)
@@ -348,12 +348,12 @@ func main() {
 
 	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
 	// initialize communication with the UI
-	fmt.Printf("Port is:%d\n", *uiPortFlag)
+	fmt.Printf("[MULTEGULA CORE] UI Port flag is: %d\n", *uiPortFlag)
 	bridges.InitPyBridge(*uiPortFlag)
 
 	// get the localname
 	localNodeName := uiGetLocalName()
-	fmt.Println("My name is:", localNodeName)
+	fmt.Println("[MULTEGULA CORE] My name is:", localNodeName)
 
 	// determine the game type (multi or single player)
 	gameType := uiGetGameType()
@@ -363,7 +363,7 @@ func main() {
 		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
-			fmt.Println("Couldn't get peers:", err)
+			fmt.Println("[MULTEGULA CORE] Couldn't get peers:", err)
 			panic(err)
 		}
 		*peers = append(*peers, localNode)
@@ -373,7 +373,7 @@ func main() {
 
 		// initialize message passer
 		messagePasser.InitMessagePasser(*peers, localNodeName)
-		fmt.Println(localNodeName, "made message passer.")
+		fmt.Println(localNodeName, "[MULTEGULA CORE] Made messagepasser.")
 
 		/***** TODO: REPLACE WITH ACTUAL ELECTION INFORMATION *******/
 		// NOTE: This will happen somewhere else
