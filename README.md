@@ -18,7 +18,6 @@ brew install python3 golang git
 mkdir -p ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git
-export GOPATH=$HOME/go  
 cd multegula/
 
 #Add this to .bashrc or .bash_profile:
