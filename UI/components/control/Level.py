@@ -23,17 +23,21 @@ class Level :
         self.first = True
         self.updated = False
 
-        # Read levels
-        for level in glob.iglob('*.mlev',recursive=True):
+        # Read all level files
+        for level in glob.glob('*.mlev',recursive=True):
         	readLevel(level)
+    
+        # set first level
+        self.blocks = self.levels[0]
 
     ### readLevel - parse level as defined in mlev file
     def readLevel(self, levelpath) :
-    	level = []
-    	print(levelpath)
-    	exec(levelpath)
-    	self.levels.append(level)
-    	self.blocks = self.levels[0];
+        # make a blank level
+        thisLevel = []
+        exec(levelpath)
+        # makeBlock parses the line and makes a new block
+        #thisLevel.append(makeBlock(line))
+        self.levels.append(thisLevel)
 
     ### getTextLevel -- get a text version of the current level
     def getTextLevel(self) :
