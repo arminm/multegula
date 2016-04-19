@@ -17,7 +17,7 @@ import (
     "fmt"
     "sync"
 	"github.com/arminm/multegula/messagePasser"
-	"github.com/arminm/multegula/messageType"
+	"github.com/arminm/multegula/defs"
 )
 
 /* If a node doesn't receive message from unicorn after 
@@ -67,7 +67,7 @@ var mutex = &sync.Mutex{}
 /* The queue for messages to be sent, messages in this queue
  * will be passed to messagePasser by mutegula
  */
-var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
 /*
  * Put message into sendChannel
@@ -90,7 +90,7 @@ func GetMessageFromSendChannel() messagePasser.Message {
 /* The queue for received messages, mutegula will put messages,
  * which come from messagePasser, into this queue
  */
-var receiveChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var receiveChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
 /*
  * Put message into receiveChannel. This method will be called
@@ -111,42 +111,42 @@ func getMessageFromReceiveChannel() messagePasser.Message {
 }
 
 /* received answer message */
-var receivedAnswerChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var receivedAnswerChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 /* received unicorn message */
-var receivedUnicornChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var receivedUnicornChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 /* received health check reply message */
-var receivedHeadCheckReplyChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var receivedHeadCheckReplyChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
 /* dispatch received message */
 func dispatchMessage() {
 	for {
 		message := getMessageFromReceiveChannel()
 		switch message.Kind {
-		case messageType.ANSWER:
+		case defs.ANSWER:
 			go func() {
 				receivedAnswerChannel <- message
 			}()
-        case messageType.UNICORN:
+        case defs.UNICORN:
 			go func() {
 				receivedUnicornChannel <- message
 			}()
-		case messageType.ELECTION:
+		case defs.ELECTION:
             fmt.Printf("Received election message from %s\n", message.Source)
             sendAnswerMessage(message.Source, message.Content)
             if !electionIsStarted {
                 startElection()
             }
         /* receive health check message, reply if node is unicorn */
-        case messageType.ARE_YOU_ALIVE:
+        case defs.ARE_YOU_ALIVE:
 //            if unicorn == localName {
                 go putMessageToSendChannel(messagePasser.Message{
                     Source: localName,
                     Destination: message.Source,
                     Content: message.Content,
-                    Kind: messageType.IAM_ALIVE,
+                    Kind: defs.IAM_ALIVE,
                 })
 //            }
-        case messageType.IAM_ALIVE:
+        case defs.IAM_ALIVE:
             go func() {
                 receivedHeadCheckReplyChannel <- message
             }()
@@ -185,7 +185,7 @@ func sendUnicornMessage() {
 			Source: localName,
 			Destination: name,
 			Content: localName,
-			Kind: messageType.UNICORN,
+			Kind: defs.UNICORN,
 			})
         fmt.Printf("Send unicorn message from %s to %s\n", localName, name)
 	}
@@ -201,7 +201,7 @@ func sendElectionMessage(timestamp string) {
 			Source: localName,
 			Destination: name,
 			Content: timestamp,
-			Kind: messageType.ELECTION,
+			Kind: defs.ELECTION,
 			})
         fmt.Printf("Election message send from %s to %s\n", localName, name)
 	}
@@ -219,7 +219,7 @@ func sendAnswerMessage(destination string, timestamp string) {
 		Source: localName,
 		Destination: destination,
 		Content: timestamp,
-		Kind: messageType.ANSWER,
+		Kind: defs.ANSWER,
 		})
     fmt.Printf("Send answer from %s to %s with timestamp %s\n", localName, destination, timestamp)
 }
@@ -237,7 +237,7 @@ func sendHealthCheckRequestMessage(timestamp string) {
         Source: localName,
         Destination: unicorn,
         Content: timestamp,
-        Kind: messageType.ARE_YOU_ALIVE,
+        Kind: defs.ARE_YOU_ALIVE,
     })
     fmt.Printf("Send health check from %s to %s\n", localName, unicorn)
 }
