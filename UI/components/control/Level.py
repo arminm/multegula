@@ -6,6 +6,7 @@
 # imports
 import queue
 import random
+import glob
 from UI.typedefs import *
 from UI.components.gameplay.Block import *
 
@@ -22,35 +23,15 @@ class Level :
         self.first = True
         self.updated = False
 
-        # level01 - horizontal blocks
-        level01 = []
-        for x in range(1, 4) :
-           for y in range(Y_THIRD, Y_2THIRD, BLOCK_HEIGHT*4) :
-                level01.append(Block(x*X_THIRD, y, PowerUps.PWR_NONE, Tilt.HORZ))
-        self.levels.append(level01);
-        self.blocks = self.levels[0];
-
-        # level02 - vertical blocks
-        level02 = []
-        for x in range(X_THIRD, X_2THIRD, BLOCK_HEIGHT*4) :
-           for y in range(1, 4) :
-                level02.append(Block(x, y*Y_THIRD, PowerUps.PWR_NONE, Tilt.VERT)) 
-        self.levels.append(level02);       
-
-        # level03 - random horizontal and vertical blocks
-        level03 = []
-        for x in range(1, 4) :
-           for y in range(Y_THIRD, Y_2THIRD, BLOCK_HEIGHT*4) :
-                if random.randint(0, 1) == 1 :
-                    level03.append(Block(x*X_THIRD, y, PowerUps.PWR_NONE, Tilt.HORZ))
-        for x in range(X_THIRD, X_2THIRD, BLOCK_HEIGHT*4) :
-           for y in range(1, 4) :
-                if random.randint(0, 1) == 1 :
-                    level03.append(Block(x, y*Y_THIRD, PowerUps.PWR_NONE, Tilt.VERT)) 
-        self.levels.append(level03)
+        # Read levels
+        for level in glob.iglob('levels/'):
+        	readLevel(level)
 
     ### readLevel - parse level as defined in mlev file
-    def readLevel(self) :
+    def readLevel(self, levelpath) :
+    	level = []
+    	import levelpath
+    	self.levels.append(level)
 
     ### getTextLevel -- get a text version of the current level
     def getTextLevel(self) :
