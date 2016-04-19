@@ -63,6 +63,12 @@ BREAK_POINTS = 5
 FP_MULT = 10
 RD_FACT = 1
 
+# pause screen constants
+DISP_3_VAL = 0
+DISP_2_VAL = 50
+DISP_1_VAL = 100
+MOVE_ON_VAL = 150
+
 # message formation and pervasion
 BUFFER_SIZE = 200 #Arbitrary buffer size for received messages
 DELIMITER = '##'
@@ -126,8 +132,9 @@ class PlayerState(Enum) :
 
 ### GameType - define the two game types
 class GameType(Enum) :
-    SINGLE_PLAYER   = 0
-    MULTI_PLAYER    = 1
+    UNSET           = 0
+    SINGLE_PLAYER   = 1
+    MULTI_PLAYER    = 2
 
 ### Tilt - defines the tilt of a block, either vertical or horizontal
 class Tilt(Enum) :
@@ -136,14 +143,17 @@ class Tilt(Enum) :
 
 ### MsgType - defines the message types
 class MsgType() :
-    MSG_GAME_TYPE   = 'MGT'
-    MSG_MYNAME      = 'MMN'
-    MSG_PADDLE_DIR  = 'MPD'
-    MSG_PADDLE_POS  = 'MPP'
-    MSG_BALL_MISSED = 'MBM'
-    MSG_BALL_DEFLECTED = 'MBD'
-    MSG_BLOCK_BROKEN = 'MBB'
-    MSG_PLAYER_LOC = 'MPL'
+    MSG_BALL_DEFLECTED  = 'MBD'
+    MSG_BALL_MISSED     = 'MBM'
+    MSG_BLOCK_BROKEN    = 'MBB'
+    MSG_GAME_TYPE       = 'MGT'
+    MSG_MYNAME          = 'MMN'
+    MSG_PADDLE_DIR      = 'MPD'
+    MSG_PADDLE_POS      = 'MPP'
+    MSG_PAUSE_UPDATE    = 'MPU'
+    MSG_PLAYER_LOC      = 'MPL'
+    MSG_START_PLAY      = 'MSP'
+    MSG_UNICORN         = 'MUN'
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
@@ -154,17 +164,15 @@ class MsgPayload() :
 
 ### MsgIndex - defines the the standard placement of payload values
 class MsgIndex() :
-    PADDLE_DIR              = 0
-    PADDLE_POS_CENTER       = 0
-    PADDLE_POS_WIDTH        = 1
-    BALL_MISSED_SCORE       = 0
-    BALL_MISSED_LIVES       = 1
+
     BALL_DEFLECTED_XCENTER  = 0
     BALL_DEFLECTED_YCENTER  = 1
     BALL_DEFLECTED_RADIUS   = 2
     BALL_DEFLECTED_XSPEED   = 3
     BALL_DEFLECTED_YSPEED   = 4
     BALL_DEFLECTED_SCORE    = 5
+    BALL_MISSED_SCORE       = 0
+    BALL_MISSED_LIVES       = 1
     BLOCK_BROKEN_XCENTER    = 0
     BLOCK_BROKEN_YCENTER    = 1
     BLOCK_BROKEN_RADIUS     = 2
@@ -173,6 +181,13 @@ class MsgIndex() :
     BLOCK_BROKEN_SCORE      = 5
     BLOCK_BROKEN_LIVES      = 6
     BLOCK_BROKEN_BLOCK      = 7
+    PADDLE_DIR              = 0
+    PADDLE_POS_CENTER       = 0
+    PADDLE_POS_WIDTH        = 1
+    PAUSE_UPDATE_VAL        = 0
+    PLAYER_LOC_NUMBER       = 0
+    PLAYER_LOC_PLAYERS      = 1
+    UNICORN_UNICORN         = 0
 
 class PlayerReturnStatus() :
     NO_STATUS       = 0
@@ -181,6 +196,13 @@ class PlayerReturnStatus() :
     BALL_DEFLECTED  = 3
     WALL_BALL_DEFLECTED = 4
     BLOCK_BROKEN    = 5
+
+class PauseReturnStatus() :
+    NO_STATUS   = 0
+    DISP_3      = 1
+    DISP_2      = 2
+    DISP_1      = 3
+    MOVE_ON     = 4
 
 # PyMessage class 
 class PyMessage :

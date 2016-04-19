@@ -233,17 +233,20 @@ func inboundDispatcher() {
 		message := messagePasser.Receive()
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
-		case defs.MSG_PADDLE_POS:
-			bridges.SendToPyBridge(message)
-		case defs.MSG_PADDLE_DIR:
+		case defs.MSG_BALL_DEFLECTED:
 			bridges.SendToPyBridge(message)
 		case defs.MSG_BALL_MISSED:
 			bridges.SendToPyBridge(message)
-		case defs.MSG_BALL_DEFLECTED:
-			bridges.SendToPyBridge(message)
 		case defs.MSG_BLOCK_BROKEN:
 			bridges.SendToPyBridge(message)
-
+		case defs.MSG_PADDLE_DIR:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_PADDLE_POS:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_PAUSE_UPDATE:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_START_PLAY:
+			bridges.SendToPyBridge(message)
 		}
 	}
 }
@@ -371,6 +374,15 @@ func main() {
 		// initialize message passer
 		messagePasser.InitMessagePasser(*peers, localNodeName)
 		fmt.Println(localNodeName, "made message passer.")
+
+		/***** TODO: REPLACE WITH ACTUAL ELECTION INFORMATION *******/
+		// NOTE: This will happen somewhere else
+		var unicornMsg messagePasser.Message;
+		unicornMsg.Source = localNode.Name;
+		unicornMsg.Destination = defs.MULTICAST_DEST;
+		unicornMsg.Kind = defs.MSG_UNICORN;
+		unicornMsg.Content = "a";
+		bridges.SendToPyBridge(unicornMsg)
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()
