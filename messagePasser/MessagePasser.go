@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"github.com/arminm/multegula/messageType"
+	"github.com/arminm/multegula/defs"
 )
 
 // Node structure to hold each node's information
@@ -97,10 +97,10 @@ var localNode Node
 var localIndex int
 
 /* the queue for messages to be sent */
-var sendChannel chan Message = make(chan Message, messageType.QUEUE_SIZE)
+var sendChannel chan Message = make(chan Message, defs.QUEUE_SIZE)
 
 /* the queue for received messages */
-var receiveChannel chan Message = make(chan Message, messageType.QUEUE_SIZE)
+var receiveChannel chan Message = make(chan Message, defs.QUEUE_SIZE)
 var holdbackQueue []Message = []Message{}
 
 func updateSeqNum(message *Message) {
