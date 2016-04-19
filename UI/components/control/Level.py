@@ -49,6 +49,9 @@ class Level :
                     level03.append(Block(x, y*Y_THIRD, PowerUps.PWR_NONE, Tilt.VERT)) 
         self.levels.append(level03)
 
+    ### readLevel - parse level as defined in mlev file
+    def readLevel(self) :
+
     ### getTextLevel -- get a text version of the current level
     def getTextLevel(self) :
         return 'LEVEL ' + str(self.currentLevel + 1) + '.'
