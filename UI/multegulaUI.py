@@ -187,17 +187,22 @@ def react(canvas, received) :
     kind = received.kind
     name = received.src
     content = received.content
-    print("received: " + received.toString())
+    myName = canvas.data['myName']
+    print(myName + " Received: " + received.toString())
 
     if kind == MsgType.MSG_PLAYER_LOC :
         initPlayers(canvas, int(content[0]), content[1:])
         canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-        
+        canvas.data['nextScreen'] = Screens.SCRN_GAME
+
     # MSG_PADDLE_DIR
     elif kind == MsgType.MSG_PADDLE_DIR :
+        print(myName + " paddle dir...")
         if content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_LEFT:
+            print(myName + " left...")
             canvas.data[name].paddle.direction = Direction.DIR_LEFT
         elif content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_RIGHT:
+            print(myName + " right...")
             canvas.data[name].paddle.direction = Direction.DIR_RIGHT
 
     # MSG_PADDLE_POS

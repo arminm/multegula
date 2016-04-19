@@ -111,10 +111,10 @@ class Paddle :
     def update(self, canvas) :
         state = self.state
 
-        if state == PlayerState.USER or state == PlayerState.AI :
+        if state == PlayerState.USER or state == PlayerState.AI or state == PlayerState.COMP:
             self.move()
             self.draw(canvas)
-        elif state == PlayerState.COMP or state == PlayerState.WALL :
+        elif state == PlayerState.WALL :
             self.draw(canvas)
 
     ### getInfo - get pertinent information about the paddle
