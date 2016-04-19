@@ -13,22 +13,15 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
-	"github.com/arminm/multegula/messageType"
 )
 
-// TODO: Remove fixed port number
-/* port number for local TCP connection */
-// const port string = ":44444"
-
-/* delimiter for formating message */
-const delimiter string = "##"
-
 /* the queue for messages to be sent to multegula */
-var sendQueue chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var sendQueue chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
 /* the queue for messages received from multegula */
-var receivedQueue chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var receivedQueue chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
 /*
  * construct message from it's string format
@@ -38,7 +31,7 @@ var receivedQueue chan messagePasser.Message = make(chan messagePasser.Message, 
  * @return	message
  **/
 func decodeMessage(messageString string) messagePasser.Message {
-	var elements []string = strings.Split(messageString, delimiter)
+	var elements []string = strings.Split(messageString, defs.DELIMITER)
 	return messagePasser.Message{Source: elements[0], Destination: elements[1], Content: elements[2], Kind: elements[3]}
 }
 
@@ -50,7 +43,7 @@ func decodeMessage(messageString string) messagePasser.Message {
  * @return	the string format of the message
  **/
 func encodeMessage(message messagePasser.Message) string {
-	return message.Source + delimiter + message.Destination + delimiter + message.Content + delimiter + message.Kind
+	return message.Source + defs.DELIMITER + message.Destination + defs.DELIMITER + message.Content + defs.DELIMITER + message.Kind
 }
 
 /*

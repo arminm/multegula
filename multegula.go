@@ -11,31 +11,15 @@ import (
 	"fmt"
 //	"reflect"
 	"strconv"
+
+	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
+	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
-	"github.com/arminm/multegula/messageType"
 	"github.com/arminm/multegula/bullySelection"
 )
 
-
-/*** MESSAGE TYPE CONSTANTS ***/
-const MSG_GAME_TYPE 	string = "MSG_GAME_TYPE"
-const MSG_MYNAME 		string = "MSG_MYNAME"
-const MSG_PADDLE_POS 	string = "MSG_PADDLE_POS"
-const MSG_PADDLE_DIR 	string = "MSG_PADDLE_DIR"
-
-/*** MESSAGE DESTINATION CONSTANTS ***/
-const MULTICAST_DEST string = "EVERYBODY"
-const MULTEGULA_DEST string = "MULTEGULA"
-
-/*** MESSAGE SOURCE CONTENTS ***/
-const UI_SOURCE string = "UI"
-
-/*** MESSAGE PAYLOAD CONSTANTS ***/
-const GAME_TYPE_MULTI 	string = "MULTI"
-const GAME_TYPE_SINGLE	string = "SINGLE"
-
-/* 
+/*
  * This is the sendChannel for message dispatcher.
  * Any components like UI or bully algorithm will
  * put messages into this channel if they whan to
@@ -43,14 +27,14 @@ const GAME_TYPE_SINGLE	string = "SINGLE"
  * messages out from this channel and send them
  * to messagePasser
  */
-var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, messageType.QUEUE_SIZE)
+var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
 /*
  * get message out from sendChannel
  * @return the message got from sendChannel
  */
 func getMessageFromSendChannel() messagePasser.Message {
-	message := <- sendChannel
+	message := <-sendChannel
 	return message
 }
 
@@ -172,7 +156,7 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 func uiGetLocalName() (localName string) {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-		if message.Kind == MSG_MYNAME {
+		if message.Kind == defs.MSG_MYNAME {
 			localName = message.Content
 			break
 		}
@@ -186,19 +170,19 @@ func uiGetLocalName() (localName string) {
 func uiGetGameType() (gameType string) {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-		if message.Kind == MSG_GAME_TYPE {
+		if message.Kind == defs.MSG_GAME_TYPE {
 			gameType = message.Content
 			break
 		}
 	}
-	return gameType	
+	return gameType
 }
 
 /* wait for incoming messages from the UI */
 func PyBridgeReceiver() {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-        go putMessageIntoSendChannel(message)
+		go putMessageIntoSendChannel(message)
 	}
 }
 
@@ -215,22 +199,27 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
-
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
-		case MSG_PADDLE_POS:
+		case defs.MSG_PADDLE_POS:
 			bridges.SendToPyBridge(message)
-		case MSG_PADDLE_DIR:
+		case defs.MSG_PADDLE_DIR:
 			bridges.SendToPyBridge(message)
-		case messageType.ELECTION:
+		case defs.MSG_BALL_MISSED:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_BALL_DEFLECTED:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_BLOCK_BROKEN:
+			bridges.SendToPyBridge(message)
+		case defs.ELECTION:
 			bullySelection.PutMessageToReceiveChannel(message)
-		case messageType.ANSWER:
+		case defs.ANSWER:
 			bullySelection.PutMessageToReceiveChannel(message)
-		case messageType.UNICORN:
+		case defs.UNICORN:
 			bullySelection.PutMessageToReceiveChannel(message)
-		case messageType.ARE_YOU_ALIVE:
+		case defs.ARE_YOU_ALIVE:
 			bullySelection.PutMessageToReceiveChannel(message)
-		case messageType.IAM_ALIVE:
+		case defs.IAM_ALIVE:
 			bullySelection.PutMessageToReceiveChannel(message)
 		}
 	}
@@ -244,7 +233,7 @@ func outboundDispatcher() {
 
 		// based on it's destination, determine which messagePasser
 		//	routine is appropriate
-		if message.Destination == MULTICAST_DEST {
+		if message.Destination == defs.MULTICAST_DEST {
 			messagePasser.Multicast(&message)
 		} else {
 			messagePasser.Send(message)
@@ -255,33 +244,15 @@ func outboundDispatcher() {
 /*
  * parses main arguments passed in through command-line
  */
-func parseMainArguments(args []string) (configName string, localNodeName string) {
-
+func parseMainArguments(args []string) string {
+	var localNodeName string
 	if len(args) > 0 {
-		configName = args[0]
-	} else {
-		configName = getConfigName()
-	}
-	fmt.Println("Config Name:", configName)
-
-	if len(args) > 1 {
 		localNodeName = args[1]
 	} else {
 		localNodeName = getLocalName()
 	}
 	fmt.Println("Local Node Name:", localNodeName)
-	return configName, localNodeName
-}
-
-func skinnyParseMainArguments(args []string) (configName string) {
-
-	if len(args) > 0 {
-		configName = args[0]
-	} else {
-		configName = getConfigName()
-	}
-	fmt.Println("Config Name:", configName)
-	return configName
+	return localNodeName
 }
 
 /* the Main function of the Multegula application */
@@ -289,19 +260,37 @@ func main() {
 //	testFlag := flag.Bool("test", false, "Test Mode Flag")
 	testFlag := flag.Bool("test", true, "Test Mode Flag")
 	portFlag := flag.Int("port", 44444, "Local port number for Python-Go bridge.")
+
 	flag.Parse()
 	// Read command-line arguments and prompt the user if not provided
 	args := flag.Args()
 
+	// nodes used for testing purposes only
+	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
+
+	// for testing the bootstrapping
+	if *bootstrapTestFlag {
+		localName := getLocalName()
+		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
+		fmt.Println("Contacting the bootstrap server...")
+		peers, err := bootstrapClient.GetNodes(localNode)
+		if err != nil {
+			fmt.Println("Got error:", err)
+		} else {
+			fmt.Printf("Got peers: %+v\n", peers)
+		}
+		return
+	}
+
 	if *testFlag {
-		configName, localNodeName := parseMainArguments(args)
+		localNodeName := parseMainArguments(args)
+
 		fmt.Print("--------------------------------\n")
 		fmt.Println("Initing with localName:", localNodeName)
-		messagePasser.InitMessagePasser(configName, localNodeName)
+		messagePasser.InitMessagePasser(nodes, localNodeName)
 
-		configuration := messagePasser.Config()
 		fmt.Println("Available Nodes:")
-		for id, node := range configuration.Nodes {
+		for id, node := range nodes {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
@@ -317,7 +306,7 @@ func main() {
 			fmt.Println("Getting operation")
 			operation := getOperation()
 			if operation == 0 {
-				message := getMessage(configuration.Nodes, localNodeName)
+				message := getMessage(nodes, localNodeName)
 				messagePasser.Send(message)
 			} else if operation == 1 {
 				var message messagePasser.Message = nonBlockingReceive()
@@ -327,7 +316,7 @@ func main() {
 					fmt.Printf("Received: %+v\n\n", message)
 				}
 			} else if operation == 2 {
-				message := getMessage(configuration.Nodes, localNodeName)
+				message := getMessage(nodes, localNodeName)
 				messagePasser.Multicast(&message)
 				fmt.Println("Did multicast")
 			} else {

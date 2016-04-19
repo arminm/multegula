@@ -11,6 +11,6 @@ killall multegula 2> /dev/null
 killall BootstrapServer 2> /dev/null
 sleep 1
 
-#Start multegula.go and wait for it to come up.
+#Start Bootstrap server.
 #Defaults to port 55555 if port isn't received.
-go run bootstrapServer/BootstrapServer.go -port=${1:-55555}
+go run bootstrapServer/bootstrapServer.go -port=${1:-55555}
