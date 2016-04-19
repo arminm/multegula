@@ -24,8 +24,8 @@ class Level :
         self.updated = False
 
         # Read all level files
-        for level in glob.glob('*.mlev',recursive=True):
-        	readLevel(level)
+        for level in glob.glob('UI/levels/*.mlev',recursive=True):
+        	self.readLevel(level)
     
         # set first level
         self.blocks = self.levels[0]
@@ -34,7 +34,8 @@ class Level :
     def readLevel(self, levelpath) :
         # make a blank level
         thisLevel = []
-        exec(levelpath)
+        #Execfile is gone in Python 3, need to do it this way for now
+        exec(open(levelpath).read())
         # makeBlock parses the line and makes a new block
         #thisLevel.append(makeBlock(line))
         self.levels.append(thisLevel)
