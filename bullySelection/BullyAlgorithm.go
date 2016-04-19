@@ -127,8 +127,8 @@ func dispatchMessage() {
 				receivedAnswerChannel <- message
 			}()
         case defs.UNICORN:
-			go func() {
-				receivedUnicornChannel <- message
+		    go func() {
+			    receivedUnicornChannel <- message
 			}()
 		case defs.ELECTION:
             fmt.Printf("Received election message from %s\n", message.Source)
@@ -138,14 +138,12 @@ func dispatchMessage() {
             }
         /* receive health check message, reply if node is unicorn */
         case defs.ARE_YOU_ALIVE:
-//            if unicorn == localName {
-                go putMessageToSendChannel(messagePasser.Message{
-                    Source: localName,
-                    Destination: message.Source,
-                    Content: message.Content,
-                    Kind: defs.IAM_ALIVE,
-                })
-//            }
+            go putMessageToSendChannel(messagePasser.Message{
+                Source: localName,
+                Destination: message.Source,
+                Content: message.Content,
+                Kind: defs.IAM_ALIVE,
+            })
         case defs.IAM_ALIVE:
             go func() {
                 receivedHeadCheckReplyChannel <- message
@@ -343,8 +341,8 @@ func startElection() {
                 case unicornMessage := <- receivedUnicornChannel:
                     electionIsStarted = false
 					unicorn = unicornMessage.Content
+			        go startHealthCheck()
                     fmt.Printf("Received unicorn message from %s\n", unicorn)
-					go startHealthCheck()
 				}
 			}
 			/*
