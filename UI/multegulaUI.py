@@ -397,7 +397,7 @@ def redrawAll(canvas) :
             playerUpdate(player, status, info, canvas)
 
         canvas.data['level'].update(canvas)
-        canvas.data['ball'].updateGame(canvas)
+        ##canvas.data['ball'].updateGame(canvas)
 
 
     # GAME OVER SCREEN

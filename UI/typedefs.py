@@ -8,8 +8,8 @@ from enum import Enum
 
 ### CONSTANT VALUES
 # canvas dimensions
-CANVAS_WIDTH = 700;
-CANVAS_HEIGHT = 700;
+CANVAS_WIDTH = 350;
+CANVAS_HEIGHT = 350;
 X_THIRD = CANVAS_WIDTH // 4
 X_CENTER = CANVAS_WIDTH // 2
 X_2THIRD = X_THIRD*3
@@ -142,6 +142,7 @@ class MsgType() :
     MSG_BALL_MISSED = 'MBM'
     MSG_BALL_DEFLECTED = 'MBD'
     MSG_BLOCK_BROKEN = 'MBB'
+    MSG_PLAYER_LOC = 'MPL'
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
