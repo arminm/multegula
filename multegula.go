@@ -10,8 +10,8 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
-
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/defs"
@@ -177,6 +177,36 @@ func uiGetGameType() (gameType string) {
 	return gameType
 }
 
+/* 
+ * sets the orientation of the players to alphabetical
+ */
+func uiSetCompetitorLocation(myName string, peers *[]messagePasser.Node) {
+	var toSend messagePasser.Message;
+	var nodeNames = []string{};
+
+	// loop through all nodes and pull out names
+	for _, node := range *peers {
+		nodeNames = append(nodeNames, node.Name);
+	}
+
+	// sort and get length
+	sort.Strings(nodeNames);
+	length := len(nodeNames);
+
+	// create content of message
+	content := fmt.Sprintf("%d", length);
+	for _, name := range nodeNames {
+		content = fmt.Sprintf("%v%v%v", content, defs.PAYLOAD_DELIMITER, name)
+	}
+
+	// create message and send message
+	toSend.Source = myName;
+	toSend.Destination = myName;
+	toSend.Kind = defs.MSG_PLAYER_LOC;
+	toSend.Content = content;
+	bridges.SendToPyBridge(toSend);
+}
+
 /* wait for incoming messages from the UI */
 func PyBridgeReceiver() {
 	for {
@@ -326,16 +356,21 @@ func main() {
 	gameType := uiGetGameType()
 
 	if gameType == defs.GAME_TYPE_MULTI {
+		// get fellow players
 		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Couldn't get peers:", err)
 			panic(err)
 		}
-
 		*peers = append(*peers, localNode)
-		fmt.Printf("Got peers: %+v\n", *peers)
+
+		// set competitor location
+		uiSetCompetitorLocation(localNode.Name, peers)
+
+		// initialize message passer
 		messagePasser.InitMessagePasser(*peers, localNodeName)
+		fmt.Println(localNodeName, "made message passer.")
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()

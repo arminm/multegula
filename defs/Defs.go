@@ -11,8 +11,8 @@ import (
 )
 
 //Our bootstrap server.  Uncomment below for local testing.
-const SERVER_DNS string = "multegula.dyndns.org:55555"
-//const SERVER_DNS string = "localhost:55555"
+//const SERVER_DNS string = "multegula.dyndns.org:55555"
+const SERVER_DNS string = "localhost:55555"
 
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
@@ -27,6 +27,7 @@ const COORDINATOR string = "coordinator"
 
 /* The end of message types for bully algorithm */
 const DELIMITER string = "##"
+const PAYLOAD_DELIMITER string = "|"
 
 /* MessagePasser */
 const QUEUE_SIZE int = 200
@@ -45,6 +46,7 @@ const MSG_PADDLE_DIR string = "MPD"
 const MSG_BALL_MISSED string = "MBM"
 const MSG_BALL_DEFLECTED string = "MBD"
 const MSG_BLOCK_BROKEN string = "MBB"
+const MSG_PLAYER_LOC string = "MPL"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVR1"

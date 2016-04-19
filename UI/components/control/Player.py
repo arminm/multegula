@@ -314,7 +314,7 @@ class Player :
 
         # if this player is a competitor, just draw it
         elif(self.state == PlayerState.COMP) :
-            self.paddle.draw(canvas)
+            self.paddle.update(canvas)
             return (PlayerReturnStatus.NO_STATUS, [])
 
 
