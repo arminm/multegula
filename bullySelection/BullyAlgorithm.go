@@ -28,7 +28,7 @@ import (
  * transmission delay and message processing delay. It is counted
  * in millisecond.
  */
-const TIMEOUT int = 2000
+const TIMEOUT int = 1000
 
 /* The time period between two health check */
 const TIME_BETWEEN_HEALTH_CHECK = 2000
@@ -38,7 +38,7 @@ const TIME_BETWEEN_HEALTH_CHECK = 2000
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_UNICORN_MESSAGE_TIMEOUT int = 4000
+const WAITING_UNICORN_MESSAGE_TIMEOUT int = 2000
 
 /* The name of node */
 var localName string
@@ -74,7 +74,8 @@ var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, de
  * @param	message - message to be put into sendChannel
  */
 func putMessageToSendChannel(message messagePasser.Message) {
-	sendChannel <- message
+    fmt.Printf("Send: %s, %s, %s, %s at %s\n", message.Source, message.Destination, message.Kind, message.Content, getCurrentTime())
+    sendChannel <- message
 }
 
 /*
@@ -98,7 +99,7 @@ var receiveChannel chan messagePasser.Message = make(chan messagePasser.Message,
  * @param	message - message to be put into receiveChannel
  */
 func PutMessageToReceiveChannel(message messagePasser.Message) {
-    fmt.Printf("Message: %s, %s, %s, %s\n", message.Source, message.Destination, message.Kind, message.Content)
+    fmt.Printf("Receive: %s, %s, %s, %s at %s\n", message.Source, message.Destination, message.Kind, message.Content, getCurrentTime())
 	receiveChannel <- message
 }
 
@@ -243,17 +244,12 @@ func sendHealthCheckRequestMessage(timestamp string) {
 
 /* check the liveness of unicorn */
 func startHealthCheck() {
-	/* when unicorn failure detected, set i to 1,
-	 * because there is no need for health check anymore.
-	 */
-    var i int = -1
-    for i < 0 {
+    for {
         currentTime := getCurrentTime()
-//        fmt.Printf("Start health check at %s\n", currentTime)
         sendHealthCheckRequestMessage(currentTime)
         var waitHealthCheckReplyTimeout chan bool = make(chan bool, 1)
         go func(){
-            time.Sleep(time.Duration(TIMEOUT) * time.Millisecond)
+            time.Sleep(time.Duration(TIME_BETWEEN_HEALTH_CHECK) * time.Millisecond)
             waitHealthCheckReplyTimeout <- true
         }()
         var j int = -1
@@ -350,9 +346,6 @@ func startElection() {
 				 */
                 case unicornMessage := <- receivedUnicornChannel:
 //                    electionIsStarted = false
-                    for len(receivedUnicornChannel) > 0 {
-                        <- receivedUnicornChannel
-                    }
 					unicorn = unicornMessage.Content
 			        go startHealthCheck()
                     fmt.Printf("Received unicorn message from %s\n", unicorn)
