@@ -15,7 +15,7 @@ class Level :
     ### __init__ - initialize and return Level
     def __init__(self) :
         # constant fields
-        self.MAX_LEVELS = 3;
+        self.MAX_LEVELS = len(glob.glob('UI/levels/*.py',recursive=True));
 
         # dynamic fields
         self.levels = []
