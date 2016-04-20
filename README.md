@@ -50,7 +50,7 @@ Click "Allow" on any Windows Firewall notifications upon running.
 
 Running:
 ---------------------------------------------------------
-1. ./run.sh (OS X, Linux) or click run.bat (Windows)
+1. `./run.sh` (OS X, Linux) or click `run.bat` (Windows)
 
 Acknowledgements:
 ---------------------------------------------------------
