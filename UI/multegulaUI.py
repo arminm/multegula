@@ -199,12 +199,29 @@ def translatePosition(xCenter, yCenter, player) :
 
     if orientation == Orientation.DIR_SOUTH :
         return (xCenter, yCenter)
-    elif orientation == Orientation.DIR_NORTH :
-        return (xCenter, yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN))
     elif orientation == Orientation.DIR_EAST :
         return (yCenter, xCenter)
+    elif orientation == Orientation.DIR_NORTH :
+        return (xCenter, yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN))
     elif orientation == Orientation.DIR_WEST :
         return (yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN), xCenter)
+
+def translationPlayerDirection(direction, player) :
+    orientation = player.ORIENTATION
+
+    if orientation == Orientation.DIR_SOUTH :
+        return direction
+    elif orientation == Orientation.DIR_EAST  and direction == Direction.DIR_LEFT :
+        return Direction.DIR_RIGHT
+    elif orientation == Orientation.DIR_EAST and direction == Direction.DIR_RIGHT :
+        return Direction.DIR_LEFT
+    elif orientation == Orientation.DIR_NORTH and direction == Direction.DIR_LEFT :
+        return Direction.DIR_RIGHT
+    elif orientation == Orientation.DIR_NORTH and direction == Direction.DIR_RIGHT :
+        return Direction.DIR_LEFT
+    elif orientation == Orientation.DIR_WEST :
+        return direction
+
 
 def react(canvas, received) :
     # break down message
@@ -263,10 +280,9 @@ def react(canvas, received) :
 
     # MSG_PADDLE_DIR
     elif kind == MsgType.MSG_PADDLE_DIR :
-        if content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_LEFT:
-            canvas.data[name].paddle.direction = Direction.DIR_LEFT
-        elif content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_RIGHT:
-            canvas.data[name].paddle.direction = Direction.DIR_RIGHT
+        direction = content[MsgIndex.PADDLE_DIR]
+        direction = translationPlayerDirection(direction, canvas.data[name])
+        canvas.data[name].paddle.direction = direction
 
     # MSG_PADDLE_POS
     elif kind == MsgType.MSG_PADDLE_POS : 
@@ -521,7 +537,7 @@ def redrawAll(canvas) :
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
-        canvas.data['ball'].updateGame(canvas)
+        ##canvas.data['ball'].updateGame(canvas)
 
     ### GAME SCREEN MULTI PLAYER
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER):
