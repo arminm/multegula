@@ -80,7 +80,7 @@ func putMessageToSendChannel(message messagePasser.Message) {
 /*
  * Get message from sendChannel. This method will be called
  * in mutegula and it's a public message
- * @return	the message got from sendChannel
+ * @return	the message got from sendhannel
  */
 func GetMessageFromSendChannel() messagePasser.Message {
 	message := <- sendChannel
