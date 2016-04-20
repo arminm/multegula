@@ -206,9 +206,16 @@ def translatePosition(xCenter, yCenter, player) :
     elif orientation == Orientation.DIR_WEST :
         return (yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN), xCenter)
 
-def translationPlayerDirection(direction, player) :
+def translationPlayerDirection(payload, player) :
     orientation = player.ORIENTATION
 
+    # translate from payload type to Direction type
+    if payload == MsgPayload.PADDLE_DIR_LEFT :
+        direction = Direction.DIR_LEFT
+    elif payload == MsgPayload.PADDLE_DIR_RIGHT :
+        direction = Direction.DIR_RIGHT 
+
+    # translate based on orientation
     if orientation == Orientation.DIR_SOUTH :
         return direction
     elif orientation == Orientation.DIR_EAST  and direction == Direction.DIR_LEFT :
@@ -222,6 +229,17 @@ def translationPlayerDirection(direction, player) :
     elif orientation == Orientation.DIR_WEST :
         return direction
 
+def translatePlayerLocaiton(center, player) :
+    orientation = player.ORIENTATION
+
+    if orientation == Orientation.DIR_SOUTH :
+        return center
+    elif orientation == Orientation.DIR_EAST :
+        return CANVAS_HEIGHT - center
+    elif orientation == Orientation.DIR_NORTH :
+        return CANVAS_WIDTH - center
+    elif orientation == Orientation.DIR_WEST :
+        return center
 
 def react(canvas, received) :
     # break down message
@@ -259,14 +277,17 @@ def react(canvas, received) :
 
     # MSG_BLOCK_BROKEN
     elif kind == MsgType.MSG_BLOCK_BROKEN :
+        # get information out of payload
         xCenter = float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT
         yCenter = float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT
         xSpeed = float(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT
         ySpeed = float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT
 
+        # translate for player orientation
         (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
         (xCenter, yCenter) = translatePosition(xCenter, yCenter, canvas.data[name])
 
+        # set component fiels
         canvas.data[name].score = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
         canvas.data[name].lives = int(content[MsgIndex.BLOCK_BROKEN_LIVES])  
         canvas.data[name].statusUpdate = True
@@ -282,13 +303,22 @@ def react(canvas, received) :
     elif kind == MsgType.MSG_PADDLE_DIR :
         direction = content[MsgIndex.PADDLE_DIR]
         direction = translationPlayerDirection(direction, canvas.data[name])
+        print(canvas.data['myName'] + " " + str(direction))
         canvas.data[name].paddle.direction = direction
 
     # MSG_PADDLE_POS
     elif kind == MsgType.MSG_PADDLE_POS : 
+        # pull information from the payload
+        center = int(content[MsgIndex.PADDLE_POS_CENTER])
+        width = int(content[MsgIndex.PADDLE_POS_WIDTH])
+
+        # translate for player orientation
+        center = translatePlayerLocaiton(center, canvas.data[name])
+
+        # update the player's paddle
         canvas.data[name].paddle.direction = Direction.DIR_STOP
-        canvas.data[name].paddle.center = int(content[MsgIndex.PADDLE_POS_CENTER])
-        canvas.data[name].paddle.width = int(content[MsgIndex.PADDLE_POS_WIDTH])
+        canvas.data[name].paddle.center = center
+        canvas.data[name].paddle.width = width
 
     elif kind == MsgType.MSG_PAUSE_UPDATE :
         canvas.data['pauseScreen'].text = content[MsgIndex.PAUSE_UPDATE_VAL]
@@ -537,7 +567,7 @@ def redrawAll(canvas) :
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
-        ##canvas.data['ball'].updateGame(canvas)
+        canvas.data['ball'].updateGame(canvas)
 
     ### GAME SCREEN MULTI PLAYER
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER):
@@ -551,7 +581,7 @@ def redrawAll(canvas) :
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
-        canvas.data['ball'].updateGame(canvas)
+        #canvas.data['ball'].updateGame(canvas)
 
 
     # GAME OVER SCREEN
