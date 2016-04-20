@@ -26,6 +26,9 @@ const UNICORN string = "UNICORN"
 const ARE_YOU_ALIVE string = "ARE_YOU_ALIVE"
 /* The unicorn heart beat message */
 const IAM_ALIVE string = "IAM_ALIVE"
+/* The default unicorn name */
+/* Note that this name is reserved in the system */
+const UNICORN_DEFAULT_NAME = "unicorn##default##name"
 /* The end of message types for bully algorithm */
 
 const DELIMITER string = "##"

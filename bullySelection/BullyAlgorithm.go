@@ -15,7 +15,6 @@ package bullySelection
 import (
 	"time"
     "fmt"
-    "sync"
 	"github.com/arminm/multegula/messagePasser"
 	"github.com/arminm/multegula/defs"
 )
@@ -38,7 +37,7 @@ const TIME_BETWEEN_HEALTH_CHECK = 2000
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_UNICORN_MESSAGE_TIMEOUT int = 2000
+const WAITING_UNICORN_MESSAGE_TIMEOUT int = 3000
 
 /* The name of node */
 var localName string
@@ -52,18 +51,6 @@ var frontNodes []string
 /* Nodes whose names are greater than local name in the group */
 var latterNodes []string
 
-
-/*
- * Indicate wheather this node has already started an election.
- * When a node starts an election, set this value to true.
- * When a node receives an unicorn message, set this value to false,
- * because en election has finished when receiving an unicorn message
- */
-var electionIsStarted bool = false
-
-/* Only one routine is allowed to change the value of electionIsStarted */
-var mutex = &sync.Mutex{}
-
 /* The queue for messages to be sent, messages in this queue
  * will be passed to messagePasser by mutegula
  */
@@ -74,7 +61,7 @@ var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, de
  * @param	message - message to be put into sendChannel
  */
 func putMessageToSendChannel(message messagePasser.Message) {
-    fmt.Printf("Send: %s, %s, %s, %s at %s\n", message.Source, message.Destination, message.Kind, message.Content, getCurrentTime())
+//   fmt.Printf("Send: %s, %s, %s, %s at %s\n", message.Source, message.Destination, message.Kind, message.Content, getCurrentTime())
     sendChannel <- message
 }
 
@@ -99,7 +86,7 @@ var receiveChannel chan messagePasser.Message = make(chan messagePasser.Message,
  * @param	message - message to be put into receiveChannel
  */
 func PutMessageToReceiveChannel(message messagePasser.Message) {
-    fmt.Printf("Receive: %s, %s, %s, %s at %s\n", message.Source, message.Destination, message.Kind, message.Content, getCurrentTime())
+//    fmt.Printf("Receive: %s, %s, %s, %s at %s\n", message.Source, message.Destination, message.Kind, message.Content, getCurrentTime())
 	receiveChannel <- message
 }
 
@@ -133,13 +120,10 @@ func dispatchMessage() {
 			    receivedUnicornChannel <- message
 			}()
 		case defs.ELECTION:
-            fmt.Printf("Received election message from %s with timestamp %s\n", message.Source, message.Content)
+//            fmt.Printf("Received election message from %s with timestamp %s\n", message.Source, message.Content)
             sendAnswerMessage(message.Source, message.Content)
-            if !electionIsStarted {
-                startElection()
-            }
-        /* receive health check message, reply if node is unicorn */
         case defs.ARE_YOU_ALIVE:
+//            fmt.Printf("Send health check reply from %s to %s\n", localName, message.Source)
             go putMessageToSendChannel(messagePasser.Message{
                 Source: localName,
                 Destination: message.Source,
@@ -147,6 +131,7 @@ func dispatchMessage() {
                 Kind: defs.IAM_ALIVE,
             })
         case defs.IAM_ALIVE:
+            fmt.Printf("Health check reply from %s to %s at %s\n", message.Source, message.Destination, message.Content)
             go func() {
                 receivedHealthCheckReplyChannel <- message
             }()
@@ -187,7 +172,7 @@ func sendUnicornMessage() {
 			Content: localName,
 			Kind: defs.UNICORN,
 			})
-        fmt.Printf("Send unicorn message from %s to %s\n", localName, name)
+//        fmt.Printf("Send unicorn message from %s to %s\n", localName, name)
 	}
 }
 
@@ -203,7 +188,7 @@ func sendElectionMessage(timestamp string) {
 			Content: timestamp,
 			Kind: defs.ELECTION,
 			})
-        fmt.Printf("Election message send from %s to %s with timestamp %s\n", localName, name, timestamp)
+//        fmt.Printf("Election message send from %s to %s with timestamp %s\n", localName, name, timestamp)
 	}
 }
 
@@ -221,7 +206,7 @@ func sendAnswerMessage(destination string, timestamp string) {
 		Content: timestamp,
 		Kind: defs.ANSWER,
 		})
-    fmt.Printf("Send answer from %s to %s with timestamp %s\n", localName, destination, timestamp)
+ //   fmt.Printf("Send answer from %s to %s with timestamp %s\n", localName, destination, timestamp)
 }
 
 /* Get the string representation of current time
@@ -239,7 +224,7 @@ func sendHealthCheckRequestMessage(timestamp string) {
         Content: timestamp,
         Kind: defs.ARE_YOU_ALIVE,
     })
-    fmt.Printf("Send health check from %s to %s with timestamp %s\n", localName, unicorn, timestamp)
+    fmt.Printf("Send health check from %s to %s at %s\n", localName, unicorn, timestamp)
 }
 
 /* check the liveness of unicorn */
@@ -252,52 +237,42 @@ func startHealthCheck() {
             time.Sleep(time.Duration(TIME_BETWEEN_HEALTH_CHECK) * time.Millisecond)
             waitHealthCheckReplyTimeout <- true
         }()
-        var j int = -1
-        for j < 0 {
+        var i int = -1
+        for i < 0 {
             select {
             /* no reply after timeout, unicorn failure detected,
-             * break loop and start election
+             * start election
              */
             case <- waitHealthCheckReplyTimeout:
                 close(waitHealthCheckReplyTimeout)
-                j = 1
-                i = 1
                 fmt.Println("Time out without health check received, start election")
-                electionIsStarted = false
+                /* No election message received yet, start an election */
                 startElection()
+                i = 1
             case message := <- receivedHealthCheckReplyChannel:
                 /* valide health check reply message received
                  * break the inner loop, wait for TIME_BETWEEN_HEALTH_CHECK,
                  * and start another round of health check
                  */
                 if message.Content == currentTime {
-                    fmt.Println("Received health check reply")
+                    fmt.Printf("Valide health check reply: %s\n", message.Source)
                     for len(receivedHealthCheckReplyChannel) > 0 {
                         <- receivedHealthCheckReplyChannel
                     }
-                    j = 1
-                    time.Sleep(time.Duration(TIME_BETWEEN_HEALTH_CHECK) * time.Millisecond)
-                } else {
-                    fmt.Println("Invalid health check reply")
+                    i = 1
+                } else {// otherwise, drop out-dated health check reply
+                    fmt.Printf("Invalid health check reply: %s\n", message.Source)
                 }
-                /* 
-                 * otherwise, drop out-dated health check reply
-                 */
             }
         }
+        time.Sleep(time.Duration(TIME_BETWEEN_HEALTH_CHECK) * time.Millisecond)
     }
 }
 
 /* Start election */
 func startElection() {
-    if electionIsStarted {
-        return
-    }
-    mutex.Lock()
-    electionIsStarted = true
 	currentTime := getCurrentTime()
-    fmt.Println("Start an election at " + currentTime)
-	sendElectionMessage(currentTime)
+    sendElectionMessage(currentTime)
     /* wait for answers from other nodes within timeout */
 	var timeoutWaitAnswer chan bool = make(chan bool, 1)
 	go func() {
@@ -309,10 +284,8 @@ func startElection() {
 		select {
 		/* no answer after timeout, the node it self is unicorn */
 		case <- timeoutWaitAnswer:
-//          electionIsStarted = false
-            fmt.Println("Time out without answer received")
+//            fmt.Println("Time out without answer received")
 			close(timeoutWaitAnswer)
-            fmt.Printf("Set self %s as unicorn\n", localName)
 			unicorn = localName
 			sendUnicornMessage()
 			i = 1
@@ -325,7 +298,7 @@ func startElection() {
                 for len(receivedAnswerChannel) > 0 {
                     <- receivedAnswerChannel
                 }
-                fmt.Printf("Received valid answer of %s, waiting for unicorn message...\n", currentTime)
+//                fmt.Printf("Received valid answer: %s\n", currentTime)
 				i = 1
 				var timeoutWaitUnicorn chan bool = make(chan bool, 1)
 				go func() {
@@ -337,28 +310,21 @@ func startElection() {
 				 * start another election process
 				 */
 				case <- timeoutWaitUnicorn:
-                    electionIsStarted = false
-                    fmt.Println("No unicorn message received, start another election.")
+//                    fmt.Println("No unicorn message received, start another election.")
                     close(timeoutWaitUnicorn)
-					go startElection()
+					startElection()
 				/* recieve an unicorn message within timeout,
 				 * start health check
 				 */
                 case unicornMessage := <- receivedUnicornChannel:
-//                    electionIsStarted = false
 					unicorn = unicornMessage.Content
-			        go startHealthCheck()
-                    fmt.Printf("Received unicorn message from %s\n", unicorn)
+//                    fmt.Printf("Received unicorn message from %s\n", unicornMessage.Source)
 				}
-            } else {
-                fmt.Printf("Invalid answer message %s\n", message.Content)
+            } else {//otherwise, drop out-dated answer message
+//                fmt.Printf("Invalid answer from %s\n", message.Source)
             }
-			/*
-			 * otherwise, drop out-dated answer message
-			 */
 		}
 	}
-    mutex.Unlock()
 }
 
 /*
@@ -373,5 +339,6 @@ func InitBullySelection(name string, names []string) {
 	localName = name
 	frontNodes, latterNodes = getFrontAndLatterNodes(names, localName)
 	go dispatchMessage()
-    startElection()
+    unicorn = defs.UNICORN_DEFAULT_NAME
+    startHealthCheck()
 }
