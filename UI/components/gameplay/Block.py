@@ -6,6 +6,7 @@
 # imports
 from enum import Enum
 from UI.typedefs import *
+import random
 
 # BLOCK class
 class Block :
@@ -22,6 +23,7 @@ class Block :
         self.enabled = True
         self.first = True
         self.changed = False
+        self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'black', 'white']
 
     ### getEdges - get the edges of the block based on the orientation
     def getEdges(self) :
@@ -58,7 +60,8 @@ class Block :
         (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges()
 
         ## TODO: THE COLOR SHOULD BE SET BASED ON THE POWER UP
-        color = 'white'
+        ## But for now, we're just going to set it to a random value.
+        color = random.choice(self.COLORS)
 
         self.b = canvas.create_rectangle(leftEdge, topEdge, rightEdge, bottomEdge,
                                             fill = color, width = BORDER_WIDTH)  
