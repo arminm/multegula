@@ -181,6 +181,65 @@ def mousePressed(event) :
     elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER :
         init(canvas);
 
+def translateSpeed(xSpeed, ySpeed, player) :
+    orientation = player.ORIENTATION
+
+    # if there is a wall, then do not translate
+    if orientation == Orientation.DIR_SOUTH :
+        return (xSpeed, ySpeed)
+    elif orientation == Orientation.DIR_EAST : 
+        return (ySpeed, -xSpeed)
+    elif orientation == Orientation.DIR_NORTH :
+        return (-xSpeed, -ySpeed)
+    elif orientation == Orientation.DIR_WEST :
+        return (-ySpeed, xSpeed)
+
+def translatePosition(xCenter, yCenter, player) :
+    orientation = player.ORIENTATION
+
+    if orientation == Orientation.DIR_SOUTH :
+        return (xCenter, yCenter)
+    elif orientation == Orientation.DIR_EAST :
+        return (yCenter, xCenter)
+    elif orientation == Orientation.DIR_NORTH :
+        return (xCenter, yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN))
+    elif orientation == Orientation.DIR_WEST :
+        return (yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN), xCenter)
+
+def translationPlayerDirection(payload, player) :
+    orientation = player.ORIENTATION
+
+    # translate from payload type to Direction type
+    if payload == MsgPayload.PADDLE_DIR_LEFT :
+        direction = Direction.DIR_LEFT
+    elif payload == MsgPayload.PADDLE_DIR_RIGHT :
+        direction = Direction.DIR_RIGHT 
+
+    # translate based on orientation
+    if orientation == Orientation.DIR_SOUTH :
+        return direction
+    elif orientation == Orientation.DIR_EAST  and direction == Direction.DIR_LEFT :
+        return Direction.DIR_RIGHT
+    elif orientation == Orientation.DIR_EAST and direction == Direction.DIR_RIGHT :
+        return Direction.DIR_LEFT
+    elif orientation == Orientation.DIR_NORTH and direction == Direction.DIR_LEFT :
+        return Direction.DIR_RIGHT
+    elif orientation == Orientation.DIR_NORTH and direction == Direction.DIR_RIGHT :
+        return Direction.DIR_LEFT
+    elif orientation == Orientation.DIR_WEST :
+        return direction
+
+def translatePlayerLocaiton(center, player) :
+    orientation = player.ORIENTATION
+
+    if orientation == Orientation.DIR_SOUTH :
+        return center
+    elif orientation == Orientation.DIR_EAST :
+        return CANVAS_HEIGHT - center
+    elif orientation == Orientation.DIR_NORTH :
+        return CANVAS_WIDTH - center
+    elif orientation == Orientation.DIR_WEST :
+        return center
 
 def react(canvas, received) :
     # break down message
@@ -188,25 +247,24 @@ def react(canvas, received) :
     name = received.src
     content = received.content
     myName = canvas.data['myName']
-    print(myName + " Received: " + received.toString())
 
-    if kind == MsgType.MSG_PLAYER_LOC :
-        initPlayers(canvas, int(content[0]), content[1:])
-        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-        canvas.data['nextScreen'] = Screens.SCRN_GAME
+    # MSG_BALL_DEFLECTED
+    if kind == MsgType.MSG_BALL_DEFLECTED :
+        xCenter = float(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT
+        yCenter = float(content[MsgIndex.BALL_DEFLECTED_YCENTER]) / FP_MULT
+        xSpeed = float(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT
+        ySpeed = float(content[MsgIndex.BALL_DEFLECTED_YSPEED]) / FP_MULT
 
-    # MSG_PADDLE_DIR
-    elif kind == MsgType.MSG_PADDLE_DIR :
-        if content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_LEFT:
-            canvas.data[name].paddle.direction = Direction.DIR_LEFT
-        elif content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_RIGHT:
-            canvas.data[name].paddle.direction = Direction.DIR_RIGHT
+        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
+        (xCenter, yCenter) = translatePosition(xCenter, yCenter, canvas.data[name])
 
-    # MSG_PADDLE_POS
-    elif kind == MsgType.MSG_PADDLE_POS : 
-        canvas.data[name].paddle.direction = Direction.DIR_STOP
-        canvas.data[name].paddle.center = int(content[MsgIndex.PADDLE_POS_CENTER])
-        canvas.data[name].paddle.width = int(content[MsgIndex.PADDLE_POS_WIDTH])
+        canvas.data[name].score = int(content[MsgIndex.BALL_DEFLECTED_SCORE])
+        canvas.data[name].statusUpdate = True
+        canvas.data['ball'].lastToTouch = name
+        canvas.data['ball'].setCenter(xCenter, yCenter)
+        canvas.data['ball'].radius = float(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
+        canvas.data['ball'].setVelocity(xSpeed, ySpeed)
+        canvas.data['ball'].randomColor()
 
     # MSG_BALL_MISSED
     elif kind == MsgType.MSG_BALL_MISSED : 
@@ -217,28 +275,72 @@ def react(canvas, received) :
         canvas.data['currentScreen'] = Screens.SCRN_PAUSE
         canvas.data['nextScreen'] = Screens.SCRN_GAME
 
-    # MSG_BALL_DEFLECTED
-    elif kind == MsgType.MSG_BALL_DEFLECTED :
-        canvas.data[name].score = int(content[MsgIndex.BALL_DEFLECTED_SCORE])
-        canvas.data[name].statusUpdate = True
-        canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(float(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT, float(content[MsgIndex.BALL_DEFLECTED_YCENTER]) / FP_MULT)
-        canvas.data['ball'].radius = float(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
-        canvas.data['ball'].setVelocity(float(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT, float(content[MsgIndex.BALL_DEFLECTED_YSPEED]) / FP_MULT)
-        canvas.data['ball'].randomColor()
-
     # MSG_BLOCK_BROKEN
     elif kind == MsgType.MSG_BLOCK_BROKEN :
+        # get information out of payload
+        xCenter = float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT
+        yCenter = float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT
+        xSpeed = float(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT
+        ySpeed = float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT
+
+        # translate for player orientation
+        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
+        (xCenter, yCenter) = translatePosition(xCenter, yCenter, canvas.data[name])
+
+        # set component fiels
         canvas.data[name].score = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
         canvas.data[name].lives = int(content[MsgIndex.BLOCK_BROKEN_LIVES])  
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT, float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT)
+        canvas.data['ball'].setCenter(xCenter, yCenter)
         canvas.data['ball'].radius = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
-        canvas.data['ball'].setVelocity(int(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT, float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT)
+        canvas.data['ball'].setVelocity(xSpeed, ySpeed)
         canvas.data['ball'].randomColor()
         canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
         canvas.data['level'].updated = True
+
+    # MSG_PADDLE_DIR
+    elif kind == MsgType.MSG_PADDLE_DIR :
+        direction = content[MsgIndex.PADDLE_DIR]
+        direction = translationPlayerDirection(direction, canvas.data[name])
+        print(canvas.data['myName'] + " " + str(direction))
+        canvas.data[name].paddle.direction = direction
+
+    # MSG_PADDLE_POS
+    elif kind == MsgType.MSG_PADDLE_POS : 
+        # pull information from the payload
+        center = int(content[MsgIndex.PADDLE_POS_CENTER])
+        width = int(content[MsgIndex.PADDLE_POS_WIDTH])
+
+        # translate for player orientation
+        center = translatePlayerLocaiton(center, canvas.data[name])
+
+        # update the player's paddle
+        canvas.data[name].paddle.direction = Direction.DIR_STOP
+        canvas.data[name].paddle.center = center
+        canvas.data[name].paddle.width = width
+
+    elif kind == MsgType.MSG_PAUSE_UPDATE :
+        canvas.data['pauseScreen'].text = content[MsgIndex.PAUSE_UPDATE_VAL]
+
+    # MSG_PLAYER_LOC
+    elif kind == MsgType.MSG_PLAYER_LOC :
+        initPlayers(canvas, int(content[MsgIndex.PLAYER_LOC_NUMBER]), content[MsgIndex.PLAYER_LOC_PLAYERS:])
+        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+
+    elif kind == MsgType.MSG_START_PLAY :
+        xSpeed = float(content[MsgIndex.START_PLAY_XSPEED]) / FP_MULT
+        ySpeed = float(content[MsgIndex.START_PLAY_YSPEED]) / FP_MULT
+        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
+        
+        canvas.data['ball'].setVelocity(xSpeed, ySpeed)
+        canvas.data['pauseScreen'].reset(canvas)
+        canvas.data['currentScreen'] = Screens.SCRN_GAME
+
+    # MSG_UNICORN
+    if kind == MsgType.MSG_UNICORN :
+        print(myName + " Unicorn is..." + content[MsgIndex.UNICORN_UNICORN])
+        canvas.data['unicorn'] = content[MsgIndex.UNICORN_UNICORN]
 
 ### receiveAll - get all messages from the GoBrige
 def receiveAll(canvas) :
@@ -347,62 +449,139 @@ def playerUpdate(name, status, info, canvas) :
             # send message
             canvas.data['bridge'].sendMessage(toSend)
 
+def pauseUpdate(status, canvas) :
+    # Three seconds left until the game starts...
+    if status == PauseReturnStatus.DISP_3 :
+        # form message
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_PAUSE_UPDATE
+        toSend.content = '3'
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+    # Two seconds left until the game starts...
+    elif status == PauseReturnStatus.DISP_2 :
+        # form message
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_PAUSE_UPDATE
+        toSend.content = '2'
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+    # One second left until the game starts...
+    elif status == PauseReturnStatus.DISP_1 :
+        # form message
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_PAUSE_UPDATE
+        toSend.content = '1'
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+    # Time for the game to begin
+    elif status == PauseReturnStatus.MOVE_ON :
+        XSPEED = 0 * FP_MULT
+        YSPEED = round(CANVAS_HEIGHT // 110, RD_FACT) * FP_MULT
+        # form message
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_START_PLAY
+        toSend.content = str(XSPEED) + '|' + str(YSPEED)
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
     receiveAll(canvas)
+    gameType = canvas.data['gameType']
+    myName = canvas.data['myName']
 
     ### SPLASH SCREEN
     if canvas.data['currentScreen'] == Screens.SCRN_SPLASH :
+        # draw screen background and ball
         canvas.data['splashScreen'].drawBackground(canvas)
         canvas.data['ball'].updateMenu(canvas)
+
+        # draw screen foreground and text box AFTER ball so they are over the ball
         canvas.data['splashScreen'].drawText(canvas)
         canvas.data['splashTextField'].draw(canvas)        
 
     ### MAIN SCREEN 
     elif canvas.data['currentScreen'] == Screens.SCRN_MENU :
+        # draw screen background and ball
         canvas.data['menuScreen'].drawBackground(canvas)
         canvas.data['ball'].updateMenu(canvas)
+
+        # draw screen foreground and buttons AFTER ball so they are over the ball
         canvas.data['menuScreen'].drawText(canvas)
         canvas.data['soloButton'].draw(canvas)
         canvas.data['joinButton'].draw(canvas)
 
+    ### JOIN SCREEN - wait for everyone to connect
     elif canvas.data['currentScreen'] == Screens.SCRN_JOIN :
         canvas.data['joinScreen'].draw(canvas)
 
-    ### PAUSE SCREEN
-    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE :
+    ### PAUSE SCREEN SINGLE PLAYER
+    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE and gameType == GameType.SINGLE_PLAYER :
+        # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
-        # canvas.data[canvas.data['myName']].update(canvas)
+
+        # update all players
         for player in canvas.data['competitors'] :
             (status, info) = canvas.data[player].update(canvas)
             playerUpdate(player, status, info, canvas)
 
-        canvas.data['pauseScreen'].draw(canvas)
+        # update the screen to countdown (3...2....1...)
+        status = canvas.data['pauseScreen'].draw(canvas)
+        if status == PauseReturnStatus.MOVE_ON :
+            canvas.data['currentScreen'] = Screens.SCRN_GAME
 
-    ### GAME SCREEN
-    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.SINGLE_PLAYER):
+    ### PAUSE SCREEN MULTIPLAYER 
+    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE and gameType == GameType.MULTI_PLAYER :
+        # draw screen and ball
+        canvas.data['gameScreen'].draw(canvas)
+        canvas.data['ball'].draw(canvas)
+
+        # update all players
+        for player in canvas.data['competitors'] :
+            (status, info) = canvas.data[player].update(canvas)
+            playerUpdate(player, status, info, canvas)
+
+        # update the screen to countdown (3...2....1...)
+        status = canvas.data['pauseScreen'].draw(canvas)
+        pauseUpdate(status, canvas)
+
+    ### GAME SCREEN SINGLE PLAYER
+    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and gameType == GameType.SINGLE_PLAYER:
+        # draw screen
         canvas.data['gameScreen'].draw(canvas)
 
-        # update all other players
+        # update all players
         for player in canvas.data['competitors'] :
             (status, info) = canvas.data[player].update(canvas)
             playerUpdate(player, status, info, canvas)
 
+        # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
 
-    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.MULTI_PLAYER):
+    ### GAME SCREEN MULTI PLAYER
+    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER):
         canvas.data['gameScreen'].draw(canvas)
 
+        # update all players
         competitors = canvas.data['competitors']
         for player in competitors :
             (status, info) = canvas.data[player].update(canvas)
             playerUpdate(player, status, info, canvas)
 
+        # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
-        ##canvas.data['ball'].updateGame(canvas)
+        #canvas.data['ball'].updateGame(canvas)
 
 
     # GAME OVER SCREEN
@@ -416,11 +595,12 @@ def redrawAll(canvas) :
 def init(canvas) :
     # current screen
     canvas.data['currentScreen'] = Screens.SCRN_SPLASH
-    canvas.data['nextScreen'] = Screens.SCRN_NONE
 
     # misc
     canvas.data['delay'] = 10
     canvas.data['myName'] = 'Type name...'
+    canvas.data['unicorn'] = 'UNSET'
+    canvas.data['gameType'] = GameType.UNSET
 
     ### COMPONENETS
     # buttons

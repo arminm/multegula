@@ -44,14 +44,17 @@ const TIMEOUT_DURATION = 30 * time.Second
 const CHANNEL_SIZE = 10
 
 /*** MESSAGE TYPE CONSTANTS ***/
+const MSG_BALL_DEFLECTED string = "MBD"
+const MSG_BALL_MISSED string = "MBM"
+const MSG_BLOCK_BROKEN string = "MBB"
 const MSG_GAME_TYPE string = "MGT"
 const MSG_MYNAME string = "MMN"
-const MSG_PADDLE_POS string = "MPP"
 const MSG_PADDLE_DIR string = "MPD"
-const MSG_BALL_MISSED string = "MBM"
-const MSG_BALL_DEFLECTED string = "MBD"
-const MSG_BLOCK_BROKEN string = "MBB"
+const MSG_PADDLE_POS string = "MPP"
+const MSG_PAUSE_UPDATE string = "MPU"
 const MSG_PLAYER_LOC string = "MPL"
+const MSG_START_PLAY string = "MSP"
+const MSG_UNICORN string = "MUN"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVR1"

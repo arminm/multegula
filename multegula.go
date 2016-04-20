@@ -9,7 +9,7 @@ package main
 import (
 	"flag"
 	"fmt"
-//	"reflect"
+	"reflect"
 	"sort"
 	"strconv"
 	"github.com/arminm/multegula/bootstrapClient"
@@ -229,18 +229,27 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
+
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
-		case defs.MSG_PADDLE_POS:
-			bridges.SendToPyBridge(message)
-		case defs.MSG_PADDLE_DIR:
+
+		// UI Messages
+		case defs.MSG_BALL_DEFLECTED:
 			bridges.SendToPyBridge(message)
 		case defs.MSG_BALL_MISSED:
 			bridges.SendToPyBridge(message)
-		case defs.MSG_BALL_DEFLECTED:
-			bridges.SendToPyBridge(message)
 		case defs.MSG_BLOCK_BROKEN:
 			bridges.SendToPyBridge(message)
+		case defs.MSG_PADDLE_DIR:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_PADDLE_POS:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_PAUSE_UPDATE:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_START_PLAY:
+			bridges.SendToPyBridge(message)
+
+		// election messages
 		case defs.ELECTION:
 			bullySelection.PutMessageToReceiveChannel(message)
 		case defs.ANSWER:
@@ -286,7 +295,7 @@ func parseMainArguments(args []string) string {
 
 /* the Main function of the Multegula application */
 func main() {
-	testFlag := flag.Bool("test", true, "Test Mode Flag")
+	testFlag := flag.Bool("test", false, "Test Mode Flag")
 	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
 	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
 	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
@@ -301,7 +310,7 @@ func main() {
 	if *bootstrapTestFlag {
 		localName := getLocalName()
 		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
-		fmt.Println("[MULTEGULA CORE] Contacting the bootstrap server...")
+		fmt.Println("Contacting the bootstrap server...")
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Got error:", err)
@@ -323,14 +332,9 @@ func main() {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
-		//go receiveRoutine()
-        go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
-		go BullyReceiver()
-		go inboundDispatcher()
-        /* start bully algorithm */
-		outboundDispatcher()
+		go receiveRoutine()
 
-/*		fmt.Println("Please select the operation you want to do:")
+		fmt.Println("Please select the operation you want to do:")
 		for {
 			fmt.Println("Getting operation")
 			operation := getOperation()
@@ -351,17 +355,17 @@ func main() {
 			} else {
 				fmt.Println("Operation not recognized. Please try again.")
 			}
-		}/*/
+		}
 	}
 
 	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
 	// initialize communication with the UI
-	fmt.Printf("[MULTEGULA CORE] UI Port flag is: %d\n", *uiPortFlag)
+	fmt.Printf("Port is:%d\n", *uiPortFlag)
 	bridges.InitPyBridge(*uiPortFlag)
 
 	// get the localname
 	localNodeName := uiGetLocalName()
-	fmt.Println("[MULTEGULA CORE] My name is:", localNodeName)
+	fmt.Println("My name is:", localNodeName)
 
 	// determine the game type (multi or single player)
 	gameType := uiGetGameType()
@@ -371,7 +375,7 @@ func main() {
 		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
-			fmt.Println("[MULTEGULA CORE] Couldn't get peers:", err)
+			fmt.Println("Couldn't get peers:", err)
 			panic(err)
 		}
 		*peers = append(*peers, localNode)
@@ -381,7 +385,16 @@ func main() {
 
 		// initialize message passer
 		messagePasser.InitMessagePasser(*peers, localNodeName)
-		fmt.Println(localNodeName, "[MULTEGULA CORE] Made messagepasser.")
+		fmt.Println(localNodeName, "made message passer.")
+
+		/***** TODO: REPLACE WITH ACTUAL ELECTION INFORMATION *******/
+		// NOTE: This will happen somewhere else
+		var unicornMsg messagePasser.Message;
+		unicornMsg.Source = localNode.Name;
+		unicornMsg.Destination = defs.MULTICAST_DEST;
+		unicornMsg.Kind = defs.MSG_UNICORN;
+		unicornMsg.Content = "a";
+		bridges.SendToPyBridge(unicornMsg)
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()

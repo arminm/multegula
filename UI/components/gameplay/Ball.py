@@ -27,8 +27,10 @@ class Ball :
 
     ### reset - reset dynamic ball location/speed properties 
     def reset(self) :
-        self.randomXVelocity()
-        self.yVelocity = round(random.choice([-1, 1])*CANVAS_WIDTH / 110, RD_FACT)
+        ##self.randomXVelocity()
+        ##self.yVelocity = round(random.choice([-1, 1])*CANVAS_WIDTH / 110, RD_FACT)
+        self.xVelocity = 0
+        self.yVelocity = round(CANVAS_WIDTH // 110, RD_FACT)
         self.xCenter = round(CANVAS_WIDTH / 2, RD_FACT)
         self.yCenter = round(CANVAS_HEIGHT / 2, RD_FACT)
         self.randomColor()
