@@ -181,6 +181,30 @@ def mousePressed(event) :
     elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER :
         init(canvas);
 
+def translateSpeed(xSpeed, ySpeed, player) :
+    orientation = player.ORIENTATION
+
+    # if there is a wall, then do not translate
+    if orientation == Orientation.DIR_SOUTH :
+        return (xSpeed, ySpeed)
+    elif orientation == Orientation.DIR_EAST : 
+        return (ySpeed, -xSpeed)
+    elif orientation == Orientation.DIR_NORTH :
+        return (-xSpeed, -ySpeed)
+    elif orientation == Orientation.DIR_WEST :
+        return (-ySpeed, xSpeed)
+
+def translatePosition(xCenter, yCenter, player) :
+    orientation = player.ORIENTATION
+
+    if orientation == Orientation.DIR_SOUTH :
+        return (xCenter, yCenter)
+    elif orientation == Orientation.DIR_NORTH :
+        return (xCenter, yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN))
+    elif orientation == Orientation.DIR_EAST :
+        return (yCenter, xCenter)
+    elif orientation == Orientation.DIR_WEST :
+        return (yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN), xCenter)
 
 def react(canvas, received) :
     # break down message
@@ -191,12 +215,20 @@ def react(canvas, received) :
 
     # MSG_BALL_DEFLECTED
     if kind == MsgType.MSG_BALL_DEFLECTED :
+        xCenter = float(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT
+        yCenter = float(content[MsgIndex.BALL_DEFLECTED_YCENTER]) / FP_MULT
+        xSpeed = float(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT
+        ySpeed = float(content[MsgIndex.BALL_DEFLECTED_YSPEED]) / FP_MULT
+
+        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
+        (xCenter, yCenter) = translatePosition(xCenter, yCenter, canvas.data[name])
+
         canvas.data[name].score = int(content[MsgIndex.BALL_DEFLECTED_SCORE])
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(float(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT, float(content[MsgIndex.BALL_DEFLECTED_YCENTER]) / FP_MULT)
+        canvas.data['ball'].setCenter(xCenter, yCenter)
         canvas.data['ball'].radius = float(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
-        canvas.data['ball'].setVelocity(float(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT, float(content[MsgIndex.BALL_DEFLECTED_YSPEED]) / FP_MULT)
+        canvas.data['ball'].setVelocity(xSpeed, ySpeed)
         canvas.data['ball'].randomColor()
 
     # MSG_BALL_MISSED
@@ -210,13 +242,21 @@ def react(canvas, received) :
 
     # MSG_BLOCK_BROKEN
     elif kind == MsgType.MSG_BLOCK_BROKEN :
+        xCenter = float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT
+        yCenter = float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT
+        xSpeed = float(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT
+        ySpeed = float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT
+
+        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
+        (xCenter, yCenter) = translatePosition(xCenter, yCenter, canvas.data[name])
+
         canvas.data[name].score = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
         canvas.data[name].lives = int(content[MsgIndex.BLOCK_BROKEN_LIVES])  
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT, float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT)
+        canvas.data['ball'].setCenter(xCenter, yCenter)
         canvas.data['ball'].radius = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
-        canvas.data['ball'].setVelocity(int(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT, float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT)
+        canvas.data['ball'].setVelocity(xSpeed, ySpeed)
         canvas.data['ball'].randomColor()
         canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
         canvas.data['level'].updated = True
@@ -243,6 +283,11 @@ def react(canvas, received) :
         canvas.data['currentScreen'] = Screens.SCRN_PAUSE
 
     elif kind == MsgType.MSG_START_PLAY :
+        xSpeed = float(content[MsgIndex.START_PLAY_XSPEED]) / FP_MULT
+        ySpeed = float(content[MsgIndex.START_PLAY_YSPEED]) / FP_MULT
+        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
+        
+        canvas.data['ball'].setVelocity(xSpeed, ySpeed)
         canvas.data['pauseScreen'].reset(canvas)
         canvas.data['currentScreen'] = Screens.SCRN_GAME
 
@@ -391,11 +436,13 @@ def pauseUpdate(status, canvas) :
         canvas.data['bridge'].sendMessage(toSend)
     # Time for the game to begin
     elif status == PauseReturnStatus.MOVE_ON :
+        XSPEED = 0 * FP_MULT
+        YSPEED = round(CANVAS_HEIGHT // 110, RD_FACT) * FP_MULT
         # form message
         toSend = PyMessage()
         toSend.src = canvas.data['myName']
         toSend.kind = MsgType.MSG_START_PLAY
-        toSend.content = 'LETS GO'
+        toSend.content = str(XSPEED) + '|' + str(YSPEED)
         toSend.multicast = True
         # send message
         canvas.data['bridge'].sendMessage(toSend)
@@ -488,7 +535,7 @@ def redrawAll(canvas) :
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
-        ##canvas.data['ball'].updateGame(canvas)
+        canvas.data['ball'].updateGame(canvas)
 
 
     # GAME OVER SCREEN

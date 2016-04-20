@@ -187,6 +187,8 @@ class MsgIndex() :
     PAUSE_UPDATE_VAL        = 0
     PLAYER_LOC_NUMBER       = 0
     PLAYER_LOC_PLAYERS      = 1
+    START_PLAY_XSPEED       = 0
+    START_PLAY_YSPEED       = 1
     UNICORN_UNICORN         = 0
 
 class PlayerReturnStatus() :
