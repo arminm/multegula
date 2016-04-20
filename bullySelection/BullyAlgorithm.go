@@ -28,7 +28,7 @@ import (
  * transmission delay and message processing delay. It is counted
  * in millisecond.
  */
-const TIMEOUT int = 1000
+const TIMEOUT int = 2000
 
 /* The time period between two health check */
 const TIME_BETWEEN_HEALTH_CHECK = 2000
@@ -38,7 +38,7 @@ const TIME_BETWEEN_HEALTH_CHECK = 2000
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_UNICORN_MESSAGE_TIMEOUT int = 2000
+const WAITING_UNICORN_MESSAGE_TIMEOUT int = 4000
 
 /* The name of node */
 var localName string
@@ -98,6 +98,7 @@ var receiveChannel chan messagePasser.Message = make(chan messagePasser.Message,
  * @param	message - message to be put into receiveChannel
  */
 func PutMessageToReceiveChannel(message messagePasser.Message) {
+    fmt.Printf("Message: %s, %s, %s, %s\n", message.Source, message.Destination, message.Kind, message.Content)
 	receiveChannel <- message
 }
 
@@ -115,7 +116,7 @@ var receivedAnswerChannel chan messagePasser.Message = make(chan messagePasser.M
 /* received unicorn message */
 var receivedUnicornChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 /* received health check reply message */
-var receivedHeadCheckReplyChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
+var receivedHealthCheckReplyChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
 /* dispatch received message */
 func dispatchMessage() {
@@ -146,7 +147,7 @@ func dispatchMessage() {
             })
         case defs.IAM_ALIVE:
             go func() {
-                receivedHeadCheckReplyChannel <- message
+                receivedHealthCheckReplyChannel <- message
             }()
 		}
 	}
@@ -268,13 +269,16 @@ func startHealthCheck() {
                 fmt.Println("Time out without health check received, start election")
                 electionIsStarted = false
                 startElection()
-            case message := <- receivedHeadCheckReplyChannel:
+            case message := <- receivedHealthCheckReplyChannel:
                 /* valide health check reply message received
                  * break the inner loop, wait for TIME_BETWEEN_HEALTH_CHECK,
                  * and start another round of health check
                  */
                 if message.Content == currentTime {
                     fmt.Println("Received health check reply")
+                    for len(receivedHealthCheckReplyChannel) > 0 {
+                        <- receivedHealthCheckReplyChannel
+                    }
                     j = 1
                     time.Sleep(time.Duration(TIME_BETWEEN_HEALTH_CHECK) * time.Millisecond)
                 } else {
@@ -309,7 +313,7 @@ func startElection() {
 		select {
 		/* no answer after timeout, the node it self is unicorn */
 		case <- timeoutWaitAnswer:
-  //          electionIsStarted = false
+//          electionIsStarted = false
             fmt.Println("Time out without answer received")
 			close(timeoutWaitAnswer)
             fmt.Printf("Set self %s as unicorn\n", localName)
@@ -322,7 +326,10 @@ func startElection() {
 			 * break the loop and wait for unicorn
 			 */
 			if message.Content == currentTime {
-                fmt.Printf("Received valid answer of %s, waiting for unicornMessage...", currentTime)
+                for len(receivedAnswerChannel) > 0 {
+                    <- receivedAnswerChannel
+                }
+                fmt.Printf("Received valid answer of %s, waiting for unicorn message...\n", currentTime)
 				i = 1
 				var timeoutWaitUnicorn chan bool = make(chan bool, 1)
 				go func() {
@@ -343,6 +350,9 @@ func startElection() {
 				 */
                 case unicornMessage := <- receivedUnicornChannel:
 //                    electionIsStarted = false
+                    for len(receivedUnicornChannel) > 0 {
+                        <- receivedUnicornChannel
+                    }
 					unicorn = unicornMessage.Content
 			        go startHealthCheck()
                     fmt.Printf("Received unicorn message from %s\n", unicorn)
