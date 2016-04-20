@@ -17,15 +17,20 @@ const SERVER_DNS string = "localhost:55555"
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
 /* The election message */
-const ELECTION string = "election"
-
+const ELECTION string = "ELECTION"
 /* The answer message */
-const ANSWER string = "answer"
-
-/* The coordinator message */
-const COORDINATOR string = "coordinator"
-
+const ANSWER string = "ANSWER"
+/* The unicorn message */	
+const UNICORN string = "UNICORN"
+/* Nodes request if unicorn is alive */
+const ARE_YOU_ALIVE string = "ARE_YOU_ALIVE"
+/* The unicorn heart beat message */
+const IAM_ALIVE string = "IAM_ALIVE"
+/* The default unicorn name */
+/* Note that this name is reserved in the system */
+const UNICORN_DEFAULT_NAME = "unicorn##default##name"
 /* The end of message types for bully algorithm */
+
 const DELIMITER string = "##"
 const PAYLOAD_DELIMITER string = "|"
 
