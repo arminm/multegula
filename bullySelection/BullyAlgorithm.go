@@ -27,17 +27,17 @@ import (
  * transmission delay and message processing delay. It is counted
  * in millisecond.
  */
-const TIMEOUT int = 2000
+const TIMEOUT int = 800
 
 /* The time period between two health check */
-const TIME_BETWEEN_HEALTH_CHECK = 2000
+const TIME_BETWEEN_HEALTH_CHECK = 1000
 
 /* This is the time a node will wait after sending out an answer
  * message. If it receives unicorn message within this time
  * period, it will know which node is the new unicorn; otherwise,
  * it will start another election.
  */
-const WAITING_UNICORN_MESSAGE_TIMEOUT int = 3000
+const WAITING_UNICORN_MESSAGE_TIMEOUT int = 1200
 
 /* The name of node */
 var localName string
@@ -61,7 +61,6 @@ var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, de
  * @param	message - message to be put into sendChannel
  */
 func putMessageToSendChannel(message messagePasser.Message) {
-   fmt.Printf("Send: %s, %s, %s, %s at %s\n", message.Source, message.Destination, message.Kind, message.Content, getCurrentTime())
     sendChannel <- message
 }
 
@@ -86,7 +85,6 @@ var receiveChannel chan messagePasser.Message = make(chan messagePasser.Message,
  * @param	message - message to be put into receiveChannel
  */
 func PutMessageToReceiveChannel(message messagePasser.Message) {
-    fmt.Printf("Receive: %s, %s, %s, %s at %s\n", message.Source, message.Destination, message.Kind, message.Content, getCurrentTime())
 	receiveChannel <- message
 }
 
@@ -112,7 +110,6 @@ func dispatchMessage() {
 		message := getMessageFromReceiveChannel()
 		switch message.Kind {
 		case defs.ANSWER:
-//            fmt.Printf("Receive answer from %s: %s at %s\n", message.Source, message.Content, getCurrentTime())
 			go func() {
 				receivedAnswerChannel <- message
 			}()
@@ -121,11 +118,8 @@ func dispatchMessage() {
 			    receivedUnicornChannel <- message
 			}()
 		case defs.ELECTION:
-//            fmt.Printf("Received election message from %s with timestamp %s\n", message.Source, message.Content)
             sendAnswerMessage(message.Source, message.Content)
-//            fmt.Printf("Send answer to %s: %s at %s\n", message.Source, message.Content, getCurrentTime())
         case defs.ARE_YOU_ALIVE:
-//            fmt.Printf("Send health check reply from %s to %s at %s\n", localName, message.Source, getCurrentTime())
             go putMessageToSendChannel(messagePasser.Message{
                 Source: localName,
                 Destination: message.Source,
@@ -133,7 +127,6 @@ func dispatchMessage() {
                 Kind: defs.IAM_ALIVE,
             })
         case defs.IAM_ALIVE:
-//            fmt.Printf("Health check reply from %s to %s at %s\n", message.Source, message.Destination, message.Content)
             go func() {
                 receivedHealthCheckReplyChannel <- message
             }()
@@ -174,7 +167,6 @@ func sendUnicornMessage() {
 			Content: localName,
 			Kind: defs.UNICORN,
 			})
-//        fmt.Printf("Send unicorn message from %s to %s\n", localName, name)
 	}
 }
 
@@ -190,7 +182,6 @@ func sendElectionMessage(timestamp string) {
 			Content: timestamp,
 			Kind: defs.ELECTION,
 			})
-//        fmt.Printf("Election message send from %s to %s with timestamp %s\n", localName, name, timestamp)
 	}
 }
 
@@ -208,7 +199,6 @@ func sendAnswerMessage(destination string, timestamp string) {
 		Content: timestamp,
 		Kind: defs.ANSWER,
 		})
- //   fmt.Printf("Send answer from %s to %s with timestamp %s\n", localName, destination, timestamp)
 }
 
 /* Get the string representation of current time
@@ -226,7 +216,6 @@ func sendHealthCheckRequestMessage(timestamp string) {
         Content: timestamp,
         Kind: defs.ARE_YOU_ALIVE,
     })
-//    fmt.Printf("Send health check to %s at %s\n", unicorn, timestamp)
 }
 
 /* check the liveness of unicorn */
@@ -247,7 +236,7 @@ func startHealthCheck() {
              */
             case <- waitHealthCheckReplyTimeout:
                 close(waitHealthCheckReplyTimeout)
-//                fmt.Println("Time out without health check received, start election")
+                fmt.Println("Time out without health check received, start election")
                 /* No election message received yet, start an election */
                 startElection()
                 i = 1
@@ -257,14 +246,13 @@ func startHealthCheck() {
                  * and start another round of health check
                  */
                 if message.Content == currentTime {
-//                    fmt.Printf("Valide health check reply: %s %s\n", message.Source, message.Content)
-//                    fmt.Printf("Valide health check reply from %s at %s\n", message.Source, getCurrentTime())
+                    fmt.Printf("Valide health check reply: %s %s\n", message.Source, message.Content)
                     for len(receivedHealthCheckReplyChannel) > 0 {
                         <- receivedHealthCheckReplyChannel
                     }
                     i = 1
                 } else {// otherwise, drop out-dated health check reply
-//                    fmt.Printf("Invalid health check reply from %s at %s\n", message.Source, getCurrentTime())
+                    fmt.Printf("Invalid health check reply from %s at %s\n", message.Source, getCurrentTime())
                 }
             }
         }
@@ -276,7 +264,6 @@ func startHealthCheck() {
 func startElection() {
 	currentTime := getCurrentTime()
     sendElectionMessage(currentTime)
-//    fmt.Printf("Send election message at %s\n", currentTime)
     /* wait for answers from other nodes within timeout */
 	var timeoutWaitAnswer chan bool = make(chan bool, 1)
 	go func() {
@@ -288,7 +275,7 @@ func startElection() {
 		select {
 		/* no answer after timeout, the node it self is unicorn */
 		case <- timeoutWaitAnswer:
-//            fmt.Println("Time out without answer received")
+            fmt.Println("Time out without answer received")
 			close(timeoutWaitAnswer)
             fmt.Printf("Change unicorn from %s to %s\n", unicorn, localName)
 			unicorn = localName
@@ -303,7 +290,6 @@ func startElection() {
                 for len(receivedAnswerChannel) > 0 {
                     <- receivedAnswerChannel
                 }
-//                fmt.Printf("Received valid answer %s from %s at %s\n", currentTime, message.Source, getCurrentTime())
 				i = 1
 				var timeoutWaitUnicorn chan bool = make(chan bool, 1)
 				go func() {
@@ -315,7 +301,6 @@ func startElection() {
 				 * start another election process
 				 */
 				case <- timeoutWaitUnicorn:
-//                    fmt.Println("No unicorn message received, start another election.")
                     close(timeoutWaitUnicorn)
 					startElection()
 				/* recieve an unicorn message within timeout,
@@ -324,11 +309,9 @@ func startElection() {
                 case unicornMessage := <- receivedUnicornChannel:
                     fmt.Printf("Change unicorn from %s to %s\n", unicorn, unicornMessage.Content)
 					unicorn = unicornMessage.Content
-//                    fmt.Printf("Received unicorn message from %s\n", unicornMessage.Source)
 				}
-            } else {//otherwise, drop out-dated answer message
-//                fmt.Printf("Invalid answer from %s, %s\n", message.Source, message.Content)
             }
+           //otherwise, drop out-dated answer message
 		}
 	}
 }

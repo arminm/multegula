@@ -11,7 +11,6 @@ import (
 	"fmt"
 //	"reflect"
 	"sort"
-    "time"
 	"strconv"
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
@@ -231,7 +230,6 @@ func inboundDispatcher() {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
 		// Based on the type of message, determine where it needs routed
-        fmt.Printf("Receive from messagePasser: %+v at %s\n", message, time.Now().String())
 		switch message.Kind {
 		case defs.MSG_PADDLE_POS:
 			bridges.SendToPyBridge(message)
@@ -262,7 +260,6 @@ func outboundDispatcher() {
 	for {
 		// get message from the send channel
 		message := getMessageFromSendChannel()
-        fmt.Printf("Send to messagePasser: %+v at %s\n", message, time.Now().String())
 		// based on it's destination, determine which messagePasser
 		//	routine is appropriate
 		if message.Destination == defs.MULTICAST_DEST {
