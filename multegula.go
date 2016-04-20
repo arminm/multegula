@@ -9,13 +9,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"reflect"
+//	"reflect"
 	"sort"
 	"strconv"
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
+	"github.com/arminm/multegula/bullySelection"
 )
 
 /*
@@ -217,13 +218,10 @@ func PyBridgeReceiver() {
 
 /* wait for incoming messages from the bully algorithm */
 func BullyReceiver() {
-	/*
-		for {
-			message := bully.Receive()
-			go puMessageIntoSendChannel(message)
-		}
-	*/
-	return
+	for {
+		message := bullySelection.GetMessageFromSendChannel()
+		go putMessageIntoSendChannel(message)
+	}
 }
 
 /* receive message from messagePasser and route to correct location */
@@ -243,7 +241,16 @@ func inboundDispatcher() {
 			bridges.SendToPyBridge(message)
 		case defs.MSG_BLOCK_BROKEN:
 			bridges.SendToPyBridge(message)
-
+		case defs.ELECTION:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.ANSWER:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.UNICORN:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.ARE_YOU_ALIVE:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.IAM_ALIVE:
+			bullySelection.PutMessageToReceiveChannel(message)
 		}
 	}
 }
@@ -253,7 +260,6 @@ func outboundDispatcher() {
 	for {
 		// get message from the send channel
 		message := getMessageFromSendChannel()
-
 		// based on it's destination, determine which messagePasser
 		//	routine is appropriate
 		if message.Destination == defs.MULTICAST_DEST {
@@ -280,7 +286,7 @@ func parseMainArguments(args []string) string {
 
 /* the Main function of the Multegula application */
 func main() {
-	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	testFlag := flag.Bool("test", true, "Test Mode Flag")
 	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
 	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
 	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
@@ -317,9 +323,14 @@ func main() {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
-		go receiveRoutine()
+		//go receiveRoutine()
+        go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
+		go BullyReceiver()
+		go inboundDispatcher()
+        /* start bully algorithm */
+		outboundDispatcher()
 
-		fmt.Println("Please select the operation you want to do:")
+/*		fmt.Println("Please select the operation you want to do:")
 		for {
 			fmt.Println("Getting operation")
 			operation := getOperation()
@@ -340,7 +351,7 @@ func main() {
 			} else {
 				fmt.Println("Operation not recognized. Please try again.")
 			}
-		}
+		}/*/
 	}
 
 	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/

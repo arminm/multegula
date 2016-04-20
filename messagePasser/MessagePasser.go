@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"github.com/arminm/multegula/defs"
 )
 
 // Node structure to hold each node's information
@@ -96,10 +97,10 @@ var localNode Node
 var localIndex int
 
 /* the queue for messages to be sent */
-var sendChannel chan Message = make(chan Message, 100)
+var sendChannel chan Message = make(chan Message, defs.QUEUE_SIZE)
 
 /* the queue for received messages */
-var receiveChannel chan Message = make(chan Message, 100)
+var receiveChannel chan Message = make(chan Message, defs.QUEUE_SIZE)
 var holdbackQueue []Message = []Message{}
 
 func updateSeqNum(message *Message) {
@@ -236,6 +237,22 @@ func getFrontAndLatterNodes(nodes []Node, localNode Node) (map[string]Node, map[
 	}
 	return frontNodes, latterNodes
 }
+
+/*
+ * Get all nodes' name from messagePasser
+ * This function should be deleted when
+ * node names are got from BootstrapServer
+ * @param nodes all nodes
+ * @return all nodes' names
+ */
+ func GetNodeNames() []string {
+     var names []string
+     names = append(names, "armin")
+     names = append(names, "lunwen")
+     names = append(names, "daniel")
+     names = append(names, "garrett")
+     return names
+ }
 
 /*
  * accepts connections from other nodes and stores

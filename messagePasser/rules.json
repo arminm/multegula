@@ -20,7 +20,7 @@
     "ReceiveRules": [
     	{
             "Action": "delay",
-            "Src": "armin",
+            "Src": "A",
             "Dest": "",
             "Kind": "",
             "SeqNum": 2
