@@ -167,6 +167,7 @@ func messageHasBeenReceived(message Message) bool {
 func sendMessageTCP(nodeName string, message *Message) {
 	encoder := gob.NewEncoder(connections[nodeName])
 	encoder.Encode(message)
+    fmt.Printf("Send to TCP: %+v at %s\n", *message, time.Now().String())
 }
 
 /*
@@ -182,6 +183,7 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
 	if err != nil {
 		return *msg, err
 	}
+    fmt.Printf("Receive from TCP: %+v at %s\n", *msg, time.Now().String())
 	return *msg, nil
 }
 

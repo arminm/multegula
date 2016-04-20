@@ -11,6 +11,7 @@ import (
 	"fmt"
 //	"reflect"
 	"sort"
+    "time"
 	"strconv"
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
@@ -230,6 +231,7 @@ func inboundDispatcher() {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
 		// Based on the type of message, determine where it needs routed
+        fmt.Printf("Receive from messagePasser: %+v at %s\n", message, time.Now().String())
 		switch message.Kind {
 		case defs.MSG_PADDLE_POS:
 			bridges.SendToPyBridge(message)
@@ -260,7 +262,7 @@ func outboundDispatcher() {
 	for {
 		// get message from the send channel
 		message := getMessageFromSendChannel()
-
+        fmt.Printf("Send to messagePasser: %+v at %s\n", message, time.Now().String())
 		// based on it's destination, determine which messagePasser
 		//	routine is appropriate
 		if message.Destination == defs.MULTICAST_DEST {
@@ -325,10 +327,10 @@ func main() {
 		}
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
 		//go receiveRoutine()
+        go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
 		go BullyReceiver()
 		go inboundDispatcher()
         /* start bully algorithm */
-        go bullySelection.InitBullySelection(localNodeName, messagePasser.GetNodeNames())
 		outboundDispatcher()
 
 /*		fmt.Println("Please select the operation you want to do:")
