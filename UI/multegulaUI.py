@@ -203,9 +203,9 @@ def translatePosition(xCenter, yCenter, radius, player) :
     elif orientation == Orientation.DIR_EAST :
         return (yCenter, CANVAS_HEIGHT - xCenter)
     elif orientation == Orientation.DIR_NORTH :
-        return (CANVAS_WIDTH - xCenter, yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN - radius))
+        return (CANVAS_WIDTH - xCenter, CANVAS_HEIGHT - yCenter)
     elif orientation == Orientation.DIR_WEST :
-        return (yCenter - (CANVAS_HEIGHT - 2*PADDLE_HEIGHT - 2*PADDLE_MARGIN - radius), xCenter)
+        return (CANVAS_WIDTH - yCenter, xCenter)
 
 ### translatePlayerDirection - translate player direction based on orientation
 def translatePlayerDirection(payload, player) :
@@ -292,7 +292,7 @@ def react(canvas, received) :
     # MSG_BLOCK_BROKEN
     elif kind == MsgType.MSG_BLOCK_BROKEN :
         # get information out of payload
-        scores  = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
+        score   = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
         lives   = int(content[MsgIndex.BLOCK_BROKEN_LIVES])
         xCenter = float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT
         yCenter = float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT
@@ -608,7 +608,7 @@ def redrawAll(canvas) :
             playerUpdate(player, status, info, canvas)
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
-        ##canvas.data['level'].update(canvas)
+        canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
 
 
