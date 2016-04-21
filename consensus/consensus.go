@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
 )
 
@@ -14,15 +16,25 @@ const CONSENSUS_ACCEPT_KIND string = "CAK"
 const CONSENSUS_REJECT_KIND string = "CRK"
 const CONSENSUS_COMMIT_KIND string = "CCK"
 const CONSENSUS_CHANNEL_SIZE int = 10
+const CONSENSUS_TIMEOUT_INTERVAL time.Duration = 5 * time.Second
 const DELIMITER string = "::"
 
 var leaderNode messagePasser.Node
 var peerNodes messagePasser.Nodes
 var localName string
-var sendChannel chan *messagePasser.Message
-var commitChannel chan *Proposal = make(chan *Proposal, CONSENSUS_CHANNEL_SIZE)
-var acceptedProposals map[string]*Proposal
 var isLeader bool
+var commitChannel chan *Proposal = make(chan *Proposal, CONSENSUS_CHANNEL_SIZE)
+var sendChannel chan *messagePasser.Message
+
+// A proposal check channel that passes check jobs to be completed by application
+var proposalCheckChannel chan *PropCheck = make(chan *PropCheck, CONSENSUS_CHANNEL_SIZE)
+
+// Client
+var acceptedProposals map[string]*Proposal
+
+// Leader
+var SeqNum int = 0
+var propVotesMap map[string]*(map[string]*Proposal)
 
 type Proposal struct {
 	SeqNum int
@@ -30,27 +42,88 @@ type Proposal struct {
 	Value  string
 }
 
+type PropCheck struct {
+	Prop     *Proposal
+	Callback func(string)
+}
+
 func InitConsensus(leader messagePasser.Node, peers messagePasser.Nodes, localNodeName string) {
 	localName = localNodeName
 	leaderNode = leader
 	peerNodes = peers
-	acceptedProposals = make(map[string]*Proposal, CONSENSUS_CHANNEL_SIZE)
-	sendChannel = make(chan *messagePasser.Message)
 	isLeader = leader.Name == localNodeName
+	sendChannel = make(chan *messagePasser.Message, CONSENSUS_CHANNEL_SIZE)
+
+	//Client
+	acceptedProposals = make(map[string]*Proposal)
+
+	//Leader
+	propVotesMap = make(map[string]*(map[string]*Proposal))
+
 }
 
 /*
  * If the leader, propose a value and reach consensus
  */
-func Propose(proposal *Proposal) {
-	//TODO
+func Propose(value string, valueType string) {
+	if !isLeader {
+		return
+	}
+	// Create proposal
+	SeqNum += 1
+	proposal := Proposal{SeqNum, valueType, value}
+	// Create the votesMap to track votes
+	votesMap := make(map[string]*Proposal)
+	// Add own proposal to votesMap
+	votesMap[localName] = &proposal
+	// Keep track of the votesMap for the valueType
+	propVotesMap[valueType] = &votesMap
+	// Multicast the proposal
+	addMessageToSendChannel(defs.MULTICAST_DEST, CONSENSUS_PROPOSE_KIND, &proposal)
+	// local copy of SeqNum for timeout checks
+	seqNum := SeqNum
+	time.AfterFunc(CONSENSUS_TIMEOUT_INTERVAL, func() {
+		// check if the timeout is still relevant
+		if votes, exists := propVotesMap[valueType]; exists {
+			localVote := (*Proposal)((*votes)[localName])
+			if localVote.SeqNum == seqNum {
+				// Timed out, see if consensus is reached
+				reached, value, err := reachedConsensus(valueType)
+				if err == nil {
+					if reached {
+						// update localVote's value to decided value and multicastCommit
+						proposal.Value = value
+						multicastCommit(&proposal)
+					} else {
+						// If timed out and haven't reached consensus then force value
+						multicastCommit(&proposal)
+					}
+				}
+			}
+		}
+	})
+}
+
+/*
+ * Multicasts a commit asking everyone to commit value
+ */
+func multicastCommit(proposal *Proposal) {
+	// Check to see if we haven't already multicasted a commit for this proposal
+	if votes, exists := propVotesMap[proposal.Type]; exists {
+		if (*votes)[localName].SeqNum == proposal.SeqNum {
+			delete(propVotesMap, proposal.Type)
+			addMessageToSendChannel(defs.MULTICAST_DEST, CONSENSUS_COMMIT_KIND, proposal)
+			// locally commit as well.
+			commitChannel <- proposal
+		}
+	}
 }
 
 /*
  * Receives a consensus related message from the application's message dispatcher
  */
 func ReceiveMessage(message messagePasser.Message) {
-	proposal, err := contentToProposal(message.Content)
+	proposal, err := stringToProposal(message.Content)
 	if err != nil {
 		fmt.Printf("Couldn't parse Consensus message:%+v\n", message)
 		panic(err)
@@ -62,18 +135,71 @@ func ReceiveMessage(message messagePasser.Message) {
 	case CONSENSUS_COMMIT_KIND:
 		commitProposal(proposal)
 	default:
-		handleProposalResponse(proposal)
+		// Message is for the leader
+		handleProposalResponse(&message, proposal)
 	}
 }
 
 /*
  * Handles the response received from a peer in consensus process
  */
-func handleProposalResponse(proposal *Proposal) {
+func handleProposalResponse(message *messagePasser.Message, proposal *Proposal) {
 	if !isLeader {
 		return
 	}
-	//TODO
+	votesMapPtr, exists := propVotesMap[proposal.Type]
+	if !exists {
+		return
+	}
+	localVote := (*Proposal)((*votesMapPtr)[localName])
+	if localVote.SeqNum != proposal.SeqNum {
+		return
+	}
+	(*votesMapPtr)[message.Source] = proposal
+	if len(*votesMapPtr) == len(peerNodes)+1 {
+		reached, value, err := reachedConsensus(proposal.Type)
+		if err != nil {
+			return
+		}
+		if reached {
+			consensus := localVote
+			consensus.Value = value
+			multicastCommit(consensus)
+		} else {
+			multicastCommit(localVote)
+		}
+	}
+}
+
+/*
+ * Looks at the existing votes to see if majority consensus has been reached
+ */
+func reachedConsensus(valueType string) (bool, string, error) {
+	votes, exists := propVotesMap[valueType]
+	if !exists {
+		return false, "N/A", errors.New("ValueType not found in propVotesMap")
+	}
+
+	// Find majority vote
+	var popularVote string
+	popularCount := 0
+	for _, vote := range *votes {
+		tempCount := 0
+		for _, compareVote := range *votes {
+			if vote.Value == compareVote.Value {
+				tempCount += 1
+			}
+		}
+		if tempCount > popularCount {
+			popularCount = tempCount
+			popularVote = vote.Value
+		}
+	}
+	if popularCount <= len(peerNodes)/2 {
+		return false, "N/A", nil
+	}
+
+	return true, popularVote, nil
 }
 
 /*
@@ -91,17 +217,20 @@ func parseProposal(proposal *Proposal) {
 			accept(proposal)
 		} else {
 			// proposal is not the most recent of that type so disregard
+			proposal.Value = accepted.Value
 			reject(proposal)
 		}
 	} else {
 		// It's a new proposal that hasn't been accepted
-		localValue := check(proposal)
-		if localValue == proposal.Value {
-			acceptedProposals[proposal.Type] = proposal
-			accept(proposal)
-		} else {
-			reject(proposal)
-		}
+		check(proposal, func(value string) {
+			if value == proposal.Value {
+				acceptedProposals[proposal.Type] = proposal
+				accept(proposal)
+			} else {
+				proposal.Value = value
+				reject(proposal)
+			}
+		})
 	}
 }
 
@@ -109,22 +238,23 @@ func parseProposal(proposal *Proposal) {
  * Check with the application to see what value we agree to regarding the
  * proposal.Type
  */
-func check(proposal *Proposal) string {
-	return ""
+func check(proposal *Proposal, callback func(string)) {
+	propCheck := PropCheck{proposal, callback}
+	proposalCheckChannel <- &propCheck
 }
 
 /*
  * Accept the proposal
  */
 func accept(proposal *Proposal) {
-	addMessageToSendChannel(CONSENSUS_ACCEPT_KIND, proposal)
+	addMessageToSendChannel(leaderNode.Name, CONSENSUS_ACCEPT_KIND, proposal)
 }
 
 /*
  * Reject the proposal
  */
 func reject(proposal *Proposal) {
-	addMessageToSendChannel(CONSENSUS_REJECT_KIND, proposal)
+	addMessageToSendChannel(leaderNode.Name, CONSENSUS_REJECT_KIND, proposal)
 }
 
 /*
@@ -132,19 +262,23 @@ func reject(proposal *Proposal) {
  */
 func commitProposal(proposal *Proposal) {
 	// Make sure to remove the committed propsals
-	delete(acceptedProposals, proposal.Type)
-	commitChannel <- proposal
+	if prop, exists := acceptedProposals[proposal.Type]; exists {
+		if prop.SeqNum == proposal.SeqNum {
+			delete(acceptedProposals, proposal.Type)
+			commitChannel <- proposal
+		}
+	}
 }
 
 /*
  * Adds message to sendChannel to be retreived by the application and sent
  */
-func addMessageToSendChannel(kind string, proposal *Proposal) {
+func addMessageToSendChannel(dest string, kind string, proposal *Proposal) {
 	message := messagePasser.Message{
 		Destination: leaderNode.Name,
 		Source:      localName,
 		Kind:        kind,
-		Content:     proposalToContent(proposal)}
+		Content:     proposalToString(proposal)}
 	sendChannel <- &message
 }
 
@@ -160,7 +294,7 @@ func SendMessage() *messagePasser.Message {
 /*
  * Helper function to create Message.Content string from a Proposal
  */
-func proposalToContent(proposal *Proposal) string {
+func proposalToString(proposal *Proposal) string {
 	return fmt.Sprintf("%v%s%v%s%v", proposal.SeqNum, DELIMITER, proposal.Type, DELIMITER, proposal.Value)
 }
 
@@ -168,7 +302,7 @@ func proposalToContent(proposal *Proposal) string {
  * Helper function to create a Proposal from Message.Content string
  * The content will have the format "SeqNum::Type::Value"
  */
-func contentToProposal(content string) (*Proposal, error) {
+func stringToProposal(content string) (*Proposal, error) {
 	values := strings.Split(content, DELIMITER)
 	if len(values) != 3 {
 		return nil, errors.New("Wrong Format: " + content)

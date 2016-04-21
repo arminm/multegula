@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/arminm/multegula/defs"
 )
 
 // Node structure to hold each node's information
@@ -76,8 +78,6 @@ func getConnectionName(connection net.Conn) (string, error) {
 	}
 	return "Not Found", fmt.Errorf("Connection not found:%v\n", connection)
 }
-
-const multicastDestStr = "EVERYBODY"
 
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
@@ -189,7 +189,8 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
  */
 func Multicast(message *Message) {
 	if message.Source == localNode.Name {
-		message.Destination = multicastDestStr
+		message.Destination = defs.MULTICAST_DEST
+
 		updateSeqNum(message)
 		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
 	}
@@ -368,7 +369,7 @@ func receiveMessageFromConn(conn net.Conn) {
  * messages that might be ready now.
  */
 func deliverMessage(message Message) {
-	if message.Destination == multicastDestStr {
+	if message.Destination == defs.MULTICAST_DEST {
 		if messageHasBeenReceived(message) {
 			return
 		}
@@ -470,7 +471,7 @@ func putMessageToSendChannel(message Message) {
 func Send(message Message) {
 	if (reflect.DeepEqual(message, Message{})) {
 		fmt.Println("Empty message, it is dropped!")
-	} else if message.Destination == multicastDestStr {
+	} else if message.Destination == defs.MULTICAST_DEST {
 		Multicast(&message)
 	} else {
 		if _, ok := connections[message.Destination]; ok {
