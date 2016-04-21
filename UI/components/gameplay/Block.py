@@ -23,7 +23,7 @@ class Block :
         self.enabled = True
         self.first = True
         self.changed = False
-        self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'black', 'white']
+        self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'white']
 
     ### getEdges - get the edges of the block based on the orientation
     def getEdges(self) :

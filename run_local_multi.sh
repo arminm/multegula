@@ -11,6 +11,7 @@ pkill -9 multegula 2> /dev/null
 pkill -9 bootstrap 2> /dev/null
 pkill -9 BootstrapServer 2> /dev/null
 pkill -9 -f multegulaUI.py 2> /dev/null
+killall run.sh 2> /dev/null
 
 ####################################
 ##To be EXTRA clean - maybe remove these for release.
