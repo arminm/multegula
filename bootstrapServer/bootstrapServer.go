@@ -174,7 +174,11 @@ func duplicateNameExists(existingNodes map[net.Addr]*messagePasser.Node, newNode
  * the connections map for next games.
  */
 func startAGame() {
-	//Give everyone their player list
+	//First, ensure that everyone still exists.
+	//Remove them from the map if not.
+
+	//Give everyone their player list, if there's at least two remaining.
+	//If not, just close their connections.
 	for connAddr, connection := range connections {
 		fmt.Println("Sending Peers to:", nodes[connAddr].Name)
 		sendNodes(nodesForClient(connAddr), *connection)
