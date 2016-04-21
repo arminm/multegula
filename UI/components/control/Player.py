@@ -25,6 +25,7 @@ class Player :
         self.statusUpdate = False
         self.name = name
         self.gameType = gameType
+        self.levelOrientation = Orientation.DIR_SOUTH;
 
     ### AI method -
     ##  This method moves the paddles automatically to contact the ball. There are some
@@ -72,7 +73,7 @@ class Player :
         if xVelocity < 0 and yVelocity <= 0 :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
-                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
+                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges(self.levelOrientation)
                     # hit bottom of the block
                     if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballRight) and (ballLeft <= blkRight) :
                         returnInfo = [xVelocity, (-yVelocity), blockIndex]
@@ -89,7 +90,7 @@ class Player :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     # hit bottom of the block
-                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
+                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges(self.levelOrientation)
                     if (ballTop <= blkBottom) and (ballBottom > blkBottom) and (blkLeft <= ballRight) and (ballLeft <= blkRight) :
                         returnInfo = [xVelocity, (-yVelocity), blockIndex]
                         broken = True
@@ -105,7 +106,7 @@ class Player :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     # hit top of the block
-                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
+                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges(self.levelOrientation)
                     if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballRight) and (ballLeft <= blkRight) :
                         returnInfo = [xVelocity, (-yVelocity), blockIndex]
                         broken = True;
@@ -120,7 +121,7 @@ class Player :
         elif(xVelocity >= 0) and (yVelocity > 0) :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
-                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges()
+                    (blkLeft, blkRight, blkTop, blkBottom) = block.getEdges(self.levelOrientation)
                     # hit top of the block
                     if (ballBottom >= blkTop) and (ballTop < blkTop) and (blkLeft <= ballRight) and (ballLeft <= blkRight) :
                         returnInfo = [xVelocity, (-yVelocity), blockIndex]

@@ -181,8 +181,8 @@ def mousePressed(event) :
     elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER :
         init(canvas);
 
-### translateSpeed - translate speed based on orientation
-def translateSpeed(xSpeed, ySpeed, player) :
+### translateBallSpeed - translate speed based on orientation
+def translateBallSpeed(xSpeed, ySpeed, player) :
     orientation = player.ORIENTATION
 
     # if there is a wall, then do not translate
@@ -195,8 +195,8 @@ def translateSpeed(xSpeed, ySpeed, player) :
     elif orientation == Orientation.DIR_WEST :
         return (-ySpeed, xSpeed)
 
-### translatePosition - translate position based on orientation
-def translatePosition(xCenter, yCenter, radius, player) :
+### translateBallPosition - translate position based on orientation
+def translateBallPosition(xCenter, yCenter, radius, player) :
     orientation = player.ORIENTATION
     if orientation == Orientation.DIR_SOUTH :
         return (xCenter, yCenter)
@@ -263,8 +263,8 @@ def react(canvas, received) :
         radius  = float(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
 
         # translate for player orientation
-        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
-        (xCenter, yCenter) = translatePosition(xCenter, yCenter, radius, canvas.data[name])
+        (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
+        (xCenter, yCenter) = translateBallPosition(xCenter, yCenter, radius, canvas.data[name])
 
         # set component fields
         canvas.data[name].score = score
@@ -301,8 +301,8 @@ def react(canvas, received) :
         radius  = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
 
         # translate for player orientation
-        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
-        (xCenter, yCenter) = translatePosition(xCenter, yCenter, radius, canvas.data[name])
+        (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
+        (xCenter, yCenter) = translateBallPosition(xCenter, yCenter, radius, canvas.data[name])
 
         # set component fields
         canvas.data[name].score = score
@@ -357,7 +357,7 @@ def react(canvas, received) :
         ySpeed = float(content[MsgIndex.START_PLAY_YSPEED]) / FP_MULT
 
         # translate for player orientation
-        (xSpeed, ySpeed) = translateSpeed(xSpeed, ySpeed, canvas.data[name])
+        (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
 
         # update the player's paddle
         canvas.data['ball'].setVelocity(xSpeed, ySpeed)
@@ -661,12 +661,39 @@ def initPlayers(canvas, number=1, info=[]):
         canvas.data['competitors'] = [myName, 'armin', 'lunwen', 'garrett']
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
+        # create player
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.MULTI_PLAYER)
-        myIndex = info.index(myName)
+
+
+        # create competitors
         if number == 4 :
+            myIndex = info.index(myName)
             eastIndex = (myIndex + 1) % 4
             northIndex = (myIndex + 2) % 4
             westIndex = (myIndex + 3) % 4
+
+            # set level orientaion based on odering of the players. 
+            ### WHAT THE HECK DOES THIS MEAN: 
+            ### Okay. Everyone is going to see themselves on the bottom of their screen. So...
+            ###     Translating the ball position and the paddle position send by other players is
+            ###     relatively easy because it does not require a global notion of orientation, you
+            ###     need only know where a player is RELATIVE to you. However, there has got to be an
+            ###     anchor for drawing a level. The natural notion is, 'Easy! Have the unicorn be the
+            ###     anchor!!!', but it would behoove us to do something deterministic. SO. The player
+            ###     that gets sent out first, which is to say the player that comes first alphabetically,
+            ###     get's to be the anchor. </rant>
+            if myIndex == 0 :
+                canvas.data[myName].levelOrientation = Orientation.DIR_SOUTH
+                canvas.data['level'].levelOrientation = Orientation.DIR_SOUTH     
+            elif myIndex == 1 :
+                canvas.data[myName].levelOrientation = Orientation.DIR_EAST
+                canvas.data['level'].levelOrientation = Orientation.DIR_EAST    
+            elif myIndex == 2 :
+                canvas.data[myName].levelOrientation = Orientation.DIR_NORTH
+                canvas.data['level'].levelOrientation = Orientation.DIR_NORTH     
+            elif myIndex == 3 :
+                canvas.data[myName].levelOrientation = Orientation.DIR_WEST
+                canvas.data['level'].levelOrientation = Orientation.DIR_WEST     
 
             canvas.data[info[eastIndex]] = Player(Orientation.DIR_EAST, PlayerState.COMP, info[eastIndex], GameType.MULTI_PLAYER)
             canvas.data[info[northIndex]] = Player(Orientation.DIR_NORTH, PlayerState.COMP, info[northIndex], GameType.MULTI_PLAYER)

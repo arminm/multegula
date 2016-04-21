@@ -22,6 +22,7 @@ class Level :
         self.currentLevel = 0;
         self.first = True
         self.updated = False
+        self.levelOrientation = Orientation.DIR_SOUTH;
 
         # Read all level files
         for level in glob.glob('UI/levels/*.py',recursive=True):
@@ -47,33 +48,33 @@ class Level :
     ### setBlocks -- draw blocks on canvas
     def setBlocks(self, canvas) :
         for block in self.blocks :
-            block.ID = block.draw(canvas)
+            block.ID = block.draw(canvas, self.levelOrientation)
+
+    ### isComplete - determine if the level is complete
+    def isComplete(self) :
+        for block in self.blocks :
+            if block.enabled == True:
+                return False
+
+        return True
 
     ### draw -- manage the drawing of the level
     def draw(self, canvas) :
-        # complete flag - gets set to 'False' if the level is not completet
-        complete = True;
-
         # if the level has been updated -> redraw the blocks
         if not(self.first) and self.updated :
-            for block in self.blocks :
-                if block.enabled == True:
-                    complete = False;
-                canvas.delete(block.ID)
             self.setBlocks(canvas)
             self.updated = False
-            return complete;
 
         # if this is the first time the level is being draw -> initialize
         elif self.first :
             self.setBlocks(canvas)
             self.first = False 
-            return False;
 
     ### update -- manages the updating of the level and the advancement to the next level
     def update(self, canvas) :
         # levelComplete: True if the level is complete, False otherwise
-        levelComplete = self.draw(canvas);
+        levelComplete = self.isComplete()
+        self.draw(canvas)
 
         # current level complete and there is at least one more level to be played
         if levelComplete and (self.currentLevel + 1) < self.MAX_LEVELS :
