@@ -35,10 +35,10 @@ class Level :
     def readLevel(self, levelpath) :
         # make a blank level
         thisLevel = []
+        
         #Execfile is gone in Python 3, need to do it this way for now
         exec(open(levelpath).read())
         # makeBlock parses the line and makes a new block
-        #thisLevel.append(makeBlock(line))
         self.levels.append(thisLevel)
 
     ### getTextLevel -- get a text version of the current level

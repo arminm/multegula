@@ -25,6 +25,7 @@ class Block :
         self.changed = False
         self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'white']
 
+    ### translate - translate the position and tilt based on oriention
     def translate(self, levelOrientation) :
         ## SOUTH -> nothing changes
         if levelOrientation == Orientation.DIR_SOUTH :
@@ -36,7 +37,6 @@ class Block :
                 return (CANVAS_WIDTH - self.Y_CENTER, self.X_CENTER, Tilt.VERT)
             elif self.TILT == Tilt.VERT :
                 return (CANVAS_WIDTH - self.Y_CENTER, self.X_CENTER, Tilt.HORZ)
-
 
         ## NORTH -> translate position
         elif levelOrientation == Orientation.DIR_NORTH :
