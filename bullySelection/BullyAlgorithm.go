@@ -109,24 +109,24 @@ func dispatchMessage() {
 	for {
 		message := getMessageFromReceiveChannel()
 		switch message.Kind {
-		case defs.ANSWER:
+		case defs.MSG_BULLY_ANSWER:
 			go func() {
 				receivedAnswerChannel <- message
 			}()
-        case defs.UNICORN:
+        case defs.MSG_BULLY_UNICORN:
 		    go func() {
 			    receivedUnicornChannel <- message
 			}()
-		case defs.ELECTION:
+		case defs.MSG_BULLY_ELECTION:
             sendAnswerMessage(message.Source, message.Content)
-        case defs.ARE_YOU_ALIVE:
+        case defs.MSG_BULLY_ARE_YOU_ALIVE:
             go putMessageToSendChannel(messagePasser.Message{
                 Source: localName,
                 Destination: message.Source,
                 Content: message.Content,
-                Kind: defs.IAM_ALIVE,
+                Kind: defs.MSG_BULLY_IAM_ALIVE,
             })
-        case defs.IAM_ALIVE:
+        case defs.MSG_BULLY_IAM_ALIVE:
             go func() {
                 receivedHealthCheckReplyChannel <- message
             }()
@@ -165,7 +165,7 @@ func sendUnicornMessage() {
 			Source: localName,
 			Destination: name,
 			Content: localName,
-			Kind: defs.UNICORN,
+			Kind: defs.MSG_BULLY_UNICORN,
 			})
 	}
 }
@@ -180,7 +180,7 @@ func sendElectionMessage(timestamp string) {
 			Source: localName,
 			Destination: name,
 			Content: timestamp,
-			Kind: defs.ELECTION,
+			Kind: defs.MSG_BULLY_ELECTION,
 			})
 	}
 }
@@ -197,7 +197,7 @@ func sendAnswerMessage(destination string, timestamp string) {
 		Source: localName,
 		Destination: destination,
 		Content: timestamp,
-		Kind: defs.ANSWER,
+		Kind: defs.MSG_BULLY_ANSWER,
 		})
 }
 
@@ -214,7 +214,7 @@ func sendHealthCheckRequestMessage(timestamp string) {
         Source: localName,
         Destination: unicorn,
         Content: timestamp,
-        Kind: defs.ARE_YOU_ALIVE,
+        Kind: defs.MSG_BULLY_ARE_YOU_ALIVE,
     })
 }
 
