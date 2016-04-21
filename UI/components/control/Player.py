@@ -53,6 +53,7 @@ class Player :
                 self.paddle.direction = Direction.DIR_RIGHT
             elif direction > offset :
                 self.paddle.direction = Direction.DIR_LEFT
+
         ## otherwise, if it's your lucky day -> stop the paddle
         elif chance == 0 :
             self.paddle.direction = Direction.DIR_STOP
@@ -306,8 +307,8 @@ class Player :
             (status, payload) = self.deflectBall(canvas)
 
             # if the ball hasn't been deflected or missed, determine if a block has been broken
-            if status == PlayerReturnStatus.NO_STATUS and canvas.data['ball'].lastToTouch == self.name :
-                (status, payload) = self.breakBlock(canvas)
+            # if status == PlayerReturnStatus.NO_STATUS and canvas.data['ball'].lastToTouch == self.name :
+            #     (status, payload) = self.breakBlock(canvas)
 
             # return information to the UI
             return (status, payload)
