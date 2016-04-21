@@ -250,15 +250,15 @@ func inboundDispatcher() {
 			bridges.SendToPyBridge(message)
 
 		// election messages
-		case defs.ELECTION:
+		case defs.MSG_BULLY_ELECTION:
 			bullySelection.PutMessageToReceiveChannel(message)
-		case defs.ANSWER:
+		case defs.MSG_BULLY_ANSWER:
 			bullySelection.PutMessageToReceiveChannel(message)
-		case defs.UNICORN:
+		case defs.MSG_BULLY_UNICORN:
 			bullySelection.PutMessageToReceiveChannel(message)
-		case defs.ARE_YOU_ALIVE:
+		case defs.MSG_BULLY_ARE_YOU_ALIVE:
 			bullySelection.PutMessageToReceiveChannel(message)
-		case defs.IAM_ALIVE:
+		case defs.MSG_BULLY_IAM_ALIVE:
 			bullySelection.PutMessageToReceiveChannel(message)
 		}
 	}
