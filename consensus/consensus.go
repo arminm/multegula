@@ -11,23 +11,15 @@ import (
 	"github.com/arminm/multegula/messagePasser"
 )
 
-const CONSENSUS_PROPOSE_KIND string = "CPK"
-const CONSENSUS_ACCEPT_KIND string = "CAK"
-const CONSENSUS_REJECT_KIND string = "CRK"
-const CONSENSUS_COMMIT_KIND string = "CCK"
-const CONSENSUS_CHANNEL_SIZE int = 10
-const CONSENSUS_TIMEOUT_INTERVAL time.Duration = 5 * time.Second
-const DELIMITER string = "::"
-
 var leaderNode messagePasser.Node
 var peerNodes messagePasser.Nodes
 var localName string
 var isLeader bool
-var commitChannel chan *Proposal = make(chan *Proposal, CONSENSUS_CHANNEL_SIZE)
+var commitChannel chan *Proposal = make(chan *Proposal, defs.CONSENSUS_CHANNEL_SIZE)
 var sendChannel chan *messagePasser.Message
 
 // A proposal check channel that passes check jobs to be completed by application
-var proposalCheckChannel chan *PropCheck = make(chan *PropCheck, CONSENSUS_CHANNEL_SIZE)
+var proposalCheckChannel chan *PropCheck = make(chan *PropCheck, defs.CONSENSUS_CHANNEL_SIZE)
 
 // Client
 var acceptedProposals map[string]*Proposal
@@ -52,7 +44,7 @@ func InitConsensus(leader messagePasser.Node, peers messagePasser.Nodes, localNo
 	leaderNode = leader
 	peerNodes = peers
 	isLeader = leader.Name == localNodeName
-	sendChannel = make(chan *messagePasser.Message, CONSENSUS_CHANNEL_SIZE)
+	sendChannel = make(chan *messagePasser.Message, defs.CONSENSUS_CHANNEL_SIZE)
 
 	//Client
 	acceptedProposals = make(map[string]*Proposal)
@@ -79,10 +71,10 @@ func Propose(value string, valueType string) {
 	// Keep track of the votesMap for the valueType
 	propVotesMap[valueType] = &votesMap
 	// Multicast the proposal
-	addMessageToSendChannel(defs.MULTICAST_DEST, CONSENSUS_PROPOSE_KIND, &proposal)
+	addMessageToSendChannel(defs.MULTICAST_DEST, defs.CONSENSUS_PROPOSE_KIND, &proposal)
 	// local copy of SeqNum for timeout checks
 	seqNum := SeqNum
-	time.AfterFunc(CONSENSUS_TIMEOUT_INTERVAL, func() {
+	time.AfterFunc(defs.CONSENSUS_TIMEOUT_INTERVAL, func() {
 		// check if the timeout is still relevant
 		if votes, exists := propVotesMap[valueType]; exists {
 			localVote := (*Proposal)((*votes)[localName])
@@ -112,7 +104,7 @@ func multicastCommit(proposal *Proposal) {
 	if votes, exists := propVotesMap[proposal.Type]; exists {
 		if (*votes)[localName].SeqNum == proposal.SeqNum {
 			delete(propVotesMap, proposal.Type)
-			addMessageToSendChannel(defs.MULTICAST_DEST, CONSENSUS_COMMIT_KIND, proposal)
+			addMessageToSendChannel(defs.MULTICAST_DEST, defs.CONSENSUS_COMMIT_KIND, proposal)
 			// locally commit as well.
 			commitChannel <- proposal
 		}
@@ -130,9 +122,9 @@ func ReceiveMessage(message messagePasser.Message) {
 	}
 
 	switch message.Kind {
-	case CONSENSUS_PROPOSE_KIND:
+	case defs.CONSENSUS_PROPOSE_KIND:
 		parseProposal(proposal)
-	case CONSENSUS_COMMIT_KIND:
+	case defs.CONSENSUS_COMMIT_KIND:
 		commitProposal(proposal)
 	default:
 		// Message is for the leader
@@ -244,17 +236,24 @@ func check(proposal *Proposal, callback func(string)) {
 }
 
 /*
+ * Returns outstanding proposal checks to be done.
+ */
+func ProposalCheck() *PropCheck {
+	return <-proposalCheckChannel
+}
+
+/*
  * Accept the proposal
  */
 func accept(proposal *Proposal) {
-	addMessageToSendChannel(leaderNode.Name, CONSENSUS_ACCEPT_KIND, proposal)
+	addMessageToSendChannel(leaderNode.Name, defs.CONSENSUS_ACCEPT_KIND, proposal)
 }
 
 /*
  * Reject the proposal
  */
 func reject(proposal *Proposal) {
-	addMessageToSendChannel(leaderNode.Name, CONSENSUS_REJECT_KIND, proposal)
+	addMessageToSendChannel(leaderNode.Name, defs.CONSENSUS_REJECT_KIND, proposal)
 }
 
 /*
@@ -268,6 +267,13 @@ func commitProposal(proposal *Proposal) {
 			commitChannel <- proposal
 		}
 	}
+}
+
+/*
+ * return proposals that should be committed
+ */
+func ProposalToCommit() *Proposal {
+	return <-commitChannel
 }
 
 /*
@@ -286,16 +292,14 @@ func addMessageToSendChannel(dest string, kind string, proposal *Proposal) {
  * Returns the messages to be sent to the calling application
  */
 func SendMessage() *messagePasser.Message {
-	for {
-		return <-sendChannel
-	}
+	return <-sendChannel
 }
 
 /*
  * Helper function to create Message.Content string from a Proposal
  */
 func proposalToString(proposal *Proposal) string {
-	return fmt.Sprintf("%v%s%v%s%v", proposal.SeqNum, DELIMITER, proposal.Type, DELIMITER, proposal.Value)
+	return fmt.Sprintf("%v%s%v%s%v", proposal.SeqNum, defs.CONSENSUS_DELIMITER, proposal.Type, defs.CONSENSUS_DELIMITER, proposal.Value)
 }
 
 /*
@@ -303,7 +307,7 @@ func proposalToString(proposal *Proposal) string {
  * The content will have the format "SeqNum::Type::Value"
  */
 func stringToProposal(content string) (*Proposal, error) {
-	values := strings.Split(content, DELIMITER)
+	values := strings.Split(content, defs.CONSENSUS_DELIMITER)
 	if len(values) != 3 {
 		return nil, errors.New("Wrong Format: " + content)
 	}

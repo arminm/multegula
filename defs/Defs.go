@@ -61,3 +61,12 @@ const GAME_TYPE_SINGLE string = "S"
 
 const DEFAULT_GAME_PORT int = 11111
 const DEFAULT_UI_PORT int = 44444
+
+/*** CONSENSUS CONSTANTS ***/
+const CONSENSUS_PROPOSE_KIND string = "CPK"
+const CONSENSUS_ACCEPT_KIND string = "CAK"
+const CONSENSUS_REJECT_KIND string = "CRK"
+const CONSENSUS_COMMIT_KIND string = "CCK"
+const CONSENSUS_CHANNEL_SIZE int = 10
+const CONSENSUS_TIMEOUT_INTERVAL time.Duration = 5 * time.Second
+const CONSENSUS_DELIMITER string = "::"
