@@ -331,13 +331,13 @@ func main() {
 		}
 		*peers = append(*peers, localNode)
 		fmt.Print("--------------------------------\n")
-		fmt.Println("Initing with localName:", localNodeName)
-		messagePasser.InitMessagePasser(*peers, localNodeName)
-
 		fmt.Println("Available Nodes:")
 		for id, node := range *peers {
 			fmt.Printf("  ID:%d – %s\n", id, node.Name)
 		}
+		fmt.Println("Initing with localName:", localNodeName)
+		messagePasser.InitMessagePasser(*peers, localNodeName)
+
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
 		go receiveRoutine()
 
