@@ -11,24 +11,31 @@ import (
 )
 
 //Our bootstrap server.  Uncomment below for local testing.
-//const SERVER_DNS string = "multegula.dyndns.org:55555"
-const SERVER_DNS string = "localhost:55555"
+const SERVER_DNS string = "multegula.dyndns.org:55555"
+
+// const SERVER_DNS string = "localhost:55555"
 
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
 /* The election message */
 const MSG_BULLY_ELECTION string = "ELECTION"
+
 /* The answer message */
 const MSG_BULLY_ANSWER string = "ANSWER"
-/* The unicorn message */	
+
+/* The unicorn message */
 const MSG_BULLY_UNICORN string = "UNICORN"
+
 /* Nodes request if unicorn is alive */
 const MSG_BULLY_ARE_YOU_ALIVE string = "ARE_YOU_ALIVE"
+
 /* The unicorn heart beat message */
 const MSG_BULLY_IAM_ALIVE string = "IAM_ALIVE"
+
 /* The default unicorn name */
 /* Note that this name is reserved in the system */
 const UNICORN_DEFAULT_NAME = "unicorn##default##name"
+
 /* The end of message types for bully algorithm */
 
 const DELIMITER string = "##"
