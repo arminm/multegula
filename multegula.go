@@ -306,7 +306,7 @@ func main() {
 
 	// nodes used for testing purposes only
 	// nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
-	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "50.131.53.106", Port: 11111, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "71.199.96.75", Port: 44444, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "50.131.53.106", Port: 22222, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "71.199.96.75", Port: 33333, DNS: "none"}}
+	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "50.131.53.106", Port: 11111}, messagePasser.Node{Name: "garrett", IP: "71.199.96.75", Port: 44444}, messagePasser.Node{Name: "daniel", IP: "50.131.53.106", Port: 22222}, messagePasser.Node{Name: "lunwen", IP: "71.199.96.75", Port: 33333}}
 	// for testing the bootstrapping
 	if *bootstrapTestFlag {
 		localName := getLocalName()
@@ -323,7 +323,7 @@ func main() {
 
 	if *testFlag {
 		localNodeName := parseMainArguments(args)
-		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Couldn't get peers:", err)
@@ -379,7 +379,7 @@ func main() {
 
 	if gameType == defs.GAME_TYPE_MULTI {
 		// get fellow players
-		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Couldn't get peers:", err)
