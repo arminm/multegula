@@ -25,21 +25,47 @@ class Block :
         self.changed = False
         self.COLORS = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'white']
 
-    ### getEdges - get the edges of the block based on the orientation
-    def getEdges(self) :
-        # vertical paddle
-        if self.TILT == Tilt.HORZ :
-            leftEdge    = self.X_CENTER - BLOCK_WIDTH
-            rightEdge   = self.X_CENTER + BLOCK_WIDTH
-            topEdge     = self.Y_CENTER - BLOCK_HEIGHT
-            bottomEdge  = self.Y_CENTER + BLOCK_HEIGHT     
+    ### translate - translate the position and tilt based on oriention
+    def translate(self, levelOrientation) :
+        ## SOUTH -> nothing changes
+        if levelOrientation == Orientation.DIR_SOUTH :
+            return (self.X_CENTER, self.Y_CENTER, self.TILT)
 
-        # edges of the SOUTH paddle
-        elif self.TILT == Tilt.VERT :
-            leftEdge    = self.X_CENTER - BLOCK_HEIGHT
-            rightEdge   = self.X_CENTER + BLOCK_HEIGHT
-            topEdge     = self.Y_CENTER - BLOCK_WIDTH
-            bottomEdge  = self.Y_CENTER + BLOCK_WIDTH
+        ## EAST -> translate position and tilt
+        elif levelOrientation == Orientation.DIR_EAST :
+            if self.TILT == Tilt.HORZ :
+                return (CANVAS_WIDTH - self.Y_CENTER, self.X_CENTER, Tilt.VERT)
+            elif self.TILT == Tilt.VERT :
+                return (CANVAS_WIDTH - self.Y_CENTER, self.X_CENTER, Tilt.HORZ)
+
+        ## NORTH -> translate position
+        elif levelOrientation == Orientation.DIR_NORTH :
+            return (CANVAS_WIDTH - self.X_CENTER, CANVAS_HEIGHT - self.Y_CENTER, self.TILT)
+
+        ## WEST -> translate position and tilt
+        elif levelOrientation == Orientation.DIR_WEST :
+            if self.TILT == Tilt.HORZ:
+                return (self.Y_CENTER, CANVAS_HEIGHT - self.X_CENTER, Tilt.VERT)
+            elif self.TILT == Tilt.VERT : 
+                return (self.Y_CENTER, CANVAS_HEIGHT - self.X_CENTER, Tilt.HORZ)
+
+    ### getEdges - get the edges of the block based on the orientation
+    def getEdges(self, levelOrientation) :
+        (xCenter, yCenter, tilt) = self.translate(levelOrientation) 
+
+        # horizontal block
+        if tilt == Tilt.HORZ :
+            leftEdge    = xCenter - BLOCK_WIDTH
+            rightEdge   = xCenter + BLOCK_WIDTH
+            topEdge     = yCenter - BLOCK_HEIGHT
+            bottomEdge  = yCenter + BLOCK_HEIGHT     
+
+        # vertical paddle
+        elif tilt == Tilt.VERT :
+            leftEdge    = xCenter - BLOCK_HEIGHT
+            rightEdge   = xCenter + BLOCK_HEIGHT
+            topEdge     = yCenter - BLOCK_WIDTH
+            bottomEdge  = yCenter + BLOCK_WIDTH
 
         return (leftEdge, rightEdge, topEdge, bottomEdge) 
 
@@ -56,8 +82,8 @@ class Block :
             self.changed = True
 
     ### setBlock - set the block in the canvas
-    def setBlock(self, canvas) :
-        (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges()
+    def setBlock(self, canvas, levelOrientation) :
+        (leftEdge, rightEdge, topEdge, bottomEdge) = self.getEdges(levelOrientation)
 
         ## TODO: THE COLOR SHOULD BE SET BASED ON THE POWER UP
         ## But for now, we're just going to set it to a random value.
@@ -67,12 +93,12 @@ class Block :
                                             fill = color, width = BORDER_WIDTH)  
         
     ### draw - draw the block
-    def draw(self, canvas) : 
+    def draw(self, canvas, levelOrientation) : 
         if not(self.first) and self.changed :
             canvas.delete(self.b)
             if(self.enabled) :
-                self.setBlock(canvas)
+                self.setBlock(canvas, levelOrientation)
             self.changed = False
         elif self.first :
-            self.setBlock(canvas)
+            self.setBlock(canvas, levelOrientation)
             self.first = False
