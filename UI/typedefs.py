@@ -6,6 +6,8 @@
 # imports
 from enum import Enum
 
+WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
+
 ### CONSTANT VALUES
 # canvas dimensions
 CANVAS_DIMENTSION = 350
