@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const HOLDBACKQUEUE_LIMIT int = 5
+
 //Our bootstrap server.  Uncomment below for local testing.
 const SERVER_DNS string = "multegula.dyndns.org:55555"
 
