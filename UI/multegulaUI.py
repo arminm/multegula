@@ -699,6 +699,17 @@ def initPlayers(canvas, number=1, info=[]):
             canvas.data[info[northIndex]] = Player(Orientation.DIR_NORTH, PlayerState.COMP, info[northIndex], GameType.MULTI_PLAYER)
             canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.COMP, info[westIndex], GameType.MULTI_PLAYER)
             canvas.data['competitors'] = info
+        
+        elif number == 3 :
+            print("TODO: MAKE IT HAPPEN")
+        
+        elif number == 2 :
+            print ("TODO: MAKE IT HAPPEN")
+        
+        elif number == 1:
+            canvas.data['gameType'] = GameType.SINGLE_PLAYER
+            initPlayers(canvas)
+            
 
 ### run - run the program
 def runUI(cmd_line_args) :
@@ -727,7 +738,6 @@ def runUI(cmd_line_args) :
     root.bind('<KeyRelease>', keyReleased)
 
     # get the GoBridge
-    #TODO: MAKE THIS MORE ROBUST.  CHECK TO ENSURE A PORT AND NOT "-mid" WAS PASSED IN.
     canvas.data['bridge'] = GoBridge(cmd_line_args[1]);
     
     # Set up for ReceiveThread
