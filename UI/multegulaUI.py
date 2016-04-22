@@ -49,6 +49,12 @@ def keyPressed(event) :
             canvas.data['currentScreen'] = Screens.SCRN_MENU
             # set name
             myName = canvas.data['splashTextField'].text
+
+            # replace spaces and make sure there are no duplicates with WALL_NAMES
+            myName = myName.replace(' ', '')
+            if myName in WALL_NAMES :
+                myName += '1'
+
             canvas.data['myName'] = myName
 
             # send name up to Multegula!
@@ -661,55 +667,74 @@ def initPlayers(canvas, number=1, info=[]):
         canvas.data['competitors'] = [myName, 'armin', 'lunwen', 'garrett']
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
-        # create player
+        # create my player
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.MULTI_PLAYER)
 
+        # update info array for a three player game
+        ### Basically, add a wall in the fourth slot in the info array.
+        if number == 3:
+            # add a wall to the index array
+            w = random.randint(0, len(WALL_NAMES)-1)
+            info.append(WALL_NAMES[w])
 
-        # create competitors
-        if number == 4 :
-            myIndex = info.index(myName)
-            eastIndex = (myIndex + 1) % 4
-            northIndex = (myIndex + 2) % 4
-            westIndex = (myIndex + 3) % 4
+        # update info array for a two player game
+        ### If players A and B were receieved in the info array, update the info array to look like:
+        ###     [A, WALL1, B, WALL2]
+        if number == 2:
+            w1 = random.randint(0, len(WALL_NAMES)-1)
+            w2 = w1
+            while w2 == w1 :
+                w2 = random.randint(0, len(WALL_NAMES)-1)
+            info = [info[0], WALL_NAMES[w1], info[1], WALL_NAMES[w2]]
 
-            # set level orientaion based on odering of the players. 
-            ### WHAT THE HECK DOES THIS MEAN: 
-            ### Okay. Everyone is going to see themselves on the bottom of their screen. So...
-            ###     Translating the ball position and the paddle position send by other players is
-            ###     relatively easy because it does not require a global notion of orientation, you
-            ###     need only know where a player is RELATIVE to you. However, there has got to be an
-            ###     anchor for drawing a level. The natural notion is, 'Easy! Have the unicorn be the
-            ###     anchor!!!', but it would behoove us to do something deterministic. SO. The player
-            ###     that gets sent out first, which is to say the player that comes first alphabetically,
-            ###     get's to be the anchor. </rant>
-            if myIndex == 0 :
-                canvas.data[myName].levelOrientation = Orientation.DIR_SOUTH
-                canvas.data['level'].levelOrientation = Orientation.DIR_SOUTH     
-            elif myIndex == 1 :
-                canvas.data[myName].levelOrientation = Orientation.DIR_EAST
-                canvas.data['level'].levelOrientation = Orientation.DIR_EAST    
-            elif myIndex == 2 :
-                canvas.data[myName].levelOrientation = Orientation.DIR_NORTH
-                canvas.data['level'].levelOrientation = Orientation.DIR_NORTH     
-            elif myIndex == 3 :
-                canvas.data[myName].levelOrientation = Orientation.DIR_WEST
-                canvas.data['level'].levelOrientation = Orientation.DIR_WEST     
+        # get other players index in the info array
+        myIndex = info.index(myName)
+        eastIndex = (myIndex + 1) % 4
+        northIndex = (myIndex + 2) % 4
+        westIndex = (myIndex + 3) % 4
 
+        # set level orientaion based on odering of the players. 
+        ### WHAT THE HECK DOES THIS MEAN: 
+        ### Okay. Everyone is going to see themselves on the bottom of their screen. So...
+        ###     Translating the ball position and the paddle position send by other players is
+        ###     relatively easy because it does not require a global notion of orientation, you
+        ###     need only know where a player is RELATIVE to you. However, there has got to be an
+        ###     anchor for drawing a level. The natural notion is, 'Easy! Have the unicorn be the
+        ###     anchor!!!', but it would behoove us to do something deterministic. SO. The player
+        ###     that gets sent out first, which is to say the player that comes first alphabetically,
+        ###     get's to be the anchor. </rant>
+        if myIndex == 0 :
+            canvas.data[myName].levelOrientation = Orientation.DIR_SOUTH
+            canvas.data['level'].levelOrientation = Orientation.DIR_SOUTH     
+        elif myIndex == 1 :
+            canvas.data[myName].levelOrientation = Orientation.DIR_EAST
+            canvas.data['level'].levelOrientation = Orientation.DIR_EAST    
+        elif myIndex == 2 :
+            canvas.data[myName].levelOrientation = Orientation.DIR_NORTH
+            canvas.data['level'].levelOrientation = Orientation.DIR_NORTH
+        elif myIndex == 3 :
+            canvas.data[myName].levelOrientation = Orientation.DIR_WEST
+            canvas.data['level'].levelOrientation = Orientation.DIR_WEST        
+
+        # make EAST player appropriately
+        if info[eastIndex] in WALL_NAMES :
+            canvas.data[info[eastIndex]] = Player(Orientation.DIR_EAST, PlayerState.WALL, info[eastIndex], GameType.MULTI_PLAYER)
+        else :
             canvas.data[info[eastIndex]] = Player(Orientation.DIR_EAST, PlayerState.COMP, info[eastIndex], GameType.MULTI_PLAYER)
+
+        # make WEST player appropriately
+        if info[northIndex] in WALL_NAMES :
+            canvas.data[info[northIndex]] = Player(Orientation.DIR_NORTH, PlayerState.WALL, info[northIndex], GameType.MULTI_PLAYER)
+        else :
             canvas.data[info[northIndex]] = Player(Orientation.DIR_NORTH, PlayerState.COMP, info[northIndex], GameType.MULTI_PLAYER)
-            canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.COMP, info[westIndex], GameType.MULTI_PLAYER)
-            canvas.data['competitors'] = info
+
+        if info[westIndex] in WALL_NAMES :
+            canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.WALL, info[westIndex], GameType.MULTI_PLAYER) 
+        else :   
+            canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.COMP, info[westIndex], GameType.MULTI_PLAYER)    
         
-        elif number == 3 :
-            print("TODO: MAKE IT HAPPEN")
-        
-        elif number == 2 :
-            print ("TODO: MAKE IT HAPPEN")
-        
-        elif number == 1:
-            canvas.data['gameType'] = GameType.SINGLE_PLAYER
-            initPlayers(canvas)
-            
+        # save competitor information
+        canvas.data['competitors'] = info           
 
 ### run - run the program
 def runUI(cmd_line_args) :
