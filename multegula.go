@@ -12,11 +12,12 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
+	"github.com/arminm/multegula/bullySelection"
 	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
-	"github.com/arminm/multegula/bullySelection"
 )
 
 /*
@@ -178,34 +179,34 @@ func uiGetGameType() (gameType string) {
 	return gameType
 }
 
-/* 
+/*
  * sets the orientation of the players to alphabetical
  */
 func uiSetCompetitorLocation(myName string, peers *[]messagePasser.Node) {
-	var toSend messagePasser.Message;
-	var nodeNames = []string{};
+	var toSend messagePasser.Message
+	var nodeNames = []string{}
 
 	// loop through all nodes and pull out names
 	for _, node := range *peers {
-		nodeNames = append(nodeNames, node.Name);
+		nodeNames = append(nodeNames, node.Name)
 	}
 
 	// sort and get length
-	sort.Strings(nodeNames);
-	length := len(nodeNames);
+	sort.Strings(nodeNames)
+	length := len(nodeNames)
 
 	// create content of message
-	content := fmt.Sprintf("%d", length);
+	content := fmt.Sprintf("%d", length)
 	for _, name := range nodeNames {
 		content = fmt.Sprintf("%v%v%v", content, defs.PAYLOAD_DELIMITER, name)
 	}
 
 	// create message and send message
-	toSend.Source = myName;
-	toSend.Destination = myName;
-	toSend.Kind = defs.MSG_PLAYER_LOC;
-	toSend.Content = content;
-	bridges.SendToPyBridge(toSend);
+	toSend.Source = myName
+	toSend.Destination = myName
+	toSend.Kind = defs.MSG_PLAYER_LOC
+	toSend.Content = content
+	bridges.SendToPyBridge(toSend)
 }
 
 /* wait for incoming messages from the UI */
@@ -304,8 +305,8 @@ func main() {
 	args := flag.Args()
 
 	// nodes used for testing purposes only
-	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
-
+	// nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
+	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "50.131.53.106", Port: 11111}, messagePasser.Node{Name: "garrett", IP: "71.199.96.75", Port: 44444}, messagePasser.Node{Name: "daniel", IP: "50.131.53.106", Port: 22222}, messagePasser.Node{Name: "lunwen", IP: "71.199.96.75", Port: 33333}}
 	// for testing the bootstrapping
 	if *bootstrapTestFlag {
 		localName := getLocalName()
@@ -322,15 +323,21 @@ func main() {
 
 	if *testFlag {
 		localNodeName := parseMainArguments(args)
-
-		fmt.Print("--------------------------------\n")
-		fmt.Println("Initing with localName:", localNodeName)
-		messagePasser.InitMessagePasser(nodes, localNodeName)
-
-		fmt.Println("Available Nodes:")
-		for id, node := range nodes {
-			fmt.Printf("  ID:%d – %s\n", id, node.Name)
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
+		peers, err := bootstrapClient.GetNodes(localNode)
+		if err != nil {
+			fmt.Println("Couldn't get peers:", err)
+			panic(err)
 		}
+		*peers = append(*peers, localNode)
+		fmt.Print("--------------------------------\n")
+		fmt.Println("Available Nodes:")
+		for id, node := range *peers {
+			fmt.Printf("  ID:%d – %+v\n", id, node)
+		}
+		fmt.Println("Initing with localName:", localNodeName)
+		messagePasser.InitMessagePasser(*peers, localNodeName)
+
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
 		go receiveRoutine()
 
@@ -372,7 +379,7 @@ func main() {
 
 	if gameType == defs.GAME_TYPE_MULTI {
 		// get fellow players
-		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Couldn't get peers:", err)
@@ -389,11 +396,11 @@ func main() {
 
 		/***** TODO: REPLACE WITH ACTUAL ELECTION INFORMATION *******/
 		// NOTE: This will happen somewhere else
-		var unicornMsg messagePasser.Message;
-		unicornMsg.Source = localNode.Name;
-		unicornMsg.Destination = defs.MULTICAST_DEST;
-		unicornMsg.Kind = defs.MSG_UNICORN;
-		unicornMsg.Content = "a";
+		var unicornMsg messagePasser.Message
+		unicornMsg.Source = localNode.Name
+		unicornMsg.Destination = defs.MULTICAST_DEST
+		unicornMsg.Kind = defs.MSG_UNICORN
+		unicornMsg.Content = "a"
 		bridges.SendToPyBridge(unicornMsg)
 
 		/* start the routine waiting for messages coming from UI */

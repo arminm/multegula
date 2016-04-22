@@ -12,8 +12,10 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	//"strings"
 	"time"
+
 	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
 )
@@ -63,8 +65,10 @@ func handleConnection(conn net.Conn) {
 		if haveAddedConnection == false {
 			// we have to set the public ip of the client, since the client itself
 			// doesn't know what their public ip is.
-			//ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
-			ip := "127.0.0.1"
+			ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
+			if ip == "[" {
+				ip = "127.0.0.1"
+			}
 			(*nodePtr).IP = ip
 			addClientChannel <- ClientInfo{&conn, nodePtr}
 			haveAddedConnection = true

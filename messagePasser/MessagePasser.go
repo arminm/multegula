@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
 	"github.com/arminm/multegula/defs"
 )
 
@@ -24,7 +25,6 @@ type Node struct {
 	Name string
 	IP   string
 	Port int
-	DNS  string
 }
 
 // required functions to implement the sort.Interface for sorting Nodes
@@ -102,6 +102,7 @@ var sendChannel chan Message = make(chan Message, defs.QUEUE_SIZE)
 /* the queue for received messages */
 var receiveChannel chan Message = make(chan Message, defs.QUEUE_SIZE)
 var holdbackQueue []Message = []Message{}
+var holdbackQueueMutex = &sync.Mutex{}
 
 func updateSeqNum(message *Message) {
 	seqNum := seqNums[message.Destination] + 1
@@ -151,11 +152,14 @@ func messageHasBeenReceived(message Message) bool {
 	}
 
 	/* check if message is in holdbackQueue */
+	holdbackQueueMutex.Lock()
 	for _, msg := range holdbackQueue {
 		if CompareTimestampsSame(&msg.Timestamp, &message.Timestamp) {
+			holdbackQueueMutex.Unlock()
 			return true
 		}
 	}
+	holdbackQueueMutex.Unlock()
 	return false
 }
 
@@ -245,14 +249,14 @@ func getFrontAndLatterNodes(nodes []Node, localNode Node) (map[string]Node, map[
  * @param nodes all nodes
  * @return all nodes' names
  */
- func GetNodeNames() []string {
-     var names []string
-     names = append(names, "armin")
-     names = append(names, "lunwen")
-     names = append(names, "daniel")
-     names = append(names, "garrett")
-     return names
- }
+func GetNodeNames() []string {
+	var names []string
+	names = append(names, "armin")
+	names = append(names, "lunwen")
+	names = append(names, "daniel")
+	names = append(names, "garrett")
+	return names
+}
 
 /*
  * accepts connections from other nodes and stores
@@ -341,6 +345,7 @@ func addMessageToReceiveChannel(message Message) {
 func receiveMessageFromConn(conn net.Conn) {
 	for {
 		msg, err := receiveMessageTCP(conn)
+		// fmt.Printf("holdbackQueue size: %v\n", len(holdbackQueue))
 		if err != nil {
 			name, _ := getConnectionName(conn)
 			if err.Error() == "EOF" {
@@ -394,7 +399,20 @@ func deliverMessage(message Message) {
 			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
 		} else {
+			// fmt.Printf("HBQ Message:%v\n", message)
+			holdbackQueueMutex.Lock()
 			Push(&holdbackQueue, message)
+			if len(holdbackQueue) > defs.HOLDBACKQUEUE_LIMIT {
+				fmt.Println("Flushing holdbackQueue!")
+				for _, msg := range holdbackQueue {
+					addMessageToReceiveChannel(msg)
+				}
+				length := len(holdbackQueue)
+				for i, _ := range holdbackQueue {
+					Delete(&holdbackQueue, (length-1)-i)
+				}
+			}
+			holdbackQueueMutex.Unlock()
 		}
 		/* Once a message has been inspected locally, check to see if it should be
 		 * re-multicasted to other nodes
@@ -415,6 +433,7 @@ func deliverMessage(message Message) {
  */
 func checkHoldbackQueue() {
 	var messageToDeliver *Message
+	holdbackQueueMutex.Lock()
 	for i, msg := range holdbackQueue {
 		sourceIndex, _, _ := FindNodeByName(peerNodes, msg.Source)
 		if isMessageReady(msg, sourceIndex, &vectorTimeStamp) {
@@ -423,6 +442,7 @@ func checkHoldbackQueue() {
 			break
 		}
 	}
+	holdbackQueueMutex.Unlock()
 	if messageToDeliver != nil {
 		addMessageToReceiveChannel(*messageToDeliver)
 		checkHoldbackQueue()
