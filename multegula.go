@@ -333,7 +333,7 @@ func main() {
 		fmt.Print("--------------------------------\n")
 		fmt.Println("Available Nodes:")
 		for id, node := range *peers {
-			fmt.Printf("  ID:%d – %s\n", id, node.Name)
+			fmt.Printf("  ID:%d – %+v\n", id, node)
 		}
 		fmt.Println("Initing with localName:", localNodeName)
 		messagePasser.InitMessagePasser(*peers, localNodeName)
