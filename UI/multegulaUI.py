@@ -304,24 +304,39 @@ def react(canvas, received) :
         xSpeed  = float(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT
         ySpeed  = float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT
         radius  = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
+        block   = int(content[MsgIndex.BLOCK_BROKEN_BLOCK])
 
-        # translate for player orientation
-        (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
-        (xCenter, yCenter) = translateBallPosition(xCenter, yCenter, radius, canvas.data[name])
+        if canvas.data['level'].blocks[block].enabled == True :     
+            # translate for player orientation
+            (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
+            (xCenter, yCenter) = translateBallPosition(xCenter, yCenter, radius, canvas.data[name])
 
-        # set component fields
-        canvas.data[name].score = score
-        canvas.data[name].lives = lives
-        canvas.data[name].statusUpdate = True
-        canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(xCenter, yCenter)
-        canvas.data['ball'].radius = radius
-        canvas.data['ball'].setVelocity(xSpeed, ySpeed)
-        canvas.data['ball'].randomColor()
-        canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
+            # set component fields
+            canvas.data[name].score = score
+            canvas.data[name].lives = lives
+            canvas.data[name].statusUpdate = True
+            canvas.data['ball'].lastToTouch = name
+            canvas.data['ball'].setCenter(xCenter, yCenter)
+            canvas.data['ball'].radius = radius
+            canvas.data['ball'].setVelocity(xSpeed, ySpeed)
+            canvas.data['ball'].randomColor()
+            canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
+            canvas.data['level'].updated = True
+        else :
+            # form message
+            toSend = PyMessage()
+            toSend.src = name
+            toSend.kind = MsgType.MSG_SYNC_ERROR
+            toSend.content = 'BLOCK' + str(block)
+            toSend.multicast = True
+            # send message
+            canvas.data['bridge'].sendMessage(toSend)
+
+
+    elif kind == MsgType.MSG_SYNC_ERROR :
+        canvas.delete(ALL)
+        canvas.data['gameScreen'].first = True
         canvas.data['level'].updated = True
-
-    elif kind == MsgType.MSG_ERROR_PLAYER :
         canvas.data['ball'].reset()
         canvas.data['currentScreen'] = Screens.SCRN_SYNC
 
@@ -416,6 +431,10 @@ def playerUpdate(name, status, info, canvas) :
             canvas.data['level'].blocks[info[2]].disable()
             canvas.data['level'].updated = True
 
+        elif status == PlayerReturnStatus.DEAD_BALL_DEFLECTED :
+            canvas.data['ball'].setVelocity(info[0], info[1])  
+            canvas.data['ball'].randomColor()
+
     # multiplayer game -> send update to competitors
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER :
 
@@ -456,7 +475,13 @@ def playerUpdate(name, status, info, canvas) :
             # send message
             canvas.data['bridge'].sendMessage(toSend)
 
+        # ball deflected by wall - directly update ball velocity
         elif status == PlayerReturnStatus.WALL_BALL_DEFLECTED :
+            canvas.data['ball'].setVelocity(info[0], info[1])  
+            canvas.data['ball'].randomColor()
+
+        # ball defleflected by dead player - directly update ball velocity
+        elif status == PlayerReturnStatus.DEAD_BALL_DEFLECTED :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
 
@@ -497,7 +522,7 @@ def playerUpdate(name, status, info, canvas) :
             # form message
             toSend = PyMessage()
             toSend.src = name
-            toSend.kind = MsgType.MSG_ERROR_PLAYER
+            toSend.kind = MsgType.MSG_SYNC_ERROR
             toSend.content = content
             toSend.multicast = True
             # send message
@@ -644,7 +669,7 @@ def redrawAll(canvas) :
         canvas.data['gameScreen'].draw(canvas)
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
-        canvas.data['level'].update(canvas)
+        canvas.data['level'].draw(canvas)
         canvas.data['ball'].updateMenu(canvas)  
         canvas.data['syncScreen'].draw(canvas)   
 

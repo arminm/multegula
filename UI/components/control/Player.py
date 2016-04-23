@@ -18,14 +18,22 @@ class Player :
         self.ORIENTATION = orientation
         self.state = state
         self.score = 0
-        self.lives = 5
+        self.lives = INIT_LIVES
         self.power = PowerUps.PWR_NONE
         self.paddle = Paddle(orientation, state, gameType)
         self.first = True
         self.statusUpdate = False
+        self.dead = False
         self.name = name
         self.gameType = gameType
         self.levelOrientation = Orientation.DIR_SOUTH;
+
+    ### iAmDead 
+    ##  Set the appropriate fields to make this player dead
+    def iAmDead(self) :
+        self.state = PlayerState.DEAD
+        self.paddle.iAmDead() 
+        self.dead = True
 
     ### AI method -
     ##  This method moves the paddles automatically to contact the ball. There are some
@@ -67,6 +75,7 @@ class Player :
         (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
         (leftEdge, rightEdge, topEdge, bottomEdge) = self.paddle.getEdges()
         (paddleCenter, paddleWidth, paddleDir, paddleOrientation) = self.paddle.getInfo()
+        myState = self.state
 
         # initialize flags
         ballMissed = False
@@ -105,16 +114,24 @@ class Player :
                     (topEdge < ((ballCenterX - ballRadius) <= bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge))) :
                 ballDeflected = True
 
-        # # reset ball, apply appropriate scoring
-        if ballMissed and self.state != PlayerState.WALL:
-            return (PlayerReturnStatus.BALL_MISSED, [])
-        elif ballDeflected and self.state != PlayerState.WALL:
-            return (PlayerReturnStatus.BALL_DEFLECTED, self.deflectBallVelocity(canvas))
-        elif ballDeflected and self.state == PlayerState.WALL:
-            return (PlayerReturnStatus.WALL_BALL_DEFLECTED, self.deflectBallVelocity(canvas))
-        elif self.state == PlayerState.WALL:
+
+        # if I'm a wall ...
+        if myState == PlayerState.WALL :
+            if ballDeflected :
+                return (PlayerReturnStatus.WALL_BALL_DEFLECTED, self.deflectBallVelocity(canvas))
             return (PlayerReturnStatus.WALL_NO_STATUS, [])
-        return (PlayerReturnStatus.NO_STATUS, [])
+
+        elif myState == PlayerState.DEAD :
+            if ballDeflected :
+                return (PlayerReturnStatus.DEAD_BALL_DEFLECTED, self.deflectBallVelocity(canvas))
+            return (PlayerReturnStatus.DEAD_NO_STATUS, [])
+
+        else :
+            if ballMissed :
+                return (PlayerReturnStatus.BALL_MISSED, [])
+            elif ballDeflected :
+                return (PlayerReturnStatus.BALL_DEFLECTED, self.deflectBallVelocity(canvas))
+            return (PlayerReturnStatus.NO_STATUS, [])
 
     ### deflectBallVelocity - 
     ##  Deflect ball off of a paddle and determine the new direction off the ball
@@ -130,8 +147,8 @@ class Player :
         (xVelocity, yVelocity) = canvas.data['ball'].getVelocity()
 
         # deflect off NORTH paddle
-        if(paddleOrientation == Orientation.DIR_NORTH) :
-            if self.state == PlayerState.WALL :
+        if paddleOrientation == Orientation.DIR_NORTH :
+            if self.state == PlayerState.WALL or self.state == PlayerState.DEAD :
                 yVelocity = (-yVelocity)
             else :
                 speedFactor = (ballCenterX - paddleCenter) / paddleWidth
@@ -139,8 +156,8 @@ class Player :
                 yVelocity = speed        
 
         # deflect off SOUTH paddle
-        elif(paddleOrientation == Orientation.DIR_SOUTH) :
-            if self.state == PlayerState.WALL :
+        elif paddleOrientation == Orientation.DIR_SOUTH :
+            if self.state == PlayerState.WALL or self.state == PlayerState.DEAD :
                 yVelocity = (-yVelocity)
             else :
                 speedFactor = (ballCenterX - paddleCenter) / paddleWidth
@@ -148,8 +165,8 @@ class Player :
                 yVelocity = (-speed)
 
         # deflect off EAST paddle
-        elif(paddleOrientation == Orientation.DIR_EAST) :
-            if self.state == PlayerState.WALL :
+        elif paddleOrientation == Orientation.DIR_EAST :
+            if self.state == PlayerState.WALL or self.state == PlayerState.DEAD :
                 xVelocity = (-xVelocity)
             else :
                 speedFactor = (ballCenterY - paddleCenter) / paddleWidth
@@ -158,7 +175,7 @@ class Player :
         
         # deflect off WEST paddle
         elif(paddleOrientation == Orientation.DIR_WEST) :
-            if self.state == PlayerState.WALL :
+            if self.state == PlayerState.WALL or self.state == PlayerState.DEAD :
                 xVelocity = (-xVelocity)
             else : 
                 speedFactor = (ballCenterY - paddleCenter) / paddleWidth
@@ -313,13 +330,16 @@ class Player :
         if self.state != PlayerState.WALL :
             self.displayStatus(canvas)
 
+        if self.lives == 0 and self.dead == False:
+            self.iAmDead()
+
         # if this is an AI, then updae the motion of the paddles via the AI routine
         if self.state == PlayerState.AI :
             self.AI(canvas)
 
         # update player for motion and deflection
-        if self.state == PlayerState.USER or self.state == PlayerState.AI or self.state == PlayerState.WALL:
-
+        #if self.state == PlayerState.USER or self.state == PlayerState.AI or self.state == PlayerState.WALL or self.:
+        if self.state != PlayerState.COMP :
             # update the paddle
             self.paddle.update(canvas)
             (status, payload) = self.deflectBall(canvas)
@@ -337,7 +357,7 @@ class Player :
             return (status, payload)
 
         # if this player is a competitor, just draw it
-        elif(self.state == PlayerState.COMP) :
+        elif self.state == PlayerState.COMP :
             self.paddle.update(canvas)
             return (PlayerReturnStatus.NO_STATUS, [])
 
