@@ -25,7 +25,7 @@ class Level :
         self.levelOrientation = Orientation.DIR_SOUTH;
 
         # Read all level files
-        for level in glob.glob('UI/levels/*.py',recursive=True):
+        for level in sorted(glob.glob('UI/levels/*.py',recursive=True)):
         	self.readLevel(level)
     
         # set first level
