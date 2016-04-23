@@ -34,6 +34,12 @@ class Paddle :
         self.first = True
         self.gameType = gameType;
 
+    def iAmDead(self) :
+        self.state = PlayerState.DEAD
+        self.center = X_CENTER
+        self.width = PADDLE_WIDTH_MAX
+        self.redraw = True
+
     ### increase/decrease speed methods
     def increaseSpeed(self) :
         self.speed = round(self.speed * 1.1, RD_FACT)
@@ -114,7 +120,7 @@ class Paddle :
         if state == PlayerState.USER or state == PlayerState.AI or state == PlayerState.COMP:
             self.move()
             self.draw(canvas)
-        elif state == PlayerState.WALL :
+        elif state == PlayerState.WALL or state == PlayerState.DEAD :
             self.draw(canvas)
 
     ### getInfo - get pertinent information about the paddle

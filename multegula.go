@@ -249,6 +249,8 @@ func inboundDispatcher() {
 			bridges.SendToPyBridge(message)
 		case defs.MSG_START_PLAY:
 			bridges.SendToPyBridge(message)
+		case defs.MSG_SYNC_ERROR:
+			bridges.SendToPyBridge(message)
 
 		// election messages
 		case defs.MSG_BULLY_ELECTION:

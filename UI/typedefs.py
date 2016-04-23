@@ -1,6 +1,6 @@
 # 18-842 Distributed Systems // Spring 2016.
 # Multegula - A P2P block breaking game.
-# ComponentDefs.py.
+# typedefs.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
@@ -61,6 +61,7 @@ LOST_LIFE_POINTS = -20
 LOST_LIFE_LIVES = -1
 DEFLECT_POINTS  = 3
 BREAK_POINTS = 5
+INIT_LIVES = 3
 
 # fixed point multiplier / rounding factor
 FP_MULT = 10
@@ -81,7 +82,7 @@ DEFAULT_SRC = 'UNSET'
 MULTICAST_DEST = 'EVR1'
 MULTEGULA_DEST = 'MULT'
 DEFAULT_PORT = 44444
-
+PYMESSAGE_LEN = 4
 
 ### Orientation - for the location of players/paddles
 class Orientation(Enum) :
@@ -125,6 +126,7 @@ class Screens(Enum) :
   SCRN_GAME = 4
   SCRN_GAME_OVER = 5
   SCRN_JOIN = 6
+  SCRN_SYNC = 7
 
 ### PlayerState - define different player states
 class PlayerState(Enum) :
@@ -132,6 +134,7 @@ class PlayerState(Enum) :
     AI          = 1 # controlling it self
     COMP        = 2 # controlled by a COMPetitor
     WALL        = 3 # player is a wall
+    DEAD        = 4 # player is dead
 
 ### GameType - define the two game types
 class GameType(Enum) :
@@ -156,6 +159,7 @@ class MsgType() :
     MSG_PAUSE_UPDATE    = 'MPU'
     MSG_PLAYER_LOC      = 'MPL'
     MSG_START_PLAY      = 'MSP'
+    MSG_SYNC_ERROR      = 'MSE'
     MSG_UNICORN         = 'MUN'
 
 ### MsgPayload - defines standard message payloads
@@ -197,10 +201,13 @@ class MsgIndex() :
 class PlayerReturnStatus() :
     NO_STATUS       = 0
     WALL_NO_STATUS  = 1
-    BALL_MISSED     = 2
-    BALL_DEFLECTED  = 3
-    WALL_BALL_DEFLECTED = 4
-    BLOCK_BROKEN    = 5
+    DEAD_NO_STATUS  = 2
+    BALL_MISSED     = 3
+    BALL_DEFLECTED  = 4
+    WALL_BALL_DEFLECTED = 5
+    DEAD_BALL_DEFLECTED = 6
+    BLOCK_BROKEN    = 7
+    BALL_OOB        = 8
 
 class PauseReturnStatus() :
     NO_STATUS   = 0
@@ -222,10 +229,13 @@ class PyMessage :
     ### crack - crack a PyMessage from the the 'received' string
     def crack(self, received):
         receivedArray = str(received).split(DELIMITER)
-        self.src = receivedArray[0].replace("b'", '')
-        self.dest = receivedArray[1]
-        self.content = receivedArray[2].split(PAYLOAD_DELIMITER)
-        self.kind = receivedArray[3].replace("\\n'", '')
+        try :
+            self.src = receivedArray[0].replace("b'", '')
+            self.dest = receivedArray[1]
+            self.content = receivedArray[2].split(PAYLOAD_DELIMITER)
+            self.kind = receivedArray[3].replace("\\n'", '')
+        except :
+            print('CANNOT CRACK: ' + str(received))
 
     ### assemble - assemble the message and return
     def assemble(self):
