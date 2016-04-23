@@ -13,8 +13,8 @@ import (
 const HOLDBACKQUEUE_LIMIT int = 5
 
 //Our bootstrap server.  Uncomment below for local testing.
-const SERVER_DNS string = "multegula.dyndns.org:55555"
-// const SERVER_DNS string = "localhost:55555"
+//const SERVER_DNS string = "multegula.dyndns.org:55555"
+const SERVER_DNS string = "localhost:55555"
 
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
@@ -48,13 +48,14 @@ const QUEUE_SIZE int = 200
 /* Bootstrap Server */
 const MIN_PLAYERS_PER_GAME int = 2
 const MAX_PLAYERS_PER_GAME int = 4
-const TIMEOUT_DURATION = 30 * time.Second
+const TIMEOUT_DURATION = 5 * time.Second
 const CHANNEL_SIZE = 10
 
 /*** MESSAGE TYPE CONSTANTS ***/
 const MSG_BALL_DEFLECTED string = "MBD"
 const MSG_BALL_MISSED string = "MBM"
 const MSG_BLOCK_BROKEN string = "MBB"
+const MSG_ERROR_PLAYER string = "MEP"
 const MSG_GAME_TYPE string = "MGT"
 const MSG_MYNAME string = "MMN"
 const MSG_PADDLE_DIR string = "MPD"

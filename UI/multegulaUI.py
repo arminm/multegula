@@ -26,6 +26,7 @@ from UI.components.screens.JoinScreen import *
 from UI.components.screens.MenuScreen import *
 from UI.components.screens.PauseScreen import *
 from UI.components.screens.SplashScreen import *
+from UI.components.screens.SyncScreen import *
 from UI.typedefs import *
 
 ### keyPressed - handle keypressed events
@@ -66,7 +67,7 @@ def keyPressed(event) :
             canvas.data['bridge'].sendMessage(toSend)
 
     # pause screen / gameplay keyPressed events - move the paddle
-    elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
+    elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) or (currentScreen == Screens.SCRN_SYNC):
         myName  = canvas.data['myName']
         myPaddle = canvas.data[myName].paddle
 
@@ -160,7 +161,6 @@ def mousePressed(event) :
 
             # initialize game
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-            canvas.data['nextScreen'] = Screens.SCRN_GAME
 
             # initialize ball
             canvas.data['ball'].reset()
@@ -293,7 +293,6 @@ def react(canvas, received) :
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].reset()
         canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-        canvas.data['nextScreen'] = Screens.SCRN_GAME
 
     # MSG_BLOCK_BROKEN
     elif kind == MsgType.MSG_BLOCK_BROKEN :
@@ -321,6 +320,10 @@ def react(canvas, received) :
         canvas.data['ball'].randomColor()
         canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
         canvas.data['level'].updated = True
+
+    elif kind == MsgType.MSG_ERROR_PLAYER :
+        canvas.data['ball'].reset()
+        canvas.data['currentScreen'] = Screens.SCRN_SYNC
 
     # MSG_PADDLE_DIR
     elif kind == MsgType.MSG_PADDLE_DIR :
@@ -350,6 +353,7 @@ def react(canvas, received) :
     # MSG_PAUSE_UPDATE
     elif kind == MsgType.MSG_PAUSE_UPDATE :
         canvas.data['pauseScreen'].text = content[MsgIndex.PAUSE_UPDATE_VAL]
+        canvas.data['ball'].reset()
 
     # MSG_PLAYER_LOC
     elif kind == MsgType.MSG_PLAYER_LOC :
@@ -395,7 +399,6 @@ def playerUpdate(name, status, info, canvas) :
             canvas.data[name].statusUpdate = True
             canvas.data['ball'].reset()
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-            canvas.data['nextScreen'] = Screens.SCRN_GAME
 
         # ball deflected -> update status and set ball properties
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
@@ -482,6 +485,25 @@ def playerUpdate(name, status, info, canvas) :
             # send message
             canvas.data['bridge'].sendMessage(toSend)
 
+        # ball out of bounds -> create MSG_ERROR
+        elif status == PlayerReturnStatus.BALL_OOB :
+            if(info[0] == Orientation.DIR_EAST) :
+                content = 'EAST'
+            elif (info[0] == Orientation.DIR_NORTH) :
+                content = 'NORTH'
+            elif (info[0] == Orientation.DIR_WEST) :
+                content = 'WEST'
+
+            # form message
+            toSend = PyMessage()
+            toSend.src = name
+            toSend.kind = MsgType.MSG_ERROR_PLAYER
+            toSend.content = content
+            toSend.multicast = True
+            # send message
+            canvas.data['bridge'].sendMessage(toSend)
+
+
 ### pauseUpdate - react to pause screen update
 def pauseUpdate(status, canvas) :
     # Three seconds left until the game starts...
@@ -516,13 +538,13 @@ def pauseUpdate(status, canvas) :
         canvas.data['bridge'].sendMessage(toSend)
     # Time for the game to begin
     elif status == PauseReturnStatus.MOVE_ON :
-        XSPEED = 0 * FP_MULT
-        YSPEED = round(CANVAS_HEIGHT // 110, RD_FACT) * FP_MULT
+        (XSPEED, YSPEED) = canvas.data['ball'].randomVelocity()
+
         # form message
         toSend = PyMessage()
         toSend.src = canvas.data['myName']
         toSend.kind = MsgType.MSG_START_PLAY
-        toSend.content = str(XSPEED) + '|' + str(YSPEED)
+        toSend.content = str(XSPEED*FP_MULT) + '|' + str(YSPEED*FP_MULT)
         toSend.multicast = True
         # send message
         canvas.data['bridge'].sendMessage(toSend)
@@ -557,6 +579,7 @@ def redrawAll(canvas) :
     ### JOIN SCREEN - wait for everyone to connect
     elif canvas.data['currentScreen'] == Screens.SCRN_JOIN :
         canvas.data['joinScreen'].draw(canvas)
+        canvas.data['ball'].updateMenu(canvas)
 
     ### PAUSE SCREEN SINGLE PLAYER
     elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE and gameType == GameType.SINGLE_PLAYER :
@@ -604,7 +627,7 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateGame(canvas)
 
     ### GAME SCREEN MULTI PLAYER
-    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER):
+    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER) :
         canvas.data['gameScreen'].draw(canvas)
 
         # update all players
@@ -616,6 +639,14 @@ def redrawAll(canvas) :
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
+
+    elif (canvas.data['currentScreen'] == Screens.SCRN_SYNC) :
+        canvas.data['gameScreen'].draw(canvas)
+
+        # update the level and ball AFTER players update to allow for bouncing and breaking
+        canvas.data['level'].update(canvas)
+        canvas.data['ball'].updateMenu(canvas)  
+        canvas.data['syncScreen'].draw(canvas)   
 
 
     # GAME OVER SCREEN
@@ -651,6 +682,7 @@ def init(canvas) :
     canvas.data['splashScreen'] = SplashScreen()
     canvas.data['gameOverScreen'] = GameOver()  
     canvas.data['joinScreen']   = JoinScreen()  
+    canvas.data['syncScreen']   = SyncScreen()  
 
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)

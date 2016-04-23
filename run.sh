@@ -11,25 +11,25 @@
 #Defaults are:              44444     1111
 #Arguments are optional.
 
-#Cleanup any running go
-pkill -9 go 2> /dev/null
-pkill -9 multegula 2> /dev/null
-pkill -9 bootstrap 2> /dev/null
-pkill -9 BootstrapServer 2> /dev/null
-pkill -9 -f multegulaUI.py 2> /dev/null
-killall run_local_multi.sh 2> /dev/null
+# #Cleanup any running go
+# pkill -9 go 2> /dev/null
+# pkill -9 multegula 2> /dev/null
+# pkill -9 bootstrap 2> /dev/null
+# pkill -9 BootstrapServer 2> /dev/null
+# pkill -9 -f multegulaUI.py 2> /dev/null
+# killall run_local_multi.sh 2> /dev/null
 
-####################################
-##To be EXTRA clean - maybe remove these for release.
-##We don't want users accidentally killing important processes.
-####################################
-pkill -9 -f python 2> /dev/null
-pkill -9 -f python3 2> /dev/null
-pkill -9 -f Python 2> /dev/null
-pkill -9 -f Python3 2> /dev/null
-#################################
+# ####################################
+# ##To be EXTRA clean - maybe remove these for release.
+# ##We don't want users accidentally killing important processes.
+# ####################################
+# pkill -9 -f python 2> /dev/null
+# pkill -9 -f python3 2> /dev/null
+# pkill -9 -f Python 2> /dev/null
+# pkill -9 -f Python3 2> /dev/null
+# #################################
 
-sleep 1
+# sleep 1
 
 #Start multegula.go and wait for it to come up.
 #Defaults to port 44444 if port isn't received.

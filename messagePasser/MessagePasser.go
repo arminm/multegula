@@ -401,6 +401,7 @@ func deliverMessage(message Message) {
 		} else {
 			// fmt.Printf("HBQ Message:%v\n", message)
 			holdbackQueueMutex.Lock()
+
 			Push(&holdbackQueue, message)
 			if len(holdbackQueue) > defs.HOLDBACKQUEUE_LIMIT {
 				fmt.Println("Flushing holdbackQueue!")

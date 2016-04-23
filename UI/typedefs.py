@@ -125,6 +125,7 @@ class Screens(Enum) :
   SCRN_GAME = 4
   SCRN_GAME_OVER = 5
   SCRN_JOIN = 6
+  SCRN_SYNC = 7
 
 ### PlayerState - define different player states
 class PlayerState(Enum) :
@@ -149,6 +150,7 @@ class MsgType() :
     MSG_BALL_DEFLECTED  = 'MBD'
     MSG_BALL_MISSED     = 'MBM'
     MSG_BLOCK_BROKEN    = 'MBB'
+    MSG_ERROR_PLAYER    = 'MEP'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
@@ -201,6 +203,7 @@ class PlayerReturnStatus() :
     BALL_DEFLECTED  = 3
     WALL_BALL_DEFLECTED = 4
     BLOCK_BROKEN    = 5
+    BALL_OOB        = 6
 
 class PauseReturnStatus() :
     NO_STATUS   = 0
