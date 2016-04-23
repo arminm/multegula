@@ -373,6 +373,7 @@ def react(canvas, received) :
     # MSG_PLAYER_LOC
     elif kind == MsgType.MSG_PLAYER_LOC :
         initPlayers(canvas, int(content[MsgIndex.PLAYER_LOC_NUMBER]), content[MsgIndex.PLAYER_LOC_PLAYERS:])
+        canvas.data['ball'].reset()
         canvas.data['currentScreen'] = Screens.SCRN_PAUSE
 
     # MSG_START_PLAY
@@ -404,41 +405,70 @@ def receiveAll(canvas) :
             react(canvas, message)
 
 ### playerUpdate - react to player update
+##  RETURN TRUE if the player is still playing, False otherwise
 def playerUpdate(name, status, info, canvas) :
     # single player game -> directly update appropriate game information
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER :
-        # ball missed -> update status and reset
-        if status == PlayerReturnStatus.BALL_MISSED :
+        # standard 'NO_STATUS' - player is alive and well -> return True
+        if status == PlayerReturnStatus.NO_STATUS :
+            return True
+
+        # WALL_NO_STATUS - not a player -> return False
+        elif status == PlayerReturnStatus.WALL_NO_STATUS :
+            return False
+
+        # DEAD_NO_STATUS - player is dead -> return False
+        elif status == PlayerReturnStatus.DEAD_NO_STATUS :
+            return False
+
+        # BALL_MISSED -> update status and reset, player is alive -> return True 
+        elif status == PlayerReturnStatus.BALL_MISSED :
             canvas.data[name].score += LOST_LIFE_POINTS
             canvas.data[name].lives += LOST_LIFE_LIVES
             canvas.data[name].statusUpdate = True
             canvas.data['ball'].reset()
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+            return True
 
-        # ball deflected -> update status and set ball properties
+        # BALL_DEFLECTED -> update status and set ball properties, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
             canvas.data[name].score += DEFLECT_POINTS
             canvas.data[name].statusUpdate = True
             canvas.data['ball'].lastToTouch = name;    
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
+            return True
         
-        # block broken -> update status, set ball properties, update level
+        # BLOCK_BROKEN -> update status, set ball properties, update level, player is alive -> Return True
         elif status == PlayerReturnStatus.BLOCK_BROKEN :
             canvas.data[name].score += BREAK_POINTS;    
             canvas.data[name].statusUpdate = True
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['level'].blocks[info[2]].disable()
             canvas.data['level'].updated = True
+            return True
 
+        # DEAD_BALL_DEFLECTED -> update ball properties, player is dead -> Return False
         elif status == PlayerReturnStatus.DEAD_BALL_DEFLECTED :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
+            return False
 
     # multiplayer game -> send update to competitors
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER :
+        # standard 'NO_STATUS' - player is alive and well -> return True
+        if status == PlayerReturnStatus.NO_STATUS :
+            return True
 
-        # ball missed -> created MSG_BALL_MISSED
+        # WALL_NO_STATUS - not a player -> return False
+        elif status == PlayerReturnStatus.WALL_NO_STATUS :
+            return False
+
+        # DEAD_NO_STATUS - player is dead -> return False
+        elif status == PlayerReturnStatus.DEAD_NO_STATUS :
+            return False
+
+        # BALL_MISSED -> created MSG_BALL_MISSED, player is alive -> return True 
         if status == PlayerReturnStatus.BALL_MISSED :
             # get message content fields
             SCORE = canvas.data[name].score + LOST_LIFE_POINTS
@@ -452,8 +482,9 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True 
             # send message
             canvas.data['bridge'].sendMessage(toSend)
+            return True 
 
-        # ball deflected -> create MSG_BALL_DEFLECTED
+        # BALL_DEFLECTED -> create MSG_BALL_DEFLECTED, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
             ball  = canvas.data['ball']
             # get message content fields
@@ -474,18 +505,21 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True
             # send message
             canvas.data['bridge'].sendMessage(toSend)
+            return True
 
-        # ball deflected by wall - directly update ball velocity
+        # WALL_BALL_DEFLECTED -> update ball properties, not a player -> Return False
         elif status == PlayerReturnStatus.WALL_BALL_DEFLECTED :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
+            return False
 
-        # ball defleflected by dead player - directly update ball velocity
+        # DEAD_BALL_DEFLECTED -> update ball properties, player is dead -> Return False
         elif status == PlayerReturnStatus.DEAD_BALL_DEFLECTED :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
+            return False
 
-        # block broken -> create MSG_BLOCK_BROKEN
+        # BLOCK_BROKEN -> create MSG_BLOCK_BROKEN, player is alive -> Return True
         elif status == PlayerReturnStatus.BLOCK_BROKEN :
             ball  = canvas.data['ball']
             # get message content fields
@@ -509,8 +543,9 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True
             # send message
             canvas.data['bridge'].sendMessage(toSend)
+            return True
 
-        # ball out of bounds -> create MSG_ERROR
+        # BALL_OOB -> create MSG_ERROR, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_OOB :
             if(info[0] == Orientation.DIR_EAST) :
                 content = 'EAST'
@@ -527,6 +562,7 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True
             # send message
             canvas.data['bridge'].sendMessage(toSend)
+            return True
 
 
 ### pauseUpdate - react to pause screen update
@@ -639,31 +675,44 @@ def redrawAll(canvas) :
 
     ### GAME SCREEN SINGLE PLAYER
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and gameType == GameType.SINGLE_PLAYER:
+        dead_count = 0
+
         # draw screen
         canvas.data['gameScreen'].draw(canvas)
 
         # update all players
         for player in canvas.data['competitors'] :
             (status, info) = canvas.data[player].update(canvas)
-            playerUpdate(player, status, info, canvas)
+            alive = playerUpdate(player, status, info, canvas)
+            if alive == False :
+                dead_count += 1
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
 
+        if dead_count == 4 :
+            print("TIME TO END IT")
+
     ### GAME SCREEN MULTI PLAYER
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER) :
+        dead_count = 0
         canvas.data['gameScreen'].draw(canvas)
 
         # update all players
         competitors = canvas.data['competitors']
         for player in competitors :
             (status, info) = canvas.data[player].update(canvas)
-            playerUpdate(player, status, info, canvas)
+            alive = playerUpdate(player, status, info, canvas)
+            if alive == False :
+                dead_count += 1
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
+
+        if dead_count == 4 :
+            print("TIME TO END IT")
 
     elif (canvas.data['currentScreen'] == Screens.SCRN_SYNC) :
         canvas.data['gameScreen'].draw(canvas)
