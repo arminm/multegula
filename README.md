@@ -26,7 +26,7 @@ export GOPATH=$HOME/go
 
 #### Ubuntu Linux 16.04 LTS:  
 ```bash
-sudo apt-get install python3-tk golang git  
+sudo apt-get -y install python3-tk golang git  
 mkdir -p ~/go/src/github.com/arminm/  
 cd ~/go/src/github.com/arminm/  
 git clone https://github.com/arminm/multegula.git  
