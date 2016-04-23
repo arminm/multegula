@@ -1,6 +1,6 @@
 # 18-842 Distributed Systems // Spring 2016.
 # Multegula - A P2P block breaking game.
-# PauseScreen.py.
+# SyncScreen.py.
 # Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
 # imports
