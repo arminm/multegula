@@ -48,7 +48,7 @@ const QUEUE_SIZE int = 200
 /* Bootstrap Server */
 const MIN_PLAYERS_PER_GAME int = 2
 const MAX_PLAYERS_PER_GAME int = 4
-const TIMEOUT_DURATION = 5 * time.Second
+const TIMEOUT_DURATION = 10 * time.Second
 const CHANNEL_SIZE = 10
 
 /*** MESSAGE TYPE CONSTANTS ***/

@@ -29,7 +29,7 @@ pkill -9 -f Python 2> /dev/null
 pkill -9 -f Python3 2> /dev/null
 #################################
 
-# sleep 1
+sleep 1
 
 #Start multegula.go and wait for it to come up.
 #Defaults to port 44444 if port isn't received.
