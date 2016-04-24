@@ -23,6 +23,11 @@ X_MARGIN = CANVAS_WIDTH // 30
 Y_MARGIN = CANVAS_HEIGHT // 30
 BORDER_WIDTH = CANVAS_WIDTH // 350
 
+X_LIMIT_MIN = -(CANVAS_WIDTH // 2)
+X_LIMIT_MAX = CANVAS_WIDTH*1.5
+Y_LIMIT_MIN = -(CANVAS_HEIGHT // 2)
+Y_LIMIT_MAX = CANVAS_HEIGHT*1.5
+
 # text positions / sizing
 Y_LOC_TITLE = CANVAS_HEIGHT // 4
 Y_LOC_AUTHOR1 = CANVAS_HEIGHT*0.45
@@ -65,7 +70,7 @@ LOST_LIFE_LIVES = -1
 EXTRA_LIFE_POINTS = 100
 DEFLECT_POINTS  = 3
 BREAK_POINTS = 5
-INIT_LIVES = 1
+INIT_LIVES = 5
 
 # fixed point multiplier / rounding factor
 FP_MULT = 10
@@ -219,6 +224,11 @@ class PauseReturnStatus() :
     DISP_2      = 2
     DISP_1      = 3
     MOVE_ON     = 4
+
+class LevelReturnStatus() :
+    NO_STATUS   = 0
+    COMPLETE    = 1
+    GAME_OVER   = 2
 
 # PyMessage class 
 class PyMessage :

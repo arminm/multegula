@@ -81,11 +81,13 @@ class Level :
             self.currentLevel += 1;
             self.blocks = self.levels[self.currentLevel];
             self.first = True;
-            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-            canvas.data['ball'].reset()
+            return LevelReturnStatus.COMPLETE
 
         # current level is complete and there are no more levels to be played ... Game over!
         elif levelComplete and (self.currentLevel + 1) == self.MAX_LEVELS:
-            canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER;
+            return LevelReturnStatus.GAME_OVER
 
+        # nothing significant
+        else : 
+            return LevelReturnStatus.NO_STATUS
 

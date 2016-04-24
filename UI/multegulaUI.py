@@ -181,7 +181,6 @@ def mousePressed(event) :
 
             # initialize game
             canvas.data['currentScreen'] = Screens.SCRN_JOIN
-            canvas.data['ball'].reset()
             canvas.delete(ALL)
 
 ### react - react to messages
@@ -343,33 +342,6 @@ def receiveAll(canvas) :
             break
         else:
             react(canvas, message)
-
-def getWinner(canvas) :
-    winner = 'THE DEVELOPERS!'
-    winningScore = 0
-
-        # update all players
-    for player in canvas.data['competitors'] :
-        (name, state, score, lives, pwr) = canvas.data[player].getStatus()
-        if lives > 0 :
-            score = score + lives*EXTRA_LIFE_POINTS
-            if score > winningScore :
-                winner = name
-                winningScore = score
-
-    return (winner, winningScore)
-
-def isGameOver(canvas) :
-    dead_count = 0
-    # update all players
-    for player in canvas.data['competitors'] :
-        (name, state, score, lives, pwr) = canvas.data[player].getStatus()
-        if lives == 0 :
-            dead_count += 1
-
-    if dead_count == 3 :
-        return True
-    return False
 
 ### playerUpdate - react to player update
 ##  RETURN TRUE if the player is still playing, False otherwise
@@ -549,6 +521,17 @@ def pauseUpdate(status, canvas) :
         # send message
         canvas.data['bridge'].sendMessage(toSend)
 
+def levelUpdate(status, canvas) :
+    if status == LevelReturnStatus.COMPLETE :
+        canvas.data['ball'].reset()
+        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+
+    elif status == LevelReturnStatus.GAME_OVER :
+        canvas.delete(ALL)
+        canvas.data['winner'] = getWinner(canvas);
+        canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+
+
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
     receiveAll(canvas)
@@ -623,8 +606,9 @@ def redrawAll(canvas) :
             playerUpdate(player, status, info, canvas)
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
-        canvas.data['level'].update(canvas)
+        status = canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
+        levelUpdate(status, canvas)
 
     ### GAME SCREEN MULTI PLAYER
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER) :
@@ -637,8 +621,9 @@ def redrawAll(canvas) :
             playerUpdate(player, status, info, canvas)
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
-        canvas.data['level'].update(canvas)
+        status = canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
+        levelUpdate(status, canvas)
 
     elif (canvas.data['currentScreen'] == Screens.SCRN_SYNC) :
         canvas.data['gameScreen'].draw(canvas)
@@ -789,7 +774,6 @@ def runUI(cmd_line_args) :
     canvas.data = {}
 
     # sets up events
-    #root.bind('<Key>', keyPressed)
     root.bind('<Button-1>', mousePressed)
     root.bind('<Key>', keyPressed)
     root.bind('<KeyRelease>', keyReleased)
