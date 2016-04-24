@@ -28,6 +28,7 @@ from UI.components.screens.PauseScreen import *
 from UI.components.screens.SplashScreen import *
 from UI.components.screens.SyncScreen import *
 from UI.typedefs import *
+from UI.utility import *
 
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
@@ -183,73 +184,6 @@ def mousePressed(event) :
             canvas.data['ball'].reset()
             canvas.delete(ALL)
 
-    # game over screen mouse pressed events - start over
-    elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER :
-        init(canvas);
-
-### translateBallSpeed - translate speed based on orientation
-def translateBallSpeed(xSpeed, ySpeed, player) :
-    orientation = player.ORIENTATION
-
-    # if there is a wall, then do not translate
-    if orientation == Orientation.DIR_SOUTH :
-        return (xSpeed, ySpeed)
-    elif orientation == Orientation.DIR_EAST : 
-        return (ySpeed, -xSpeed)
-    elif orientation == Orientation.DIR_NORTH :
-        return (-xSpeed, -ySpeed)
-    elif orientation == Orientation.DIR_WEST :
-        return (-ySpeed, xSpeed)
-
-### translateBallPosition - translate position based on orientation
-def translateBallPosition(xCenter, yCenter, radius, player) :
-    orientation = player.ORIENTATION
-    if orientation == Orientation.DIR_SOUTH :
-        return (xCenter, yCenter)
-    elif orientation == Orientation.DIR_EAST :
-        return (yCenter, CANVAS_HEIGHT - xCenter)
-    elif orientation == Orientation.DIR_NORTH :
-        return (CANVAS_WIDTH - xCenter, CANVAS_HEIGHT - yCenter)
-    elif orientation == Orientation.DIR_WEST :
-        return (CANVAS_WIDTH - yCenter, xCenter)
-
-### translatePlayerDirection - translate player direction based on orientation
-def translatePlayerDirection(payload, player) :
-    orientation = player.ORIENTATION
-
-    # translate from payload type to Direction type
-    if payload == MsgPayload.PADDLE_DIR_LEFT :
-        direction = Direction.DIR_LEFT
-    elif payload == MsgPayload.PADDLE_DIR_RIGHT :
-        direction = Direction.DIR_RIGHT 
-
-    # translate based on orientation
-    if orientation == Orientation.DIR_SOUTH :
-        return direction
-    elif orientation == Orientation.DIR_EAST  and direction == Direction.DIR_LEFT :
-        return Direction.DIR_RIGHT
-    elif orientation == Orientation.DIR_EAST and direction == Direction.DIR_RIGHT :
-        return Direction.DIR_LEFT
-    elif orientation == Orientation.DIR_NORTH and direction == Direction.DIR_LEFT :
-        return Direction.DIR_RIGHT
-    elif orientation == Orientation.DIR_NORTH and direction == Direction.DIR_RIGHT :
-        return Direction.DIR_LEFT
-    elif orientation == Orientation.DIR_WEST :
-        return direction
-
-### translatePlayerLocation - translate player location based on orientation
-def translatePlayerLocaiton(center, player) :
-    orientation = player.ORIENTATION
-
-    if orientation == Orientation.DIR_SOUTH :
-        return center
-    elif orientation == Orientation.DIR_EAST :
-        return CANVAS_HEIGHT - center
-    elif orientation == Orientation.DIR_NORTH :
-        return CANVAS_WIDTH - center
-    elif orientation == Orientation.DIR_WEST :
-        return center
-
 ### react - react to messages
 def react(canvas, received) :
     # break down message
@@ -292,7 +226,13 @@ def react(canvas, received) :
         canvas.data[name].lives = lives
         canvas.data[name].statusUpdate = True
         canvas.data['ball'].reset()
-        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+
+        if isGameOver(canvas) == True :
+            canvas.delete(ALL)
+            canvas.data['winner'] = getWinner(canvas);
+            canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+        else :
+            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
 
     # MSG_BLOCK_BROKEN
     elif kind == MsgType.MSG_BLOCK_BROKEN :
@@ -404,31 +344,51 @@ def receiveAll(canvas) :
         else:
             react(canvas, message)
 
+def getWinner(canvas) :
+    winner = 'THE DEVELOPERS!'
+    winningScore = 0
+
+        # update all players
+    for player in canvas.data['competitors'] :
+        (name, state, score, lives, pwr) = canvas.data[player].getStatus()
+        if lives > 0 :
+            score = score + lives*EXTRA_LIFE_POINTS
+            if score > winningScore :
+                winner = name
+                winningScore = score
+
+    return (winner, winningScore)
+
+def isGameOver(canvas) :
+    dead_count = 0
+    # update all players
+    for player in canvas.data['competitors'] :
+        (name, state, score, lives, pwr) = canvas.data[player].getStatus()
+        if lives == 0 :
+            dead_count += 1
+
+    if dead_count == 3 :
+        return True
+    return False
+
 ### playerUpdate - react to player update
 ##  RETURN TRUE if the player is still playing, False otherwise
 def playerUpdate(name, status, info, canvas) :
     # single player game -> directly update appropriate game information
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER :
-        # standard 'NO_STATUS' - player is alive and well -> return True
-        if status == PlayerReturnStatus.NO_STATUS :
-            return True
-
-        # WALL_NO_STATUS - not a player -> return False
-        elif status == PlayerReturnStatus.WALL_NO_STATUS :
-            return False
-
-        # DEAD_NO_STATUS - player is dead -> return False
-        elif status == PlayerReturnStatus.DEAD_NO_STATUS :
-            return False
-
         # BALL_MISSED -> update status and reset, player is alive -> return True 
-        elif status == PlayerReturnStatus.BALL_MISSED :
+        if status == PlayerReturnStatus.BALL_MISSED :
             canvas.data[name].score += LOST_LIFE_POINTS
             canvas.data[name].lives += LOST_LIFE_LIVES
             canvas.data[name].statusUpdate = True
-            canvas.data['ball'].reset()
-            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-            return True
+
+            if isGameOver(canvas) == True :
+                canvas.delete(ALL)
+                canvas.data['winner'] = getWinner(canvas);
+                canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+            else :
+                canvas.data['ball'].reset()
+                canvas.data['currentScreen'] = Screens.SCRN_PAUSE
 
         # BALL_DEFLECTED -> update status and set ball properties, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
@@ -437,7 +397,6 @@ def playerUpdate(name, status, info, canvas) :
             canvas.data['ball'].lastToTouch = name;    
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
-            return True
         
         # BLOCK_BROKEN -> update status, set ball properties, update level, player is alive -> Return True
         elif status == PlayerReturnStatus.BLOCK_BROKEN :
@@ -446,28 +405,14 @@ def playerUpdate(name, status, info, canvas) :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['level'].blocks[info[2]].disable()
             canvas.data['level'].updated = True
-            return True
 
         # DEAD_BALL_DEFLECTED -> update ball properties, player is dead -> Return False
         elif status == PlayerReturnStatus.DEAD_BALL_DEFLECTED :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
-            return False
 
     # multiplayer game -> send update to competitors
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER :
-        # standard 'NO_STATUS' - player is alive and well -> return True
-        if status == PlayerReturnStatus.NO_STATUS :
-            return True
-
-        # WALL_NO_STATUS - not a player -> return False
-        elif status == PlayerReturnStatus.WALL_NO_STATUS :
-            return False
-
-        # DEAD_NO_STATUS - player is dead -> return False
-        elif status == PlayerReturnStatus.DEAD_NO_STATUS :
-            return False
-
         # BALL_MISSED -> created MSG_BALL_MISSED, player is alive -> return True 
         if status == PlayerReturnStatus.BALL_MISSED :
             # get message content fields
@@ -482,7 +427,6 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True 
             # send message
             canvas.data['bridge'].sendMessage(toSend)
-            return True 
 
         # BALL_DEFLECTED -> create MSG_BALL_DEFLECTED, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
@@ -505,19 +449,16 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True
             # send message
             canvas.data['bridge'].sendMessage(toSend)
-            return True
 
         # WALL_BALL_DEFLECTED -> update ball properties, not a player -> Return False
         elif status == PlayerReturnStatus.WALL_BALL_DEFLECTED :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
-            return False
 
         # DEAD_BALL_DEFLECTED -> update ball properties, player is dead -> Return False
         elif status == PlayerReturnStatus.DEAD_BALL_DEFLECTED :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
-            return False
 
         # BLOCK_BROKEN -> create MSG_BLOCK_BROKEN, player is alive -> Return True
         elif status == PlayerReturnStatus.BLOCK_BROKEN :
@@ -543,7 +484,6 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True
             # send message
             canvas.data['bridge'].sendMessage(toSend)
-            return True
 
         # BALL_OOB -> create MSG_ERROR, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_OOB :
@@ -562,7 +502,6 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True
             # send message
             canvas.data['bridge'].sendMessage(toSend)
-            return True
 
 
 ### pauseUpdate - react to pause screen update
@@ -675,44 +614,31 @@ def redrawAll(canvas) :
 
     ### GAME SCREEN SINGLE PLAYER
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and gameType == GameType.SINGLE_PLAYER:
-        dead_count = 0
-
         # draw screen
         canvas.data['gameScreen'].draw(canvas)
 
         # update all players
         for player in canvas.data['competitors'] :
             (status, info) = canvas.data[player].update(canvas)
-            alive = playerUpdate(player, status, info, canvas)
-            if alive == False :
-                dead_count += 1
+            playerUpdate(player, status, info, canvas)
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
 
-        if dead_count == 4 :
-            print("TIME TO END IT")
-
     ### GAME SCREEN MULTI PLAYER
     elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER) :
-        dead_count = 0
         canvas.data['gameScreen'].draw(canvas)
 
         # update all players
         competitors = canvas.data['competitors']
         for player in competitors :
             (status, info) = canvas.data[player].update(canvas)
-            alive = playerUpdate(player, status, info, canvas)
-            if alive == False :
-                dead_count += 1
+            playerUpdate(player, status, info, canvas)
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
         canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
-
-        if dead_count == 4 :
-            print("TIME TO END IT")
 
     elif (canvas.data['currentScreen'] == Screens.SCRN_SYNC) :
         canvas.data['gameScreen'].draw(canvas)

@@ -35,6 +35,11 @@ class Player :
         self.paddle.iAmDead() 
         self.dead = True
 
+    ### getStatus 
+    ##  Return the status of the player (score, lives, power)
+    def getStatus(self) :
+        return (self.name, self.state, self.score, self.lives, self.power)
+
     ### AI method -
     ##  This method moves the paddles automatically to contact the ball. There are some
     ##  non-idealities built in so the computer is not perfect

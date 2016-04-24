@@ -82,7 +82,6 @@ class Level :
             self.blocks = self.levels[self.currentLevel];
             self.first = True;
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-            canvas.data['nextScreen'] = Screens.SCRN_GAME
             canvas.data['ball'].reset()
 
         # current level is complete and there are no more levels to be played ... Game over!
