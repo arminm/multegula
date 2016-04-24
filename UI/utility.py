@@ -121,7 +121,7 @@ def sendSyncError(content, canvas) :
     toSend.content = content
     toSend.multicast = True
 
-    print(toSend.toString())
+    print("SENDING: " + toSend.toString())
 
     # send message
     canvas.data['bridge'].sendMessage(toSend)

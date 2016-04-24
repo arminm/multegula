@@ -221,7 +221,7 @@ def react(canvas, received) :
 
         # otherwise, we are out of sync!
         else :
-            content = MsgType.MSG_BALL_DEFLECTED + '|' + name
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BALL_DEFLECTED + '|' + name
             sendSyncError(content, canvas)
 
     # MSG_BALL_MISSED
@@ -250,8 +250,8 @@ def react(canvas, received) :
 
         # otherwise, we are out of sync!
         else :
-            content = MsgType.MSG_BALL_MISSED + '|' + name
-            sendSyncError(content)
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BALL_MISSED + '|' + name
+            sendSyncError(content, canvas)
 
     # MSG_BLOCK_BROKEN
     elif kind == MsgType.MSG_BLOCK_BROKEN :
@@ -260,50 +260,47 @@ def react(canvas, received) :
 
         # only USERs and COMPs should be sending network messages
         if state == PlayerState.USER or state == PlayerState.COMP :
-            # get information out of payload
-            score   = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
-            lives   = int(content[MsgIndex.BLOCK_BROKEN_LIVES])
-            xCenter = float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT
-            yCenter = float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT
-            xSpeed  = float(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT
-            ySpeed  = float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT
-            radius  = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
-            block   = int(content[MsgIndex.BLOCK_BROKEN_BLOCK])
+            if canvas.data['ball'].lastToTouch == name :
+                # get information out of payload
+                score   = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
+                lives   = int(content[MsgIndex.BLOCK_BROKEN_LIVES])
+                xCenter = float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT
+                yCenter = float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT
+                xSpeed  = float(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT
+                ySpeed  = float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT
+                radius  = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
+                block   = int(content[MsgIndex.BLOCK_BROKEN_BLOCK])
 
-            # only an ENABLED block can be broken
-            if canvas.data['level'].blocks[block].enabled == True :     
-                # translate for player orientation
-                (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
-                (xCenter, yCenter) = translateBallPosition(xCenter, yCenter, radius, canvas.data[name])
+                # only an ENABLED block can be broken
+                if canvas.data['level'].blocks[block].enabled == True :     
+                    # translate for player orientation
+                    (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
+                    (xCenter, yCenter) = translateBallPosition(xCenter, yCenter, radius, canvas.data[name])
 
-                # set component fields
-                canvas.data[name].score = score
-                canvas.data[name].lives = lives
-                canvas.data[name].statusUpdate = True
-                canvas.data['ball'].lastToTouch = name
-                canvas.data['ball'].setCenter(xCenter, yCenter)
-                canvas.data['ball'].radius = radius
-                canvas.data['ball'].setVelocity(xSpeed, ySpeed)
-                canvas.data['ball'].randomColor()
-                canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
-                canvas.data['level'].updated = True
+                    # set component fields
+                    canvas.data[name].score = score
+                    canvas.data[name].lives = lives
+                    canvas.data[name].statusUpdate = True
+                    canvas.data['ball'].lastToTouch = name
+                    canvas.data['ball'].setCenter(xCenter, yCenter)
+                    canvas.data['ball'].radius = radius
+                    canvas.data['ball'].setVelocity(xSpeed, ySpeed)
+                    canvas.data['ball'].randomColor()
+                    canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
+                    canvas.data['level'].updated = True
 
-            # otherwise we are out of sync
-            else :
-                content = 'BLOCK|' + str(block)
+                # otherwise we are out of sync !
+                else :
+                    content = MsgPayload.SYNC_ERR_BLOCK_BROKEN + '|' + str(block) + '|' + name
+                    sendSyncError(content, canvas)
+            # otherwse we are out of sync !
+            else : 
+                content = MsgPayload.SYNC_ERR_LAST_TO_TOUCH + '|' + name
                 sendSyncError(content, canvas)
-
         # otherwise, we are out of sync!
         else :
-            content = MsgType.MSG_BLOCK_BROKEN + '|' + name
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
             sendSyncError(content, canvas)
-
-    elif kind == MsgType.MSG_SYNC_ERROR :
-        canvas.delete(ALL)
-        canvas.data['gameScreen'].first = True
-        canvas.data['level'].updated = True
-        canvas.data['ball'].reset()
-        canvas.data['currentScreen'] = Screens.SCRN_SYNC
 
     # MSG_PADDLE_DIR
     elif kind == MsgType.MSG_PADDLE_DIR :
@@ -323,7 +320,7 @@ def react(canvas, received) :
 
         # otherwise you are out of sync!!
         else :
-            content = MsgType.MSG_PADDLE_DIR + '|' + name
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_PADDLE_DIR + '|' + name
             sendSyncError(content, canvas)
 
     # MSG_PADDLE_POS
@@ -347,14 +344,13 @@ def react(canvas, received) :
 
         # otherwise we are out of sync!
         else : 
-            content = MsgType.MSG_PADDLE_POS + '|' + name
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_PADDLE_POS + '|' + name
             sendSyncError(content, canvas)
 
     # MSG_PAUSE_UPDATE
     elif kind == MsgType.MSG_PAUSE_UPDATE :
         # get sending players state
         unicorn = canvas.data['unicorn']
-
         # only the unicorn sends these messages
         if name == unicorn:
             canvas.data['pauseScreen'].text = content[MsgIndex.PAUSE_UPDATE_VAL]
@@ -362,24 +358,31 @@ def react(canvas, received) :
 
         # otherwise we are out of sync!
         else : 
-            content = MsgType.MSG_PAUSE_UPDATE + '|' + name
+            content = MsgPayload.SYNC_ERR_NOT_UNICORN + '|' + MsgType.MSG_PAUSE_UPDATE + '|' + name
             sendSyncError(content, canvas)
 
     # MSG_PLAYER_LOC
     elif kind == MsgType.MSG_PLAYER_LOC :
-        # get unicorns's name
-        unicorn = canvas.data['unicorn']
-
-        # only the unicorn sends this message
-        if name == unicorn: 
+        # if the players have not been initialized, then go ahead and do that
+        if canvas.data['playersInitialized'] == False: 
             initPlayers(canvas, int(content[MsgIndex.PLAYER_LOC_NUMBER]), content[MsgIndex.PLAYER_LOC_PLAYERS:])
             canvas.data['ball'].reset()
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
 
-        # Otherwise we are out of sync
+        # if the players have been initialized, then check to make sure the received message matches
+        #   exactly what was received previously
         else :
-            content = MsgType.MSG_PLAYER_LOC + '|' + name
-            sendSyncError(content, canvas)
+            # get all players out of the competitor list (walls also appear in the competitors list)
+            playerList = []
+            for player in canvas.data['competitors'] :
+                if player.state == PlayerState.COMP or player.state == PlayerState.COMP :
+                    playerList.append(player)
+
+            receivedList = content[MsgIndex.PLAYER_LOC_PLAYERS]
+
+            if playerList != receivedList :
+                content = MsgPayload.SYNC_ERR_PLAYER_LOC + '|' + name
+                sendSyncError(content, canvas)
 
     # MSG_START_PLAY
     elif kind == MsgType.MSG_START_PLAY :
@@ -400,11 +403,20 @@ def react(canvas, received) :
 
         # ontherswise, we are stupid swamped
         else :
-            content = MsgType.MSG_START_PLAY + '|' + name
+            content = MsgPayoad.SYNC_ERR_NOT_UNICORN + '|' + MsgType.MSG_START_PLAY + '|' + name
             sendSyncError(content, canvas)
 
+    # MSG_SYNC_ERROR
+    elif kind == MsgType.MSG_SYNC_ERROR :
+        print("RECEIVED: " + received.toString())
+        canvas.delete(ALL)
+        canvas.data['gameScreen'].first = True
+        canvas.data['level'].updated = True
+        canvas.data['ball'].reset()
+        canvas.data['currentScreen'] = Screens.SCRN_SYNC
+
     # MSG_UNICORN
-    if kind == MsgType.MSG_UNICORN :
+    elif kind == MsgType.MSG_UNICORN :
         canvas.data['unicorn'] = content[MsgIndex.UNICORN_UNICORN]
 
 ### receiveAll - get all messages from the GoBrige
@@ -540,16 +552,7 @@ def playerUpdate(name, status, info, canvas) :
                 content += 'NORTH'
             elif (info[0] == Orientation.DIR_WEST) :
                 content += 'WEST'
-
-
-            # form message
-            toSend = PyMessage()
-            toSend.src = canvas.data['myName']
-            toSend.kind = MsgType.MSG_SYNC_ERROR
-            toSend.content = content
-            toSend.multicast = True
-            # send message
-            canvas.data['bridge'].sendMessage(toSend)
+            sendSyncError(content, canvas)
 
 
 ### pauseUpdate - react to pause screen update
@@ -562,7 +565,6 @@ def pauseUpdate(status, canvas) :
         toSend.kind = MsgType.MSG_PAUSE_UPDATE
         toSend.content = '3|' + str(canvas.data['level'].currentLevel + 1)
         toSend.multicast = True
-        print(toSend.toString())
         # send message
         canvas.data['bridge'].sendMessage(toSend)
     # Two seconds left until the game starts...
@@ -573,7 +575,6 @@ def pauseUpdate(status, canvas) :
         toSend.kind = MsgType.MSG_PAUSE_UPDATE
         toSend.content = '2|' + str(canvas.data['level'].currentLevel + 1)
         toSend.multicast = True
-        print(toSend.toString())
         # send message
         canvas.data['bridge'].sendMessage(toSend)
     # One second left until the game starts...
@@ -584,7 +585,6 @@ def pauseUpdate(status, canvas) :
         toSend.kind = MsgType.MSG_PAUSE_UPDATE
         toSend.content = '1|' + str(canvas.data['level'].currentLevel + 1)
         toSend.multicast = True
-        print(toSend.toString())
         # send message
         canvas.data['bridge'].sendMessage(toSend)
     # Time for the game to begin
@@ -596,7 +596,6 @@ def pauseUpdate(status, canvas) :
         toSend.kind = MsgType.MSG_START_PLAY
         toSend.content = str(XSPEED*FP_MULT) + '|' + str(YSPEED*FP_MULT)
         toSend.multicast = True
-        print(toSend.toString())
         # send message
         canvas.data['bridge'].sendMessage(toSend)
 
@@ -716,6 +715,7 @@ def redrawAll(canvas) :
     # GAME OVER SCREEN
     elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER : 
         canvas.data['gameOverScreen'].draw(canvas);
+        canvas.data['ball'].updateMenu(canvas)  
 
     #  redraw after delay
     canvas.after(canvas.data['delay'], redrawAll, canvas)     
@@ -746,7 +746,9 @@ def init(canvas) :
     canvas.data['splashScreen'] = SplashScreen()
     canvas.data['gameOverScreen'] = GameOverScreen()  
     canvas.data['joinScreen']   = JoinScreen()  
-    canvas.data['syncScreen']   = SyncScreen()  
+    canvas.data['syncScreen']   = SyncScreen() 
+
+    canvas.data['playersInitialized'] = False
 
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
@@ -761,6 +763,7 @@ def initPlayers(canvas, number=1, info=[]):
         canvas.data['lunwen'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'lunwen', GameType.MULTI_PLAYER)
         canvas.data['garrett'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'garrett', GameType.MULTI_PLAYER)
         canvas.data['competitors'] = [myName, 'armin', 'lunwen', 'garrett']
+        canvas.data['playersInitialized'] = True
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
         # create my player
@@ -830,7 +833,8 @@ def initPlayers(canvas, number=1, info=[]):
             canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.COMP, info[westIndex], GameType.MULTI_PLAYER)    
         
         # save competitor information
-        canvas.data['competitors'] = info           
+        canvas.data['competitors'] = info 
+        canvas.data['playersInitialized'] = True          
 
 ### run - run the program
 def runUI(cmd_line_args) :
