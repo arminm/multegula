@@ -104,6 +104,22 @@ var receivedUnicornChannel chan messagePasser.Message = make(chan messagePasser.
 /* received health check reply message */
 var receivedHealthCheckReplyChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
 
+/*
+ * this channel holds all unicorn update message,
+ * whenever there are unicorn update, the unicorn
+ * update message will be put into this channel so
+ * that multegula can get the unicorn update
+ */
+var unicornUpdateChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
+
+func putUnicornUpdate(message messagePasser.Message) {
+    unicornUpdateChannel <- message
+}
+
+func GetUnicornUpdate() messagePasser.Message {
+    return <- unicornUpdateChannel
+}
+
 /* dispatch received message */
 func dispatchMessage() {
 	for {
@@ -145,14 +161,14 @@ func dispatchMessage() {
  * @return	frontNodes – nodes smaller than localName
  *			latterNodes – nodes greater thanlocalName
  **/
-func getFrontAndLatterNodes(nodes []string, localName string) ([]string, []string) {
+func getFrontAndLatterNodes(nodes messagePasser.Nodes, localName string) ([]string, []string) {
 	frontNodes := []string{}
 	latterNodes := []string{}
 	for _, node := range nodes {
-		if node < localName {
-			frontNodes = append(frontNodes, node)
-		} else if node > localName {
-			latterNodes = append(latterNodes, node)
+		if node.Name < localName {
+			frontNodes = append(frontNodes, node.Name)
+		} else if node.Name > localName {
+			latterNodes = append(latterNodes, node.Name)
 		}
 	}
 	return frontNodes, latterNodes
@@ -251,8 +267,6 @@ func startHealthCheck() {
                         <- receivedHealthCheckReplyChannel
                     }
                     i = 1
-                } else {// otherwise, drop out-dated health check reply
-                    fmt.Printf("Invalid health check reply from %s at %s\n", message.Source, getCurrentTime())
                 }
             }
         }
@@ -275,9 +289,15 @@ func startElection() {
 		select {
 		/* no answer after timeout, the node it self is unicorn */
 		case <- timeoutWaitAnswer:
-            fmt.Println("Time out without answer received")
 			close(timeoutWaitAnswer)
             fmt.Printf("Change unicorn from %s to %s\n", unicorn, localName)
+            // set self as unicorn, put an unicorn update message into unicornUpdateChannel
+            go putUnicornUpdate(messagePasser.Message{
+                Source: localName,
+                Destination: localName,
+                Content: localName,
+                Kind: defs.MSG_UNICORN,
+            })
 			unicorn = localName
 			sendUnicornMessage()
 			i = 1
@@ -308,7 +328,13 @@ func startElection() {
 				 */
                 case unicornMessage := <- receivedUnicornChannel:
                     fmt.Printf("Change unicorn from %s to %s\n", unicorn, unicornMessage.Content)
-					unicorn = unicornMessage.Content
+                    go putUnicornUpdate(messagePasser.Message {
+                        Source: unicornMessage.Source,
+                        Destination: unicornMessage.Destination,
+                        Kind: defs.MSG_UNICORN,
+                        Content: unicornMessage.Content,
+                    })
+                    unicorn = unicornMessage.Content
 				}
             }
            //otherwise, drop out-dated answer message
@@ -325,9 +351,9 @@ func startElection() {
  * @param	names
  *			the names of all nodes in the group
  */
-func InitBullySelection(name string, names []string) {
+func InitBullySelection(nodes messagePasser.Nodes, name string) {
 	localName = name
-	frontNodes, latterNodes = getFrontAndLatterNodes(names, localName)
+	frontNodes, latterNodes = getFrontAndLatterNodes(nodes, localName)
 	go dispatchMessage()
     unicorn = defs.UNICORN_DEFAULT_NAME
     startHealthCheck()
