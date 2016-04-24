@@ -23,6 +23,11 @@ X_MARGIN = CANVAS_WIDTH // 30
 Y_MARGIN = CANVAS_HEIGHT // 30
 BORDER_WIDTH = CANVAS_WIDTH // 350
 
+X_LIMIT_MIN = -(CANVAS_WIDTH // 2)
+X_LIMIT_MAX = CANVAS_WIDTH*1.5
+Y_LIMIT_MIN = -(CANVAS_HEIGHT // 2)
+Y_LIMIT_MAX = CANVAS_HEIGHT*1.5
+
 # text positions / sizing
 Y_LOC_TITLE = CANVAS_HEIGHT // 4
 Y_LOC_AUTHOR1 = CANVAS_HEIGHT*0.45
@@ -65,7 +70,7 @@ LOST_LIFE_LIVES = -1
 EXTRA_LIFE_POINTS = 100
 DEFLECT_POINTS  = 3
 BREAK_POINTS = 5
-INIT_LIVES = 1
+INIT_LIVES = 5
 
 # fixed point multiplier / rounding factor
 FP_MULT = 10
@@ -172,6 +177,11 @@ class MsgPayload() :
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
     PADDLE_DIR_RIGHT    = 'R'
+    SYNC_ERR_PLAYER_TYPE = 'PT'
+    SYNC_ERR_BLOCK_BROKEN = 'BB'
+    SYNC_ERR_LAST_TO_TOUCH = 'LT'
+    SYNC_ERR_NOT_UNICORN = 'NU'
+    SYNC_ERR_PLAYER_LOC = 'PL'
 
 ### MsgIndex - defines the the standard placement of payload values
 class MsgIndex() :
@@ -196,6 +206,7 @@ class MsgIndex() :
     PADDLE_POS_CENTER       = 0
     PADDLE_POS_WIDTH        = 1
     PAUSE_UPDATE_VAL        = 0
+    PAUSE_UPDATE_LEVEL      = 1
     PLAYER_LOC_NUMBER       = 0
     PLAYER_LOC_PLAYERS      = 1
     START_PLAY_XSPEED       = 0
@@ -219,6 +230,11 @@ class PauseReturnStatus() :
     DISP_2      = 2
     DISP_1      = 3
     MOVE_ON     = 4
+
+class LevelReturnStatus() :
+    NO_STATUS   = 0
+    COMPLETE    = 1
+    GAME_OVER   = 2
 
 # PyMessage class 
 class PyMessage :

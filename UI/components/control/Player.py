@@ -76,9 +76,9 @@ class Player :
     ##  Check to see if the ball is off the playing field or is being deflected by the player's paddle.
     def deflectBall(self, canvas) :
         # get canvas/paddle/ball info
-        ORIENTATION = self.ORIENTATION
-        (ballCenterX, ballCenterY, ballRadius) = canvas.data['ball'].getInfo()
-        (leftEdge, rightEdge, topEdge, bottomEdge) = self.paddle.getEdges()
+        orientation = self.ORIENTATION
+        (ballLeft, ballRight, ballTop, ballBottom) = canvas.data['ball'].getEdges()
+        (paddleLeft, paddleRight, paddleTop, paddleBottom) = self.paddle.getEdges()
         (paddleCenter, paddleWidth, paddleDir, paddleOrientation) = self.paddle.getInfo()
         myState = self.state
 
@@ -86,41 +86,32 @@ class Player :
         ballMissed = False
         ballDeflected = False
 
-        # ball out of bounds/deflected on NORTH edge/paddle
-        if(ORIENTATION == Orientation.DIR_NORTH) :
-            if (0 < ballCenterX) and (ballCenterX < CANVAS_WIDTH) and ((ballCenterY - ballRadius) <= 0) :
+        # NORTH paddle
+        if orientation == Orientation.DIR_NORTH :
+            if (X_LIMIT_MIN <= ballRight) and (ballLeft <= X_LIMIT_MAX) and (ballBottom <= 0) :
                 ballMissed = True
-            elif(((leftEdge <= (ballCenterX + ballRadius) < rightEdge) and (topEdge <= (ballCenterY - ballRadius) < bottomEdge)) or 
-                    (leftEdge < ((ballCenterX - ballRadius) <= rightEdge) and (topEdge <= (ballCenterY - ballRadius) < bottomEdge))) :
+            elif (paddleLeft <= ballRight) and (ballLeft <= paddleRight) and (paddleTop < ballTop <= paddleBottom) :
+                ballDeflected = True
+        # SOUTH paddle
+        elif orientation == Orientation.DIR_SOUTH :
+            if (X_LIMIT_MIN <= ballRight) and (ballLeft <= X_LIMIT_MAX) and (CANVAS_HEIGHT <= ballTop) :
+                ballMissed = True
+            elif (paddleLeft <= ballRight) and (ballLeft <= paddleRight) and (paddleTop <= ballBottom < paddleBottom) :
+                ballDeflected = True
+        # EAST paddle
+        elif orientation == Orientation.DIR_EAST :
+            if (Y_LIMIT_MIN <= ballTop) and (ballBottom <= Y_LIMIT_MAX) and (CANVAS_WIDTH <= ballLeft) :
+                ballMissed = True
+            elif (paddleTop <= ballBottom) and (ballTop <= paddleBottom) and (paddleLeft <= ballRight < paddleRight) :
+                ballDeflected = True
+        # WEST paddle
+        elif orientation == Orientation.DIR_WEST :
+            if (Y_LIMIT_MIN <= ballTop) and (ballBottom <= Y_LIMIT_MAX) and (ballRight <= 0) :
+                ballMissed = True
+            elif (paddleTop <= ballBottom) and (ballTop <= paddleBottom) and (paddleLeft < ballLeft <= paddleRight) :
                 ballDeflected = True
 
-        # ball out of bounds/deflected on the SOUTH edge/paddle
-        elif(ORIENTATION == Orientation.DIR_SOUTH) :
-            if (0 < ballCenterX) and (ballCenterX < CANVAS_WIDTH) and ((ballCenterY + ballRadius) >= CANVAS_HEIGHT) : 
-                ballMissed = True
-            elif(((leftEdge <= (ballCenterX + ballRadius) < rightEdge) and (topEdge <= (ballCenterY + ballRadius) < bottomEdge)) or 
-                    (leftEdge < ((ballCenterX - ballRadius) <= rightEdge) and (topEdge <= (ballCenterY + ballRadius) < bottomEdge))) :
-                ballDeflected = True
-
-        # ball out of bounds/deflected on the EAST edge/paddle
-        elif(ORIENTATION == Orientation.DIR_EAST) :
-            if((ballCenterX + ballRadius) >= CANVAS_WIDTH) and (0 < ballCenterY) and (ballCenterY < CANVAS_HEIGHT):
-                ballMissed = True
-            elif(((topEdge <= (ballCenterY + ballRadius) < bottomEdge) and (leftEdge <= (ballCenterX + ballRadius) < rightEdge)) or
-                    (topEdge < ((ballCenterX - ballRadius) <= bottomEdge) and (leftEdge <= (ballCenterX + ballRadius) < rightEdge))) :
-                ballDeflected = True
-
-        # ball out of bounds/deflected on the WEST edge/paddle
-        elif(ORIENTATION == Orientation.DIR_WEST) :
-            # out of play
-            if((ballCenterX - ballRadius) <= 0) and (0 < ballCenterY) and (ballCenterY < CANVAS_HEIGHT) :
-                ballMissed = True
-            elif(((topEdge <= (ballCenterY + ballRadius) < bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge)) or
-                    (topEdge < ((ballCenterX - ballRadius) <= bottomEdge) and (leftEdge <= (ballCenterX - ballRadius) < rightEdge))) :
-                ballDeflected = True
-
-
-        # if I'm a wall ...
+        # set return status bassed on player type and 
         if myState == PlayerState.WALL :
             if ballDeflected :
                 return (PlayerReturnStatus.WALL_BALL_DEFLECTED, self.deflectBallVelocity(canvas))
@@ -216,7 +207,7 @@ class Player :
                         break                                     
 
         # ball moving NORTH EAST
-        elif(xVelocity >= 0) and (yVelocity <= 0) :
+        elif(xVelocity >= 0) and (yVelocity < 0) :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     # hit bottom of the block
@@ -232,7 +223,7 @@ class Player :
                         break                                   
           
         # ball moving SOUTH WEST
-        elif(xVelocity < 0) and (yVelocity > 0) :
+        elif(xVelocity < 0) and (yVelocity >= 0) :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     # hit top of the block

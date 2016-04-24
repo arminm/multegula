@@ -7,7 +7,7 @@
 from UI.typedefs import *
 
 # GAMEOVER class
-class GameOver :
+class GameOverScreen :
     ### __init__ - initialize and return a GameScreen
     def __init__(self) :
         self.first = True

@@ -1,6 +1,9 @@
+# 18-842 Distributed Systems // Spring 2016.
+# Multegula - A P2P block breaking game.
+# utility.py.
+# Team Misfits // amahmoud. ddsantor. gmmiller. lunwenh.
 
-
-
+# imports
 from UI.components.control.Level import *
 from UI.components.control.Player import *
 from UI.components.gameplay.Ball import *
@@ -8,7 +11,7 @@ from UI.components.gameplay.Block import *
 from UI.components.gameplay.Paddle import *
 from UI.components.directive.Button import *
 from UI.components.directive.TextField import *
-from UI.components.screens.GameOver import *
+from UI.components.screens.GameOverScreen import *
 from UI.components.screens.GameScreen import *
 from UI.components.screens.JoinScreen import *
 from UI.components.screens.MenuScreen import *
@@ -79,3 +82,46 @@ def translatePlayerLocaiton(center, player) :
         return CANVAS_WIDTH - center
     elif orientation == Orientation.DIR_WEST :
         return center
+
+### getWinner - determin who the winner is
+def getWinner(canvas) :
+    winner = 'THE DEVELOPERS!'
+    winningScore = 0
+
+        # update all players
+    for player in canvas.data['competitors'] :
+        (name, state, score, lives, pwr) = canvas.data[player].getStatus()
+        if lives > 0 :
+            score = score + lives*EXTRA_LIFE_POINTS
+            if score > winningScore :
+                winner = name
+                winningScore = score
+
+    return (winner, winningScore)
+
+### isGameOver - determine if the game has been completed
+def isGameOver(canvas) :
+    dead_count = 0
+    # update all players
+    for player in canvas.data['competitors'] :
+        (name, state, score, lives, pwr) = canvas.data[player].getStatus()
+        if lives == 0 :
+            dead_count += 1
+
+    if dead_count == 3 :
+        return True
+    return False
+
+### sendSyncError - formulate and send sync error
+def sendSyncError(content, canvas) :
+    # form message
+    toSend = PyMessage()
+    toSend.src = canvas.data['myName']
+    toSend.kind = MsgType.MSG_SYNC_ERROR
+    toSend.content = content
+    toSend.multicast = True
+
+    print("SENDING: " + toSend.toString())
+
+    # send message
+    canvas.data['bridge'].sendMessage(toSend)
