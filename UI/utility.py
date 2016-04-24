@@ -11,7 +11,7 @@ from UI.components.gameplay.Block import *
 from UI.components.gameplay.Paddle import *
 from UI.components.directive.Button import *
 from UI.components.directive.TextField import *
-from UI.components.screens.GameOver import *
+from UI.components.screens.GameOverScreen import *
 from UI.components.screens.GameScreen import *
 from UI.components.screens.JoinScreen import *
 from UI.components.screens.MenuScreen import *
@@ -111,3 +111,17 @@ def isGameOver(canvas) :
     if dead_count == 3 :
         return True
     return False
+
+### sendSyncError - formulate and send sync error
+def sendSyncError(content, canvas) :
+    # form message
+    toSend = PyMessage()
+    toSend.src = canvas.data['myName']
+    toSend.kind = MsgType.MSG_SYNC_ERROR
+    toSend.content = content
+    toSend.multicast = True
+
+    print(toSend.toString())
+
+    # send message
+    canvas.data['bridge'].sendMessage(toSend)

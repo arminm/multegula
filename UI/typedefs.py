@@ -201,6 +201,7 @@ class MsgIndex() :
     PADDLE_POS_CENTER       = 0
     PADDLE_POS_WIDTH        = 1
     PAUSE_UPDATE_VAL        = 0
+    PAUSE_UPDATE_LEVEL      = 1
     PLAYER_LOC_NUMBER       = 0
     PLAYER_LOC_PLAYERS      = 1
     START_PLAY_XSPEED       = 0
