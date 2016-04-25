@@ -61,8 +61,8 @@ BLOCK_WIDTH = CANVAS_WIDTH // 10
 BLOCK_HEIGHT = CANVAS_HEIGHT // 50  
 
 # speed constants
-BALL_SPEED_INIT = CANVAS_WIDTH // 110
-PADDLE_SPEED_INIT = CANVAS_WIDTH // 80
+BALL_SPEED_INIT = CANVAS_WIDTH // 135
+PADDLE_SPEED_INIT = CANVAS_WIDTH // 100
 
 # score int constants
 LOST_LIFE_POINTS = -20
@@ -182,6 +182,7 @@ class MsgPayload() :
     SYNC_ERR_LAST_TO_TOUCH = 'LT'
     SYNC_ERR_NOT_UNICORN = 'NU'
     SYNC_ERR_PLAYER_LOC = 'PL'
+    SYNC_ERR_CURRENT_SCREEN = 'CS'
 
 ### MsgIndex - defines the the standard placement of payload values
 class MsgIndex() :

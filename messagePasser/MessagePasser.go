@@ -326,7 +326,7 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  *			the message to be put into receiveQueue
  **/
 func addMessageToReceiveChannel(message Message) {
-	if message.Source == localNode.Name {
+	if message.Source == localNode.Name && message.Destination == defs.MULTICAST_DEST {
 		localReceivedSeqNum += 1
 	} else {
 		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)

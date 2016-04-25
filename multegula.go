@@ -225,6 +225,18 @@ func BullyReceiver() {
 	}
 }
 
+/* 
+ * get unicorn update message from bullySelection,
+ * send unicorn update message to ui and consensus algorithm
+ */
+//TODO add code to send unicorn update message to consensus algorithm
+func UnicornReciever() {
+    for {
+        unicornUpdateMessage := bullySelection.GetUnicornUpdate()
+		go putMessageIntoSendChannel(unicornUpdateMessage)
+    }
+}
+
 /* receive message from messagePasser and route to correct location */
 func inboundDispatcher() {
 	for {
@@ -250,6 +262,8 @@ func inboundDispatcher() {
 		case defs.MSG_START_PLAY:
 			bridges.SendToPyBridge(message)
 		case defs.MSG_SYNC_ERROR:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_UNICORN:
 			bridges.SendToPyBridge(message)
 
 		// election messages
@@ -294,18 +308,6 @@ func parseMainArguments(args []string) string {
 	}
 	fmt.Println("Local Node Name:", localNodeName)
 	return localNodeName
-}
-
-/* 
- * get unicorn update message from bullySelection,
- * send unicorn update message to ui and consensus algorithm
- */
-//TODO add code to send unicorn update message to consensus algorithm
-func sendUnicornUpdate() {
-    for {
-        unicornUpdateMessage := bullySelection.GetUnicornUpdate()
-		bridges.SendToPyBridge(unicornUpdateMessage)
-    }
 }
 
 /* the Main function of the Multegula application */
@@ -408,9 +410,9 @@ func main() {
 		messagePasser.InitMessagePasser(*peers, localNodeName)
 		fmt.Println(localNodeName, "made message passer.")
 
+		// initialize elections
         go bullySelection.InitBullySelection(*peers, localNodeName)
-
-        go sendUnicornUpdate()
+        go UnicornReciever()
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()

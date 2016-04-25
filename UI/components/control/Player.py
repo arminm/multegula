@@ -223,7 +223,7 @@ class Player :
                         break                                   
           
         # ball moving SOUTH WEST
-        elif(xVelocity < 0) and (yVelocity >= 0) :
+        elif(xVelocity < 0) and (yVelocity >  0) :
             for blockIndex, block in enumerate(blocks) :
                 if(block.enabled == True) :
                     # hit top of the block

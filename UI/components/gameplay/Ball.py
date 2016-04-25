@@ -21,7 +21,7 @@ class Ball :
         self.radius = round(CANVAS_WIDTH / 50, RD_FACT)
         self.color = 'green'
         self.xVelocity = 0
-        self.yVelocity = round(CANVAS_WIDTH / 110, RD_FACT)
+        self.yVelocity = round(BALL_SPEED_INIT, RD_FACT)
         self.first = True
         self.lastToTouch = ''
 
@@ -71,20 +71,20 @@ class Ball :
         self.yVelocity = round(self.yVelocity * 0.9, RD_FACT)
 
     def randomXVelocity(self) :
-        speed = CANVAS_WIDTH / 110
+        speed = BALL_SPEED_INIT
         factor = random.random()
         factor *= random.randint(-2, 2)
         return round(speed*factor, RD_FACT)
 
     def randomYVelocity(self) :
-        speed = CANVAS_WIDTH / 110
+        speed = BALL_SPEED_INIT
         factor = random.random()
         factor *= random.randint(-2, 2)
         return round(speed*factor, RD_FACT)
 
     def randomVelocity(self) :
         xSpeed = self.randomXVelocity()
-        ySpeed = round(random.choice([-1, 1])*CANVAS_WIDTH / 110, RD_FACT)
+        ySpeed = round(random.choice([-1, 1])*BALL_SPEED_INIT, RD_FACT)
         return (xSpeed, ySpeed)
 
     def getVelocity(self) :
