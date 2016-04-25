@@ -408,14 +408,6 @@ func main() {
 		messagePasser.InitMessagePasser(*peers, localNodeName)
 		fmt.Println(localNodeName, "made message passer.")
 
-		/***** TODO: REPLACE WITH ACTUAL ELECTION INFORMATION *******/
-		// NOTE: This will happen somewhere else
-/*		var unicornMsg messagePasser.Message
-		unicornMsg.Source = localNode.Name
-		unicornMsg.Destination = defs.MULTICAST_DEST
-		unicornMsg.Kind = defs.MSG_UNICORN
-		unicornMsg.Content = "a"
-		bridges.SendToPyBridge(unicornMsg)*/
         go bullySelection.InitBullySelection(*peers, localNodeName)
 
         go sendUnicornUpdate()

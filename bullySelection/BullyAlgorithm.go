@@ -236,6 +236,7 @@ func sendHealthCheckRequestMessage(timestamp string) {
 
 /* check the liveness of unicorn */
 func startHealthCheck() {
+    var count int = -1
     for {
         currentTime := getCurrentTime()
         sendHealthCheckRequestMessage(currentTime)
@@ -253,6 +254,15 @@ func startHealthCheck() {
             case <- waitHealthCheckReplyTimeout:
                 close(waitHealthCheckReplyTimeout)
                 fmt.Println("Time out without health check received, start election")
+                if count >= 0 {
+                    go putUnicornUpdate(messagePasser.Message{
+                        Source: localName,
+                        Destination: localName,
+                        Content: defs.MSG_DEAD_UNICORN,
+                        Kind: defs.MSG_DEAD_UNICORN,
+                    })
+                }
+                count = (count + 1)%9
                 /* No election message received yet, start an election */
                 startElection()
                 i = 1
