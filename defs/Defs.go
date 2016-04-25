@@ -33,11 +33,11 @@ const MSG_BULLY_ARE_YOU_ALIVE string = "ARE_YOU_ALIVE"
 /* The unicorn heart beat message */
 const MSG_BULLY_IAM_ALIVE string = "IAM_ALIVE"
 
+/* The end of message types for bully algorithm */
+
 /* The default unicorn name */
 /* Note that this name is reserved in the system */
 const UNICORN_DEFAULT_NAME = "unicorn##default##name"
-
-/* The end of message types for bully algorithm */
 
 const DELIMITER string = "##"
 const PAYLOAD_DELIMITER string = "|"
@@ -64,6 +64,7 @@ const MSG_PLAYER_LOC string = "MPL"
 const MSG_START_PLAY string = "MSP"
 const MSG_SYNC_ERROR string = "MSE"
 const MSG_UNICORN string = "MUN"
+const MSG_DEAD_UNICORN string = "MDU"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVR1"
