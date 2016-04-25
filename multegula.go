@@ -15,6 +15,7 @@ import (
 
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
+	"github.com/arminm/multegula/bullySelection"
 	"github.com/arminm/multegula/consensus"
 	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
@@ -210,13 +211,10 @@ func PyBridgeReceiver() {
 
 /* wait for incoming messages from the bully algorithm */
 func BullyReceiver() {
-	/*
-		for {
-			message := bully.Receive()
-			go puMessageIntoSendChannel(message)
-		}
-	*/
-	return
+	for {
+		message := bullySelection.GetMessageFromSendChannel()
+		go putMessageIntoSendChannel(message)
+	}
 }
 
 /* wait for incoming messages from consensus algorithm */
@@ -258,18 +256,39 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
+
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
-		case defs.MSG_PADDLE_POS:
-			fallthrough
-		case defs.MSG_PADDLE_DIR:
-			fallthrough
-		case defs.MSG_BALL_MISSED:
-			fallthrough
+
+		// UI Messages
 		case defs.MSG_BALL_DEFLECTED:
-			fallthrough
+			bridges.SendToPyBridge(message)
+		case defs.MSG_BALL_MISSED:
+			bridges.SendToPyBridge(message)
 		case defs.MSG_BLOCK_BROKEN:
 			bridges.SendToPyBridge(message)
+		case defs.MSG_PADDLE_DIR:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_PADDLE_POS:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_PAUSE_UPDATE:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_START_PLAY:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_SYNC_ERROR:
+			bridges.SendToPyBridge(message)
+
+		// election messages
+		case defs.MSG_BULLY_ELECTION:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.MSG_BULLY_ANSWER:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.MSG_BULLY_UNICORN:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.MSG_BULLY_ARE_YOU_ALIVE:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.MSG_BULLY_IAM_ALIVE:
+			bullySelection.PutMessageToReceiveChannel(message)
 		case defs.CONSENSUS_ACCEPT_KIND:
 			fallthrough
 		case defs.CONSENSUS_REJECT_KIND:
@@ -314,6 +333,18 @@ func parseMainArguments(args []string) string {
 	return localNodeName
 }
 
+/*
+ * get unicorn update message from bullySelection,
+ * send unicorn update message to ui and consensus algorithm
+ */
+//TODO add code to send unicorn update message to consensus algorithm
+func sendUnicornUpdate() {
+	for {
+		unicornUpdateMessage := bullySelection.GetUnicornUpdate()
+		bridges.SendToPyBridge(unicornUpdateMessage)
+	}
+}
+
 /* the Main function of the Multegula application */
 func main() {
 	testFlag := flag.Bool("test", false, "Test Mode Flag")
@@ -326,7 +357,8 @@ func main() {
 	args := flag.Args()
 
 	// nodes used for testing purposes only
-	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
+	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014}}
+	// nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "50.131.53.106", Port: 11111}, messagePasser.Node{Name: "garrett", IP: "71.199.96.75", Port: 44444}, messagePasser.Node{Name: "daniel", IP: "50.131.53.106", Port: 22222}, messagePasser.Node{Name: "lunwen", IP: "71.199.96.75", Port: 33333}}
 
 	// for testing consensus
 	if *consensusTestFlag {
@@ -351,7 +383,7 @@ func main() {
 	if *bootstrapTestFlag {
 		localName := getLocalName()
 		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
-		fmt.Println("[MULTEGULA CORE] Contacting the bootstrap server...")
+		fmt.Println("Contacting the bootstrap server...")
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Got error:", err)
@@ -363,15 +395,21 @@ func main() {
 
 	if *testFlag {
 		localNodeName := parseMainArguments(args)
-
-		fmt.Print("--------------------------------\n")
-		fmt.Println("Initing with localName:", localNodeName)
-		messagePasser.InitMessagePasser(nodes, localNodeName)
-
-		fmt.Println("Available Nodes:")
-		for id, node := range nodes {
-			fmt.Printf("  ID:%d – %s\n", id, node.Name)
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
+		peers, err := bootstrapClient.GetNodes(localNode)
+		if err != nil {
+			fmt.Println("Couldn't get peers:", err)
+			panic(err)
 		}
+		*peers = append(*peers, localNode)
+		fmt.Print("--------------------------------\n")
+		fmt.Println("Available Nodes:")
+		for id, node := range *peers {
+			fmt.Printf("  ID:%d – %+v\n", id, node)
+		}
+		fmt.Println("Initing with localName:", localNodeName)
+		messagePasser.InitMessagePasser(*peers, localNodeName)
+
 		/* start a receiveRoutine to be able to use nonBlockingReceive */
 		go receiveRoutine()
 
@@ -401,22 +439,22 @@ func main() {
 
 	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
 	// initialize communication with the UI
-	fmt.Printf("[MULTEGULA CORE] UI Port flag is: %d\n", *uiPortFlag)
+	fmt.Printf("Port is:%d\n", *uiPortFlag)
 	bridges.InitPyBridge(*uiPortFlag)
 
 	// get the localname
 	localNodeName := uiGetLocalName()
-	fmt.Println("[MULTEGULA CORE] My name is:", localNodeName)
+	fmt.Println("My name is:", localNodeName)
 
 	// determine the game type (multi or single player)
 	gameType := uiGetGameType()
 
 	if gameType == defs.GAME_TYPE_MULTI {
 		// get fellow players
-		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag, DNS: ""}
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
-			fmt.Println("[MULTEGULA CORE] Couldn't get peers:", err)
+			fmt.Println("Couldn't get peers:", err)
 			panic(err)
 		}
 		*peers = append(*peers, localNode)
@@ -426,7 +464,11 @@ func main() {
 
 		// initialize message passer
 		messagePasser.InitMessagePasser(*peers, localNodeName)
-		fmt.Println(localNodeName, "[MULTEGULA CORE] Made messagepasser.")
+		fmt.Println(localNodeName, "made message passer.")
+
+		go bullySelection.InitBullySelection(*peers, localNodeName)
+
+		go sendUnicornUpdate()
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()

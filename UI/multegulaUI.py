@@ -20,13 +20,15 @@ from UI.components.gameplay.Block import *
 from UI.components.gameplay.Paddle import *
 from UI.components.directive.Button import *
 from UI.components.directive.TextField import *
-from UI.components.screens.GameOver import *
+from UI.components.screens.GameOverScreen import *
 from UI.components.screens.GameScreen import *
 from UI.components.screens.JoinScreen import *
 from UI.components.screens.MenuScreen import *
 from UI.components.screens.PauseScreen import *
 from UI.components.screens.SplashScreen import *
+from UI.components.screens.SyncScreen import *
 from UI.typedefs import *
+from UI.utility import *
 
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
@@ -49,6 +51,12 @@ def keyPressed(event) :
             canvas.data['currentScreen'] = Screens.SCRN_MENU
             # set name
             myName = canvas.data['splashTextField'].text
+
+            # replace spaces and make sure there are no duplicates with WALL_NAMES
+            myName = myName.replace(' ', '')
+            if myName in WALL_NAMES :
+                myName += '1'
+
             canvas.data['myName'] = myName
 
             # send name up to Multegula!
@@ -60,7 +68,7 @@ def keyPressed(event) :
             canvas.data['bridge'].sendMessage(toSend)
 
     # pause screen / gameplay keyPressed events - move the paddle
-    elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
+    elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) or (currentScreen == Screens.SCRN_SYNC):
         myName  = canvas.data['myName']
         myPaddle = canvas.data[myName].paddle
 
@@ -154,7 +162,6 @@ def mousePressed(event) :
 
             # initialize game
             canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-            canvas.data['nextScreen'] = Screens.SCRN_GAME
 
             # initialize ball
             canvas.data['ball'].reset()
@@ -174,71 +181,243 @@ def mousePressed(event) :
 
             # initialize game
             canvas.data['currentScreen'] = Screens.SCRN_JOIN
-            canvas.data['ball'].reset()
             canvas.delete(ALL)
 
-    # game over screen mouse pressed events - start over
-    elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER :
-        init(canvas);
-
-
+### react - react to messages
 def react(canvas, received) :
     # break down message
     kind = received.kind
     name = received.src
     content = received.content
     myName = canvas.data['myName']
-    print(myName + " Received: " + received.toString())
 
-    if kind == MsgType.MSG_PLAYER_LOC :
-        initPlayers(canvas, int(content[0]), content[1:])
-        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-        canvas.data['nextScreen'] = Screens.SCRN_GAME
+    # MSG_BALL_DEFLECTED
+    if kind == MsgType.MSG_BALL_DEFLECTED :
+        # get sending players state
+        state = canvas.data[name].state
 
-    # MSG_PADDLE_DIR
-    elif kind == MsgType.MSG_PADDLE_DIR :
-        if content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_LEFT:
-            canvas.data[name].paddle.direction = Direction.DIR_LEFT
-        elif content[MsgIndex.PADDLE_DIR] == MsgPayload.PADDLE_DIR_RIGHT:
-            canvas.data[name].paddle.direction = Direction.DIR_RIGHT
+        # only USERs and COMPs should be sending network messages
+        if state == PlayerState.USER or state == PlayerState.COMP :
+            # get information out of payload
+            score   = int(content[MsgIndex.BALL_DEFLECTED_SCORE])
+            xCenter = float(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT
+            yCenter = float(content[MsgIndex.BALL_DEFLECTED_YCENTER]) / FP_MULT
+            xSpeed  = float(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT
+            ySpeed  = float(content[MsgIndex.BALL_DEFLECTED_YSPEED]) / FP_MULT
+            radius  = float(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
 
-    # MSG_PADDLE_POS
-    elif kind == MsgType.MSG_PADDLE_POS : 
-        canvas.data[name].paddle.direction = Direction.DIR_STOP
-        canvas.data[name].paddle.center = int(content[MsgIndex.PADDLE_POS_CENTER])
-        canvas.data[name].paddle.width = int(content[MsgIndex.PADDLE_POS_WIDTH])
+            # translate for player orientation
+            (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
+            (xCenter, yCenter) = translateBallPosition(xCenter, yCenter, radius, canvas.data[name])
+
+            # set component fields
+            canvas.data[name].score = score
+            canvas.data[name].statusUpdate = True
+            canvas.data['ball'].lastToTouch = name
+            canvas.data['ball'].setCenter(xCenter, yCenter)
+            canvas.data['ball'].radius = radius
+            canvas.data['ball'].setVelocity(xSpeed, ySpeed)
+            canvas.data['ball'].randomColor()
+
+        # otherwise, we are out of sync!
+        else :
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BALL_DEFLECTED + '|' + name
+            sendSyncError(content, canvas)
 
     # MSG_BALL_MISSED
     elif kind == MsgType.MSG_BALL_MISSED : 
-        canvas.data[name].score = int(content[MsgIndex.BALL_MISSED_SCORE])
-        canvas.data[name].lives = int(content[MsgIndex.BALL_MISSED_LIVES])
-        canvas.data[name].statusUpdate = True
-        canvas.data['ball'].reset()
-        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-        canvas.data['nextScreen'] = Screens.SCRN_GAME
+        # get sending players state
+        state = canvas.data[name].state
 
-    # MSG_BALL_DEFLECTED
-    elif kind == MsgType.MSG_BALL_DEFLECTED :
-        canvas.data[name].score = int(content[MsgIndex.BALL_DEFLECTED_SCORE])
-        canvas.data[name].statusUpdate = True
-        canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(float(content[MsgIndex.BALL_DEFLECTED_XCENTER]) / FP_MULT, float(content[MsgIndex.BALL_DEFLECTED_YCENTER]) / FP_MULT)
-        canvas.data['ball'].radius = float(content[MsgIndex.BALL_DEFLECTED_RADIUS]) / FP_MULT
-        canvas.data['ball'].setVelocity(float(content[MsgIndex.BALL_DEFLECTED_XSPEED]) / FP_MULT, float(content[MsgIndex.BALL_DEFLECTED_YSPEED]) / FP_MULT)
-        canvas.data['ball'].randomColor()
+        # only USERs and COMPs should be sending network messages
+        if state == PlayerState.USER or state == PlayerState.COMP :
+            # get information out of payload 
+            score = int(content[MsgIndex.BALL_MISSED_SCORE])
+            lives = int(content[MsgIndex.BALL_MISSED_LIVES])
+
+            # set component fields
+            canvas.data[name].score = score
+            canvas.data[name].lives = lives
+            canvas.data[name].statusUpdate = True
+            canvas.data['ball'].reset()
+
+            if isGameOver(canvas) == True :
+                canvas.delete(ALL)
+                canvas.data['winner'] = getWinner(canvas);
+                canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+            else :
+                canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+
+        # otherwise, we are out of sync!
+        else :
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BALL_MISSED + '|' + name
+            sendSyncError(content, canvas)
 
     # MSG_BLOCK_BROKEN
     elif kind == MsgType.MSG_BLOCK_BROKEN :
-        canvas.data[name].score = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
-        canvas.data[name].lives = int(content[MsgIndex.BLOCK_BROKEN_LIVES])  
-        canvas.data[name].statusUpdate = True
-        canvas.data['ball'].lastToTouch = name
-        canvas.data['ball'].setCenter(float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT, float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT)
-        canvas.data['ball'].radius = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
-        canvas.data['ball'].setVelocity(int(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT, float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT)
-        canvas.data['ball'].randomColor()
-        canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
+        # get sending players state
+        state = canvas.data[name].state
+
+        # only USERs and COMPs should be sending network messages
+        if state == PlayerState.USER or state == PlayerState.COMP :
+            if canvas.data['ball'].lastToTouch == name :
+                # get information out of payload
+                score   = int(content[MsgIndex.BLOCK_BROKEN_SCORE])
+                lives   = int(content[MsgIndex.BLOCK_BROKEN_LIVES])
+                xCenter = float(content[MsgIndex.BLOCK_BROKEN_XCENTER]) / FP_MULT
+                yCenter = float(content[MsgIndex.BLOCK_BROKEN_YCENTER]) / FP_MULT
+                xSpeed  = float(content[MsgIndex.BLOCK_BROKEN_XSPEED]) / FP_MULT
+                ySpeed  = float(content[MsgIndex.BLOCK_BROKEN_YSPEED]) / FP_MULT
+                radius  = float(content[MsgIndex.BLOCK_BROKEN_RADIUS]) / FP_MULT
+                block   = int(content[MsgIndex.BLOCK_BROKEN_BLOCK])
+
+                # only an ENABLED block can be broken
+                if canvas.data['level'].blocks[block].enabled == True :     
+                    # translate for player orientation
+                    (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
+                    (xCenter, yCenter) = translateBallPosition(xCenter, yCenter, radius, canvas.data[name])
+
+                    # set component fields
+                    canvas.data[name].score = score
+                    canvas.data[name].lives = lives
+                    canvas.data[name].statusUpdate = True
+                    canvas.data['ball'].lastToTouch = name
+                    canvas.data['ball'].setCenter(xCenter, yCenter)
+                    canvas.data['ball'].radius = radius
+                    canvas.data['ball'].setVelocity(xSpeed, ySpeed)
+                    canvas.data['ball'].randomColor()
+                    canvas.data['level'].blocks[int(content[MsgIndex.BLOCK_BROKEN_BLOCK])].disable()
+                    canvas.data['level'].updated = True
+
+                # otherwise we are out of sync !
+                else :
+                    content = MsgPayload.SYNC_ERR_BLOCK_BROKEN + '|' + str(block) + '|' + name
+                    sendSyncError(content, canvas)
+            # otherwse we are out of sync !
+            else : 
+                content = MsgPayload.SYNC_ERR_LAST_TO_TOUCH + '|' + name
+                sendSyncError(content, canvas)
+        # otherwise, we are out of sync!
+        else :
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
+            sendSyncError(content, canvas)
+
+    # MSG_PADDLE_DIR
+    elif kind == MsgType.MSG_PADDLE_DIR :
+        # get sending players state
+        state = canvas.data[name].state
+
+        # only USERs and COMPs should be sending network messages
+        if state == PlayerState.USER or state == PlayerState.COMP :
+            # get information out of payload
+            direction = content[MsgIndex.PADDLE_DIR]
+
+            # translate for player orientation
+            direction = translatePlayerDirection(direction, canvas.data[name])
+
+            # set component fields
+            canvas.data[name].paddle.direction = direction
+
+        # otherwise you are out of sync!!
+        else :
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_PADDLE_DIR + '|' + name
+            sendSyncError(content, canvas)
+
+    # MSG_PADDLE_POS
+    elif kind == MsgType.MSG_PADDLE_POS : 
+        # get sending players state
+        state = canvas.data[name].state
+
+        # only USERs and COMPs should be sending network messages
+        if state == PlayerState.USER or state == PlayerState.COMP :
+            # pull information from the payload
+            center = int(content[MsgIndex.PADDLE_POS_CENTER])
+            width = int(content[MsgIndex.PADDLE_POS_WIDTH])
+
+            # translate for player orientation
+            center = translatePlayerLocaiton(center, canvas.data[name])
+
+            # update the player's paddle
+            canvas.data[name].paddle.direction = Direction.DIR_STOP
+            canvas.data[name].paddle.center = center
+            canvas.data[name].paddle.width = width
+
+        # otherwise we are out of sync!
+        else : 
+            content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_PADDLE_POS + '|' + name
+            sendSyncError(content, canvas)
+
+    # MSG_PAUSE_UPDATE
+    elif kind == MsgType.MSG_PAUSE_UPDATE :
+        # get sending players state
+        unicorn = canvas.data['unicorn']
+        # only the unicorn sends these messages
+        if name == unicorn:
+            canvas.data['pauseScreen'].text = content[MsgIndex.PAUSE_UPDATE_VAL]
+            canvas.data['ball'].reset()
+
+        # otherwise we are out of sync!
+        else : 
+            content = MsgPayload.SYNC_ERR_NOT_UNICORN + '|' + MsgType.MSG_PAUSE_UPDATE + '|' + name
+            sendSyncError(content, canvas)
+
+    # MSG_PLAYER_LOC
+    elif kind == MsgType.MSG_PLAYER_LOC :
+        # if the players have not been initialized, then go ahead and do that
+        if canvas.data['playersInitialized'] == False: 
+            initPlayers(canvas, int(content[MsgIndex.PLAYER_LOC_NUMBER]), content[MsgIndex.PLAYER_LOC_PLAYERS:])
+            canvas.data['ball'].reset()
+            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+
+        # if the players have been initialized, then check to make sure the received message matches
+        #   exactly what was received previously
+        else :
+            # get all players out of the competitor list (walls also appear in the competitors list)
+            playerList = []
+            for player in canvas.data['competitors'] :
+                if player.state == PlayerState.COMP or player.state == PlayerState.COMP :
+                    playerList.append(player)
+
+            receivedList = content[MsgIndex.PLAYER_LOC_PLAYERS]
+
+            if playerList != receivedList :
+                content = MsgPayload.SYNC_ERR_PLAYER_LOC + '|' + name
+                sendSyncError(content, canvas)
+
+    # MSG_START_PLAY
+    elif kind == MsgType.MSG_START_PLAY :
+        unicorn = canvas.data['unicorn']
+
+        if name == unicorn :
+            # pull information from the payload
+            xSpeed = float(content[MsgIndex.START_PLAY_XSPEED]) / FP_MULT
+            ySpeed = float(content[MsgIndex.START_PLAY_YSPEED]) / FP_MULT
+
+            # translate for player orientation
+            (xSpeed, ySpeed) = translateBallSpeed(xSpeed, ySpeed, canvas.data[name])
+
+            # update the player's paddle
+            canvas.data['ball'].setVelocity(xSpeed, ySpeed)
+            canvas.data['pauseScreen'].reset(canvas)
+            canvas.data['currentScreen'] = Screens.SCRN_GAME
+
+        # ontherswise, we are stupid swamped
+        else :
+            content = MsgPayoad.SYNC_ERR_NOT_UNICORN + '|' + MsgType.MSG_START_PLAY + '|' + name
+            sendSyncError(content, canvas)
+
+    # MSG_SYNC_ERROR
+    elif kind == MsgType.MSG_SYNC_ERROR :
+        print("RECEIVED: " + received.toString())
+        canvas.delete(ALL)
+        canvas.data['gameScreen'].first = True
         canvas.data['level'].updated = True
+        canvas.data['ball'].reset()
+        canvas.data['currentScreen'] = Screens.SCRN_SYNC
+
+    # MSG_UNICORN
+    elif kind == MsgType.MSG_UNICORN :
+        canvas.data['unicorn'] = content[MsgIndex.UNICORN_UNICORN]
 
 ### receiveAll - get all messages from the GoBrige
 def receiveAll(canvas) :
@@ -250,19 +429,26 @@ def receiveAll(canvas) :
         else:
             react(canvas, message)
 
+### playerUpdate - react to player update
+##  RETURN TRUE if the player is still playing, False otherwise
 def playerUpdate(name, status, info, canvas) :
     # single player game -> directly update appropriate game information
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER :
-        # ball missed -> update status and reset
+        # BALL_MISSED -> update status and reset, player is alive -> return True 
         if status == PlayerReturnStatus.BALL_MISSED :
             canvas.data[name].score += LOST_LIFE_POINTS
             canvas.data[name].lives += LOST_LIFE_LIVES
             canvas.data[name].statusUpdate = True
-            canvas.data['ball'].reset()
-            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
-            canvas.data['nextScreen'] = Screens.SCRN_GAME
 
-        # ball deflected -> update status and set ball properties
+            if isGameOver(canvas) == True :
+                canvas.delete(ALL)
+                canvas.data['winner'] = getWinner(canvas);
+                canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+            else :
+                canvas.data['ball'].reset()
+                canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+
+        # BALL_DEFLECTED -> update status and set ball properties, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
             canvas.data[name].score += DEFLECT_POINTS
             canvas.data[name].statusUpdate = True
@@ -270,7 +456,7 @@ def playerUpdate(name, status, info, canvas) :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
         
-        # block broken -> update status, set ball properties, update level
+        # BLOCK_BROKEN -> update status, set ball properties, update level, player is alive -> Return True
         elif status == PlayerReturnStatus.BLOCK_BROKEN :
             canvas.data[name].score += BREAK_POINTS;    
             canvas.data[name].statusUpdate = True
@@ -278,10 +464,14 @@ def playerUpdate(name, status, info, canvas) :
             canvas.data['level'].blocks[info[2]].disable()
             canvas.data['level'].updated = True
 
+        # DEAD_BALL_DEFLECTED -> update ball properties, player is dead -> Return False
+        elif status == PlayerReturnStatus.DEAD_BALL_DEFLECTED :
+            canvas.data['ball'].setVelocity(info[0], info[1])  
+            canvas.data['ball'].randomColor()
+
     # multiplayer game -> send update to competitors
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER :
-
-        # ball missed -> created MSG_BALL_MISSED
+        # BALL_MISSED -> created MSG_BALL_MISSED, player is alive -> return True 
         if status == PlayerReturnStatus.BALL_MISSED :
             # get message content fields
             SCORE = canvas.data[name].score + LOST_LIFE_POINTS
@@ -296,7 +486,7 @@ def playerUpdate(name, status, info, canvas) :
             # send message
             canvas.data['bridge'].sendMessage(toSend)
 
-        # ball deflected -> create MSG_BALL_DEFLECTED
+        # BALL_DEFLECTED -> create MSG_BALL_DEFLECTED, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
             ball  = canvas.data['ball']
             # get message content fields
@@ -318,11 +508,17 @@ def playerUpdate(name, status, info, canvas) :
             # send message
             canvas.data['bridge'].sendMessage(toSend)
 
+        # WALL_BALL_DEFLECTED -> update ball properties, not a player -> Return False
         elif status == PlayerReturnStatus.WALL_BALL_DEFLECTED :
             canvas.data['ball'].setVelocity(info[0], info[1])  
             canvas.data['ball'].randomColor()
 
-        # block broken -> create MSG_BLOCK_BROKEN
+        # DEAD_BALL_DEFLECTED -> update ball properties, player is dead -> Return False
+        elif status == PlayerReturnStatus.DEAD_BALL_DEFLECTED :
+            canvas.data['ball'].setVelocity(info[0], info[1])  
+            canvas.data['ball'].randomColor()
+
+        # BLOCK_BROKEN -> create MSG_BLOCK_BROKEN, player is alive -> Return True
         elif status == PlayerReturnStatus.BLOCK_BROKEN :
             ball  = canvas.data['ball']
             # get message content fields
@@ -347,67 +543,179 @@ def playerUpdate(name, status, info, canvas) :
             # send message
             canvas.data['bridge'].sendMessage(toSend)
 
+        # BALL_OOB -> create MSG_ERROR, player is alive -> Return True
+        elif status == PlayerReturnStatus.BALL_OOB :
+            content = 'BALL_OOB|'
+            if(info[0] == Orientation.DIR_EAST) :
+                content += 'EAST'
+            elif (info[0] == Orientation.DIR_NORTH) :
+                content += 'NORTH'
+            elif (info[0] == Orientation.DIR_WEST) :
+                content += 'WEST'
+            sendSyncError(content, canvas)
+
+
+### pauseUpdate - react to pause screen update
+def pauseUpdate(status, canvas) :
+    # Three seconds left until the game starts...
+    if status == PauseReturnStatus.DISP_3 :
+        # form message
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_PAUSE_UPDATE
+        toSend.content = '3|' + str(canvas.data['level'].currentLevel + 1)
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+    # Two seconds left until the game starts...
+    elif status == PauseReturnStatus.DISP_2 :
+        # form message
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_PAUSE_UPDATE
+        toSend.content = '2|' + str(canvas.data['level'].currentLevel + 1)
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+    # One second left until the game starts...
+    elif status == PauseReturnStatus.DISP_1 :
+        # form message
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_PAUSE_UPDATE
+        toSend.content = '1|' + str(canvas.data['level'].currentLevel + 1)
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+    # Time for the game to begin
+    elif status == PauseReturnStatus.MOVE_ON :
+        (XSPEED, YSPEED) = canvas.data['ball'].randomVelocity()
+        # form message
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_START_PLAY
+        toSend.content = str(XSPEED*FP_MULT) + '|' + str(YSPEED*FP_MULT)
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+
+def levelUpdate(status, canvas) :
+    if status == LevelReturnStatus.COMPLETE :
+        canvas.data['ball'].reset()
+        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+
+    elif status == LevelReturnStatus.GAME_OVER :
+        canvas.delete(ALL)
+        canvas.data['winner'] = getWinner(canvas);
+        canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
     receiveAll(canvas)
+    gameType = canvas.data['gameType']
+    myName = canvas.data['myName']
 
     ### SPLASH SCREEN
     if canvas.data['currentScreen'] == Screens.SCRN_SPLASH :
+        # draw screen background and ball
         canvas.data['splashScreen'].drawBackground(canvas)
         canvas.data['ball'].updateMenu(canvas)
+
+        # draw screen foreground and text box AFTER ball so they are over the ball
         canvas.data['splashScreen'].drawText(canvas)
         canvas.data['splashTextField'].draw(canvas)        
 
     ### MAIN SCREEN 
     elif canvas.data['currentScreen'] == Screens.SCRN_MENU :
+        # draw screen background and ball
         canvas.data['menuScreen'].drawBackground(canvas)
         canvas.data['ball'].updateMenu(canvas)
+
+        # draw screen foreground and buttons AFTER ball so they are over the ball
         canvas.data['menuScreen'].drawText(canvas)
         canvas.data['soloButton'].draw(canvas)
         canvas.data['joinButton'].draw(canvas)
 
+    ### JOIN SCREEN - wait for everyone to connect
     elif canvas.data['currentScreen'] == Screens.SCRN_JOIN :
         canvas.data['joinScreen'].draw(canvas)
+        canvas.data['ball'].updateMenu(canvas)
 
-    ### PAUSE SCREEN
-    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE :
+    ### PAUSE SCREEN SINGLE PLAYER
+    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE and gameType == GameType.SINGLE_PLAYER :
+        # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
-        # canvas.data[canvas.data['myName']].update(canvas)
+
+        # update all players
         for player in canvas.data['competitors'] :
             (status, info) = canvas.data[player].update(canvas)
             playerUpdate(player, status, info, canvas)
 
-        canvas.data['pauseScreen'].draw(canvas)
+        # update the screen to countdown (3...2....1...)
+        status = canvas.data['pauseScreen'].draw(canvas)
+        if status == PauseReturnStatus.MOVE_ON :
+            canvas.data['currentScreen'] = Screens.SCRN_GAME
 
-    ### GAME SCREEN
-    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.SINGLE_PLAYER):
+    ### PAUSE SCREEN MULTIPLAYER 
+    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE and gameType == GameType.MULTI_PLAYER :
+        # draw screen and ball
+        canvas.data['gameScreen'].draw(canvas)
+        canvas.data['ball'].draw(canvas)
+
+        # update all players
+        for player in canvas.data['competitors'] :
+            (status, info) = canvas.data[player].update(canvas)
+            playerUpdate(player, status, info, canvas)
+
+        # update the screen to countdown (3...2....1...)
+        status = canvas.data['pauseScreen'].draw(canvas)
+        pauseUpdate(status, canvas)
+
+    ### GAME SCREEN SINGLE PLAYER
+    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and gameType == GameType.SINGLE_PLAYER:
+        # draw screen
         canvas.data['gameScreen'].draw(canvas)
 
-        # update all other players
+        # update all players
         for player in canvas.data['competitors'] :
             (status, info) = canvas.data[player].update(canvas)
             playerUpdate(player, status, info, canvas)
 
-        canvas.data['level'].update(canvas)
+        # update the level and ball AFTER players update to allow for bouncing and breaking
+        status = canvas.data['level'].update(canvas)
         canvas.data['ball'].updateGame(canvas)
+        levelUpdate(status, canvas)
 
-    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (canvas.data['gameType'] == GameType.MULTI_PLAYER):
+    ### GAME SCREEN MULTI PLAYER
+    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER) :
         canvas.data['gameScreen'].draw(canvas)
 
+        # update all players
         competitors = canvas.data['competitors']
         for player in competitors :
             (status, info) = canvas.data[player].update(canvas)
             playerUpdate(player, status, info, canvas)
 
-        canvas.data['level'].update(canvas)
-        ##canvas.data['ball'].updateGame(canvas)
+        # update the level and ball AFTER players update to allow for bouncing and breaking
+        status = canvas.data['level'].update(canvas)
+        canvas.data['ball'].updateGame(canvas)
+        levelUpdate(status, canvas)
+
+    elif (canvas.data['currentScreen'] == Screens.SCRN_SYNC) :
+        canvas.data['gameScreen'].draw(canvas)
+
+        # update the level and ball AFTER players update to allow for bouncing and breaking
+        canvas.data['level'].draw(canvas)
+        canvas.data['ball'].updateMenu(canvas)  
+        canvas.data['syncScreen'].draw(canvas)   
 
 
     # GAME OVER SCREEN
     elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER : 
         canvas.data['gameOverScreen'].draw(canvas);
+        canvas.data['ball'].updateMenu(canvas)  
 
     #  redraw after delay
     canvas.after(canvas.data['delay'], redrawAll, canvas)     
@@ -416,11 +724,12 @@ def redrawAll(canvas) :
 def init(canvas) :
     # current screen
     canvas.data['currentScreen'] = Screens.SCRN_SPLASH
-    canvas.data['nextScreen'] = Screens.SCRN_NONE
 
     # misc
     canvas.data['delay'] = 10
     canvas.data['myName'] = 'Type name...'
+    canvas.data['unicorn'] = 'UNSET'
+    canvas.data['gameType'] = GameType.UNSET
 
     ### COMPONENETS
     # buttons
@@ -435,13 +744,17 @@ def init(canvas) :
     canvas.data['menuScreen']   = MenuScreen()
     canvas.data['pauseScreen']  = PauseScreen()
     canvas.data['splashScreen'] = SplashScreen()
-    canvas.data['gameOverScreen'] = GameOver()  
+    canvas.data['gameOverScreen'] = GameOverScreen()  
     canvas.data['joinScreen']   = JoinScreen()  
+    canvas.data['syncScreen']   = SyncScreen() 
+
+    canvas.data['playersInitialized'] = False
 
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
     canvas.data['level'] = Level()
 
+### initPlayers - initialize players
 def initPlayers(canvas, number=1, info=[]):
     myName = canvas.data['myName']
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
@@ -450,19 +763,78 @@ def initPlayers(canvas, number=1, info=[]):
         canvas.data['lunwen'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'lunwen', GameType.MULTI_PLAYER)
         canvas.data['garrett'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'garrett', GameType.MULTI_PLAYER)
         canvas.data['competitors'] = [myName, 'armin', 'lunwen', 'garrett']
+        canvas.data['playersInitialized'] = True
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
+        # create my player
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.MULTI_PLAYER)
-        myIndex = info.index(myName);
-        if number == 4 :
-            eastIndex = (myIndex + 1) % 4
-            northIndex = (myIndex + 2) % 4
-            westIndex = (myIndex + 3) % 4
 
+        # update info array for a three player game
+        ### Basically, add a wall in the fourth slot in the info array.
+        if number == 3:
+            # add a wall to the index array
+            w = random.randint(0, len(WALL_NAMES)-1)
+            info.append(WALL_NAMES[w])
+
+        # update info array for a two player game
+        ### If players A and B were receieved in the info array, update the info array to look like:
+        ###     [A, WALL1, B, WALL2]
+        if number == 2:
+            w1 = random.randint(0, len(WALL_NAMES)-1)
+            w2 = w1
+            while w2 == w1 :
+                w2 = random.randint(0, len(WALL_NAMES)-1)
+            info = [info[0], WALL_NAMES[w1], info[1], WALL_NAMES[w2]]
+
+        # get other players index in the info array
+        myIndex = info.index(myName)
+        eastIndex = (myIndex + 1) % 4
+        northIndex = (myIndex + 2) % 4
+        westIndex = (myIndex + 3) % 4
+
+        # set level orientaion based on odering of the players. 
+        ### WHAT THE HECK DOES THIS MEAN: 
+        ### Okay. Everyone is going to see themselves on the bottom of their screen. So...
+        ###     Translating the ball position and the paddle position send by other players is
+        ###     relatively easy because it does not require a global notion of orientation, you
+        ###     need only know where a player is RELATIVE to you. However, there has got to be an
+        ###     anchor for drawing a level. The natural notion is, 'Easy! Have the unicorn be the
+        ###     anchor!!!', but it would behoove us to do something deterministic. SO. The player
+        ###     that gets sent out first, which is to say the player that comes first alphabetically,
+        ###     get's to be the anchor. </rant>
+        if myIndex == 0 :
+            canvas.data[myName].levelOrientation = Orientation.DIR_SOUTH
+            canvas.data['level'].levelOrientation = Orientation.DIR_SOUTH     
+        elif myIndex == 1 :
+            canvas.data[myName].levelOrientation = Orientation.DIR_EAST
+            canvas.data['level'].levelOrientation = Orientation.DIR_EAST    
+        elif myIndex == 2 :
+            canvas.data[myName].levelOrientation = Orientation.DIR_NORTH
+            canvas.data['level'].levelOrientation = Orientation.DIR_NORTH
+        elif myIndex == 3 :
+            canvas.data[myName].levelOrientation = Orientation.DIR_WEST
+            canvas.data['level'].levelOrientation = Orientation.DIR_WEST        
+
+        # make EAST player appropriately
+        if info[eastIndex] in WALL_NAMES :
+            canvas.data[info[eastIndex]] = Player(Orientation.DIR_EAST, PlayerState.WALL, info[eastIndex], GameType.MULTI_PLAYER)
+        else :
             canvas.data[info[eastIndex]] = Player(Orientation.DIR_EAST, PlayerState.COMP, info[eastIndex], GameType.MULTI_PLAYER)
+
+        # make WEST player appropriately
+        if info[northIndex] in WALL_NAMES :
+            canvas.data[info[northIndex]] = Player(Orientation.DIR_NORTH, PlayerState.WALL, info[northIndex], GameType.MULTI_PLAYER)
+        else :
             canvas.data[info[northIndex]] = Player(Orientation.DIR_NORTH, PlayerState.COMP, info[northIndex], GameType.MULTI_PLAYER)
-            canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.COMP, info[westIndex], GameType.MULTI_PLAYER)
-            canvas.data['competitors'] = info
+
+        if info[westIndex] in WALL_NAMES :
+            canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.WALL, info[westIndex], GameType.MULTI_PLAYER) 
+        else :   
+            canvas.data[info[westIndex]] = Player(Orientation.DIR_WEST, PlayerState.COMP, info[westIndex], GameType.MULTI_PLAYER)    
+        
+        # save competitor information
+        canvas.data['competitors'] = info 
+        canvas.data['playersInitialized'] = True          
 
 ### run - run the program
 def runUI(cmd_line_args) :
@@ -485,13 +857,11 @@ def runUI(cmd_line_args) :
     canvas.data = {}
 
     # sets up events
-    #root.bind('<Key>', keyPressed)
     root.bind('<Button-1>', mousePressed)
     root.bind('<Key>', keyPressed)
     root.bind('<KeyRelease>', keyReleased)
 
     # get the GoBridge
-    #TODO: MAKE THIS MORE ROBUST.  CHECK TO ENSURE A PORT AND NOT "-mid" WAS PASSED IN.
     canvas.data['bridge'] = GoBridge(cmd_line_args[1]);
     
     # Set up for ReceiveThread

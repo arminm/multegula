@@ -40,7 +40,6 @@ func GetNodes(localNode messagePasser.Node) (*[]messagePasser.Node, error) {
 /*
  * Send Nodes to Bootstrap Server
  *
- *
  **/
 func sendNode(node messagePasser.Node, conn net.Conn) {
 	encoder := gob.NewEncoder(conn)

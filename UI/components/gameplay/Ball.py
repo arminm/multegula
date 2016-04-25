@@ -27,8 +27,7 @@ class Ball :
 
     ### reset - reset dynamic ball location/speed properties 
     def reset(self) :
-        self.randomXVelocity()
-        self.yVelocity = round(random.choice([-1, 1])*CANVAS_WIDTH / 110, RD_FACT)
+        (self.xVelocity, self.yVelocity) = self.randomVelocity()
         self.xCenter = round(CANVAS_WIDTH / 2, RD_FACT)
         self.yCenter = round(CANVAS_HEIGHT / 2, RD_FACT)
         self.randomColor()
@@ -75,13 +74,18 @@ class Ball :
         speed = CANVAS_WIDTH / 110
         factor = random.random()
         factor *= random.randint(-2, 2)
-        self.xVelocity = round(speed*factor, RD_FACT)
+        return round(speed*factor, RD_FACT)
 
     def randomYVelocity(self) :
         speed = CANVAS_WIDTH / 110
         factor = random.random()
         factor *= random.randint(-2, 2)
-        self.yVelocity = round(speed*factor, RD_FACT)
+        return round(speed*factor, RD_FACT)
+
+    def randomVelocity(self) :
+        xSpeed = self.randomXVelocity()
+        ySpeed = round(random.choice([-1, 1])*CANVAS_WIDTH / 110, RD_FACT)
+        return (xSpeed, ySpeed)
 
     def getVelocity(self) :
         return (self.xVelocity, self.yVelocity) 
@@ -112,7 +116,7 @@ class Ball :
         # UPDATE Y VELOCITY - 
         # Bounce ball off of bottom wall...
         if ((yCenter + radius) >= CANVAS_HEIGHT) and (yVelocity > 0) :
-            self.randomXVelocity()
+            self.xVelocity = self.randomXVelocity()
             self.randomColor()
             self.yVelocity = (-yVelocity)
         # Bounce ball off of top wall...
