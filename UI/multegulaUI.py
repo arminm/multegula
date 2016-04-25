@@ -190,6 +190,7 @@ def react(canvas, received) :
     name = received.src
     content = received.content
     myName = canvas.data['myName']
+    currentScreen = canvas.data['currentScreen']
 
     # MSG_BALL_DEFLECTED
     if kind == MsgType.MSG_BALL_DEFLECTED :
@@ -218,7 +219,6 @@ def react(canvas, received) :
             canvas.data['ball'].radius = radius
             canvas.data['ball'].setVelocity(xSpeed, ySpeed)
             canvas.data['ball'].randomColor()
-
         # otherwise, we are out of sync!
         else :
             content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BALL_DEFLECTED + '|' + name
@@ -403,7 +403,7 @@ def react(canvas, received) :
 
         # ontherswise, we are stupid swamped
         else :
-            content = MsgPayoad.SYNC_ERR_NOT_UNICORN + '|' + MsgType.MSG_START_PLAY + '|' + name
+            content = MsgPayload.SYNC_ERR_NOT_UNICORN + '|' + MsgType.MSG_START_PLAY + '|' + name
             sendSyncError(content, canvas)
 
     # MSG_SYNC_ERROR

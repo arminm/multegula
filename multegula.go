@@ -402,7 +402,7 @@ func main() {
 		unicornMsg.Source = localNode.Name
 		unicornMsg.Destination = defs.MULTICAST_DEST
 		unicornMsg.Kind = defs.MSG_UNICORN
-		unicornMsg.Content = "a"
+		unicornMsg.Content = "daniel"
 		bridges.SendToPyBridge(unicornMsg)
 
 		/* start the routine waiting for messages coming from UI */
