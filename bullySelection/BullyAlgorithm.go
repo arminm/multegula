@@ -272,7 +272,7 @@ func startHealthCheck() {
                  * and start another round of health check
                  */
                 if message.Content == currentTime {
-                    fmt.Printf("%s:\treceive health check reply from %s\n", localName, message.Source)
+                    // fmt.Printf("%s:\treceive health check reply from %s\n", localName, message.Source)
                     for len(receivedHealthCheckReplyChannel) > 0 {
                         <- receivedHealthCheckReplyChannel
                     }
