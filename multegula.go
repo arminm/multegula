@@ -253,6 +253,8 @@ func inboundDispatcher() {
 			bridges.SendToPyBridge(message)
 		case defs.MSG_BLOCK_BROKEN:
 			bridges.SendToPyBridge(message)
+		case defs.MSG_DEAD_NODE:
+			bridges.SendToPyBridge(message)
 		case defs.MSG_PADDLE_DIR:
 			bridges.SendToPyBridge(message)
 		case defs.MSG_PADDLE_POS:

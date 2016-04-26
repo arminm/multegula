@@ -61,7 +61,7 @@ BLOCK_WIDTH = CANVAS_WIDTH // 10
 BLOCK_HEIGHT = CANVAS_HEIGHT // 50  
 
 # speed constants
-BALL_SPEED_INIT = CANVAS_WIDTH // 135
+BALL_SPEED_INIT = CANVAS_WIDTH // 100
 PADDLE_SPEED_INIT = CANVAS_WIDTH // 100
 
 # score int constants
@@ -70,7 +70,7 @@ LOST_LIFE_LIVES = -1
 EXTRA_LIFE_POINTS = 100
 DEFLECT_POINTS  = 3
 BREAK_POINTS = 5
-INIT_LIVES = 5
+INIT_LIVES = 3
 
 # fixed point multiplier / rounding factor
 FP_MULT = 10
@@ -126,16 +126,17 @@ class PowerUps(Enum) :
     PWR_MOMENTUM        = 10 # ball momentum
     PWR_HOLD            = 11 # ball hold
 
-### Screens - enumerate different screens
-class Screens(Enum) :
-  SCRN_NONE = 0
-  SCRN_SPLASH = 1
-  SCRN_MENU = 2
-  SCRN_PAUSE = 3
-  SCRN_GAME = 4
-  SCRN_GAME_OVER = 5
-  SCRN_JOIN = 6
-  SCRN_SYNC = 7
+### States - enumerate different states
+class State(Enum) :
+  STATES_NONE = 0
+  STATE_SPLASH = 1
+  STATE_MENU = 2
+  STATE_PAUSE = 3
+  STATE_GAMEPLAY = 4
+  STATE_GAME_OVER = 5
+  STATE_JOIN = 6
+  STATE_REJOIN = 7
+  STATE_SYNC = 8
 
 ### PlayerState - define different player states
 class PlayerState(Enum) :
@@ -161,6 +162,7 @@ class MsgType() :
     MSG_BALL_DEFLECTED  = 'MBD'
     MSG_BALL_MISSED     = 'MBM'
     MSG_BLOCK_BROKEN    = 'MBB'
+    MSG_DEAD_NODE       = 'MDN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
@@ -177,12 +179,14 @@ class MsgPayload() :
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
     PADDLE_DIR_RIGHT    = 'R'
-    SYNC_ERR_PLAYER_TYPE = 'PT'
     SYNC_ERR_BLOCK_BROKEN = 'BB'
+    SYNC_ERR_BALL_DEFLECTED = 'BD'
+    SYNC_ERR_CURRENT_STATE = 'CS'
     SYNC_ERR_LAST_TO_TOUCH = 'LT'
     SYNC_ERR_NOT_UNICORN = 'NU'
     SYNC_ERR_PLAYER_LOC = 'PL'
-    SYNC_ERR_CURRENT_SCREEN = 'CS'
+    SYNC_ERR_PLAYER_TYPE = 'PT'
+
 
 ### MsgIndex - defines the the standard placement of payload values
 class MsgIndex() :
@@ -244,6 +248,7 @@ class PyMessage :
         self.kind = ''
         self.src = ''
         self.dest = ''
+        self.seqNum = -1
         self.content = None
         self.multicast = False
 
@@ -251,12 +256,13 @@ class PyMessage :
     def crack(self, received):
         receivedArray = str(received).split(DELIMITER)
         try :
-            self.src = receivedArray[0].replace("b'", '')
+            self.src = receivedArray[0]
             self.dest = receivedArray[1]
-            self.content = receivedArray[2].split(PAYLOAD_DELIMITER)
-            self.kind = receivedArray[3].replace("\\n'", '')
+            self.seqNum = receivedArray[2]
+            self.content = receivedArray[3].split(PAYLOAD_DELIMITER)
+            self.kind = receivedArray[4]
         except :
-            print('CANNOT CRACK: ' + str(received))
+            print('CANNOT CRACK: ' + received)
 
     ### assemble - assemble the message and return
     def assemble(self):

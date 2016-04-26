@@ -43,7 +43,7 @@ func decodeMessage(messageString string) messagePasser.Message {
  * @return	the string format of the message
  **/
 func encodeMessage(message messagePasser.Message) string {
-	return message.Source + defs.DELIMITER + message.Destination + defs.DELIMITER + message.Content + defs.DELIMITER + message.Kind
+	return message.Source + defs.DELIMITER + message.Destination + defs.DELIMITER + strconv.Itoa(message.SeqNum) + defs.DELIMITER + message.Content + defs.DELIMITER + message.Kind
 }
 
 /*
