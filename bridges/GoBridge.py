@@ -81,11 +81,18 @@ class GoBridge :
 	def receiveThread(self):
 		while True:
 			receivedData = self.GoSocket.recv(BUFFER_SIZE)
-			if not receivedData:
-				pass
-			else:
-				self.receiveQueue.put(receivedData)
+			if receivedData:
+				# remove header and footer of the received data
+				transform = str(receivedData).replace("b'", "")
+				transform = transform.replace("'", "")
 
+				# split multiple messages up if more than one was recieved
+				receivedMessages = str(transform).split('\\n')
+
+				# put all messages into the recieved queue
+				for message in receivedMessages:
+					if message :
+						self.receiveQueue.put(message)
 
 	## Receive Message
 	## # this function pulls a message from the receive queue
@@ -93,7 +100,6 @@ class GoBridge :
 		message = PyMessage()
 		# only try and get a message if there is something in the queue.
 		if not(self.receiveQueue.empty()):
-			## TODO: Eventually put this in a try/except
 			received = self.receiveQueue.get()
 			message.crack(received)
 			self.receiveQueue.task_done()

@@ -135,7 +135,8 @@ class State(Enum) :
   STATE_GAMEPLAY = 4
   STATE_GAME_OVER = 5
   STATE_JOIN = 6
-  STATE_SYNC = 7
+  STATE_REJOIN = 7
+  STATE_SYNC = 8
 
 ### PlayerState - define different player states
 class PlayerState(Enum) :
@@ -161,6 +162,7 @@ class MsgType() :
     MSG_BALL_DEFLECTED  = 'MBD'
     MSG_BALL_MISSED     = 'MBM'
     MSG_BLOCK_BROKEN    = 'MBB'
+    MSG_DEAD_NODE       = 'MDN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
@@ -246,6 +248,7 @@ class PyMessage :
         self.kind = ''
         self.src = ''
         self.dest = ''
+        self.seqNum = -1
         self.content = None
         self.multicast = False
 
@@ -253,12 +256,13 @@ class PyMessage :
     def crack(self, received):
         receivedArray = str(received).split(DELIMITER)
         try :
-            self.src = receivedArray[0].replace("b'", '')
+            self.src = receivedArray[0]
             self.dest = receivedArray[1]
-            self.content = receivedArray[2].split(PAYLOAD_DELIMITER)
-            self.kind = receivedArray[3].replace("\\n'", '')
+            self.seqNum = receivedArray[2]
+            self.content = receivedArray[3].split(PAYLOAD_DELIMITER)
+            self.kind = receivedArray[4]
         except :
-            print('CANNOT CRACK: ' + str(received))
+            print('CANNOT CRACK: ' + received)
 
     ### assemble - assemble the message and return
     def assemble(self):

@@ -180,7 +180,6 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
 	dec := gob.NewDecoder(conn)
 	msg := &Message{}
 	err := dec.Decode(msg)
-	fmt.Println(msg)
 	if err != nil {
 		return *msg, err
 	}
@@ -350,7 +349,7 @@ func receiveMessageFromConn(conn net.Conn) {
 				// tel the UI that we've lost a node
 				// TODO MULTICAST. 
 				Multicast(&Message{
-	                Source: defs.MULTEGULA_DEST,
+	                Source: localNode.Name,
 	                Destination: defs.MULTICAST_DEST,
 	                Content: name,
 	                Kind: defs.MSG_DEAD_NODE,

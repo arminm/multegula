@@ -12,7 +12,7 @@ class RejoinScreen :
     def __init__(self) :
         self.counter = 0
         self.first = True
-        self.text = 'Hang tight while we sync up.'
+        self.text = 'Loo.'
 
     ### reset -- resets the screen data
     def reset(self, canvas) :
@@ -20,7 +20,7 @@ class RejoinScreen :
         canvas.delete(self.tSub)
         canvas.delete(self.tCountdown)
         self.counter = 0  
-        self.text = 'Hang tight while we sync up.'
+        self.text = "Let's wait for them to come back."
 
     ### count - count the number of times this has been drawn to change the color of the blocks
     def count(self, canvas) :
@@ -31,7 +31,7 @@ class RejoinScreen :
             self.text = ''
             updated = True
         elif self.counter == 100 :
-            self.text = 'Hang tight while we sync up.'    
+            self.text = "Let's wait for them to come back."   
             self.counter = 0 
             updated = True 
 
@@ -45,7 +45,7 @@ class RejoinScreen :
         self.tLevel = canvas.create_text(X_CENTER, Y_THIRD, text = canvas.data['level'].getTextLevel(),
                                         font = ('Courier', XL_TEXT_SIZE))
 
-        self.tSub = canvas.create_text(X_CENTER, Y_CENTER, text = 'Something went wrong...',
+        self.tSub = canvas.create_text(X_CENTER, Y_CENTER, text = 'Looks like we lost someone...',
                                         font = ('Courier', L_TEXT_SIZE))
 
         self.tCountdown = canvas.create_text(X_CENTER, Y_2THIRD, text = self.text,
