@@ -126,16 +126,16 @@ class PowerUps(Enum) :
     PWR_MOMENTUM        = 10 # ball momentum
     PWR_HOLD            = 11 # ball hold
 
-### Screens - enumerate different screens
-class Screens(Enum) :
-  SCRN_NONE = 0
-  SCRN_SPLASH = 1
-  SCRN_MENU = 2
-  SCRN_PAUSE = 3
-  SCRN_GAME = 4
-  SCRN_GAME_OVER = 5
-  SCRN_JOIN = 6
-  SCRN_SYNC = 7
+### States - enumerate different states
+class State(Enum) :
+  STATES_NONE = 0
+  STATE_SPLASH = 1
+  STATE_MENU = 2
+  STATE_PAUSE = 3
+  STATE_GAMEPLAY = 4
+  STATE_GAME_OVER = 5
+  STATE_JOIN = 6
+  STATE_SYNC = 7
 
 ### PlayerState - define different player states
 class PlayerState(Enum) :

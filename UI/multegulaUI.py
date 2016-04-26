@@ -33,12 +33,12 @@ from UI.utility import *
 ### keyPressed - handle keypressed events
 def keyPressed(event) :
     canvas = event.widget.canvas
-    currentScreen = canvas.data['currentScreen']
+    currentState = canvas.data['currentState']
 
     # handle splash screen events - entering a name
-    if(currentScreen == Screens.SCRN_SPLASH) :
+    if(currentState == State.STATE_SPLASH) :
         # add new characters
-        if '!' <= event.char <= 'z' :
+        if 'A' <= event.char <= 'Z' or 'a' <= event.char <= 'z' :
             canvas.data['splashTextField'].addChar(event.char)            
         # remove characters
         elif event.keysym == 'BackSpace' :
@@ -48,13 +48,15 @@ def keyPressed(event) :
             canvas.data['splashTextField'].addChar(' ')            
         # enter the name
         elif (event.keysym == 'Return') and canvas.data['splashTextField'].changed :
-            canvas.data['currentScreen'] = Screens.SCRN_MENU
+            canvas.data['currentState'] = State.STATE_MENU
             # set name
             myName = canvas.data['splashTextField'].text
 
             # replace spaces and make sure there are no duplicates with WALL_NAMES
             myName = myName.replace(' ', '')
             if myName in WALL_NAMES :
+                myName += '1'
+            elif myName == LOCALHOST_IP or myName == DEFAULT_SRC or myName == MULTICAST_DEST or myName == MULTEGULA_DEST :
                 myName += '1'
 
             canvas.data['myName'] = myName
@@ -68,7 +70,7 @@ def keyPressed(event) :
             canvas.data['bridge'].sendMessage(toSend)
 
     # pause screen / gameplay keyPressed events - move the paddle
-    elif (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) or (currentScreen == Screens.SCRN_SYNC):
+    elif (currentState == State.STATE_PAUSE) or (currentState == State.STATE_GAMEPLAY) or (currentState == State.STATE_SYNC):
         myName  = canvas.data['myName']
         myPaddle = canvas.data[myName].paddle
 
@@ -112,10 +114,10 @@ def keyPressed(event) :
 ### keyReleased - handle key release events
 def keyReleased(event) :
     canvas = event.widget.canvas
-    currentScreen = canvas.data['currentScreen']
+    currentState = canvas.data['currentState']
 
     ### STOP PADDLE MOTION ###
-    if (currentScreen == Screens.SCRN_PAUSE) or (currentScreen == Screens.SCRN_GAME) :
+    if (currentState == State.STATE_PAUSE) or (currentState == State.STATE_GAMEPLAY) :
         if((event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') or 
             (event.keysym == 'Right') or (event.keysym == 'd') or (event.keysym == 'D')) :
 
@@ -145,7 +147,7 @@ def mousePressed(event) :
     canvas = event.widget.canvas
 
     # main screen mouse pressed events - button clicks
-    if canvas.data['currentScreen'] == Screens.SCRN_MENU : 
+    if canvas.data['currentState'] == State.STATE_MENU : 
         # check solo button pressed
         if canvas.data['soloButton'].clicked(event.x, event.y) :
             # initialize players
@@ -161,7 +163,7 @@ def mousePressed(event) :
             canvas.data['bridge'].sendMessage(toSend)
 
             # initialize game
-            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+            canvas.data['currentState'] = State.STATE_PAUSE
 
             # initialize ball
             canvas.data['ball'].reset()
@@ -180,7 +182,7 @@ def mousePressed(event) :
             canvas.data['bridge'].sendMessage(toSend)
 
             # initialize game
-            canvas.data['currentScreen'] = Screens.SCRN_JOIN
+            canvas.data['currentState'] = State.STATE_JOIN
             canvas.delete(ALL)
 
 ### react - react to messages
@@ -190,7 +192,7 @@ def react(canvas, received) :
     name = received.src
     content = received.content
     myName = canvas.data['myName']
-    currentScreen = canvas.data['currentScreen']
+    currentState = canvas.data['currentState']
 
     # MSG_BALL_DEFLECTED
     if kind == MsgType.MSG_BALL_DEFLECTED :
@@ -244,9 +246,9 @@ def react(canvas, received) :
             if isGameOver(canvas) == True :
                 canvas.delete(ALL)
                 canvas.data['winner'] = getWinner(canvas);
-                canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+                canvas.data['currentState'] = State.STATE_GAME_OVER
             else :
-                canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+                canvas.data['currentState'] = State.STATE_PAUSE
 
         # otherwise, we are out of sync!
         else :
@@ -367,7 +369,7 @@ def react(canvas, received) :
         if canvas.data['playersInitialized'] == False: 
             initPlayers(canvas, int(content[MsgIndex.PLAYER_LOC_NUMBER]), content[MsgIndex.PLAYER_LOC_PLAYERS:])
             canvas.data['ball'].reset()
-            canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+            canvas.data['currentState'] = State.STATE_PAUSE
 
         # if the players have been initialized, then check to make sure the received message matches
         #   exactly what was received previously
@@ -399,7 +401,7 @@ def react(canvas, received) :
             # update the player's paddle
             canvas.data['ball'].setVelocity(xSpeed, ySpeed)
             canvas.data['pauseScreen'].reset(canvas)
-            canvas.data['currentScreen'] = Screens.SCRN_GAME
+            canvas.data['currentState'] = State.STATE_GAMEPLAY
 
         # ontherswise, we are stupid swamped
         else :
@@ -413,7 +415,7 @@ def react(canvas, received) :
         canvas.data['gameScreen'].first = True
         canvas.data['level'].updated = True
         canvas.data['ball'].reset()
-        canvas.data['currentScreen'] = Screens.SCRN_SYNC
+        canvas.data['currentState'] = State.STATE_SYNC
 
     # MSG_UNICORN
     elif kind == MsgType.MSG_UNICORN :
@@ -443,10 +445,10 @@ def playerUpdate(name, status, info, canvas) :
             if isGameOver(canvas) == True :
                 canvas.delete(ALL)
                 canvas.data['winner'] = getWinner(canvas);
-                canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+                canvas.data['currentState'] = State.STATE_GAME_OVER
             else :
                 canvas.data['ball'].reset()
-                canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+                canvas.data['currentState'] = State.STATE_PAUSE
 
         # BALL_DEFLECTED -> update status and set ball properties, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
@@ -602,12 +604,12 @@ def pauseUpdate(status, canvas) :
 def levelUpdate(status, canvas) :
     if status == LevelReturnStatus.COMPLETE :
         canvas.data['ball'].reset()
-        canvas.data['currentScreen'] = Screens.SCRN_PAUSE
+        canvas.data['currentState'] = State.STATE_PAUSE
 
     elif status == LevelReturnStatus.GAME_OVER :
         canvas.delete(ALL)
         canvas.data['winner'] = getWinner(canvas);
-        canvas.data['currentScreen'] = Screens.SCRN_GAME_OVER
+        canvas.data['currentState'] = State.STATE_GAME_OVER
 
 
 ### redrawAll - draw the game screen
@@ -617,7 +619,7 @@ def redrawAll(canvas) :
     myName = canvas.data['myName']
 
     ### SPLASH SCREEN
-    if canvas.data['currentScreen'] == Screens.SCRN_SPLASH :
+    if canvas.data['currentState'] == State.STATE_SPLASH :
         # draw screen background and ball
         canvas.data['splashScreen'].drawBackground(canvas)
         canvas.data['ball'].updateMenu(canvas)
@@ -627,7 +629,7 @@ def redrawAll(canvas) :
         canvas.data['splashTextField'].draw(canvas)        
 
     ### MAIN SCREEN 
-    elif canvas.data['currentScreen'] == Screens.SCRN_MENU :
+    elif canvas.data['currentState'] == State.STATE_MENU :
         # draw screen background and ball
         canvas.data['menuScreen'].drawBackground(canvas)
         canvas.data['ball'].updateMenu(canvas)
@@ -638,12 +640,12 @@ def redrawAll(canvas) :
         canvas.data['joinButton'].draw(canvas)
 
     ### JOIN SCREEN - wait for everyone to connect
-    elif canvas.data['currentScreen'] == Screens.SCRN_JOIN :
+    elif canvas.data['currentState'] == State.STATE_JOIN :
         canvas.data['joinScreen'].draw(canvas)
         canvas.data['ball'].updateMenu(canvas)
 
     ### PAUSE SCREEN SINGLE PLAYER
-    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE and gameType == GameType.SINGLE_PLAYER :
+    elif canvas.data['currentState'] == State.STATE_PAUSE and gameType == GameType.SINGLE_PLAYER :
         # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
@@ -656,10 +658,10 @@ def redrawAll(canvas) :
         # update the screen to countdown (3...2....1...)
         status = canvas.data['pauseScreen'].draw(canvas)
         if status == PauseReturnStatus.MOVE_ON :
-            canvas.data['currentScreen'] = Screens.SCRN_GAME
+            canvas.data['currentState'] = State.STATE_GAMEPLAY
 
     ### PAUSE SCREEN MULTIPLAYER 
-    elif canvas.data['currentScreen'] == Screens.SCRN_PAUSE and gameType == GameType.MULTI_PLAYER :
+    elif canvas.data['currentState'] == State.STATE_PAUSE and gameType == GameType.MULTI_PLAYER :
         # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
@@ -674,7 +676,7 @@ def redrawAll(canvas) :
         pauseUpdate(status, canvas)
 
     ### GAME SCREEN SINGLE PLAYER
-    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and gameType == GameType.SINGLE_PLAYER:
+    elif (canvas.data['currentState'] == State.STATE_GAMEPLAY) and gameType == GameType.SINGLE_PLAYER:
         # draw screen
         canvas.data['gameScreen'].draw(canvas)
 
@@ -689,7 +691,7 @@ def redrawAll(canvas) :
         levelUpdate(status, canvas)
 
     ### GAME SCREEN MULTI PLAYER
-    elif (canvas.data['currentScreen'] == Screens.SCRN_GAME) and (gameType == GameType.MULTI_PLAYER) :
+    elif (canvas.data['currentState'] == State.STATE_GAMEPLAY) and (gameType == GameType.MULTI_PLAYER) :
         canvas.data['gameScreen'].draw(canvas)
 
         # update all players
@@ -703,7 +705,7 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateGame(canvas)
         levelUpdate(status, canvas)
 
-    elif (canvas.data['currentScreen'] == Screens.SCRN_SYNC) :
+    elif (canvas.data['currentState'] == State.STATE_SYNC) :
         canvas.data['gameScreen'].draw(canvas)
 
         # update the level and ball AFTER players update to allow for bouncing and breaking
@@ -713,7 +715,7 @@ def redrawAll(canvas) :
 
 
     # GAME OVER SCREEN
-    elif canvas.data['currentScreen'] == Screens.SCRN_GAME_OVER : 
+    elif canvas.data['currentState'] == State.STATE_GAME_OVER : 
         canvas.data['gameOverScreen'].draw(canvas);
         canvas.data['ball'].updateMenu(canvas)  
 
@@ -723,7 +725,7 @@ def redrawAll(canvas) :
 ### init - initialize dictionary
 def init(canvas) :
     # current screen
-    canvas.data['currentScreen'] = Screens.SCRN_SPLASH
+    canvas.data['currentState'] = State.STATE_SPLASH
 
     # misc
     canvas.data['delay'] = 10
