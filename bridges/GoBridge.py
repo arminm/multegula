@@ -68,6 +68,7 @@ class GoBridge :
 
 			# assemble the string version of the message
 			toSend = pyMessage.assemble()
+			print("TX: " + toSend)
 
 			try:	
 				self.GoSocket.send(toSend.encode(encoding='utf-8'))

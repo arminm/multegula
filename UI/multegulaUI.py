@@ -237,7 +237,7 @@ def react(canvas, received) :
     content = received.content
     myName = canvas.data['myName']
     currentState = canvas.data['currentState']
-    print(received.toString())
+    print('RX: ' + received.toString())
 
     if name == myName :
         canvas.data['myReceived'][kind] = True
