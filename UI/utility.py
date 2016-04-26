@@ -91,7 +91,7 @@ def getWinner(canvas) :
         # update all players
     for player in canvas.data['competitors'] :
         (name, state, score, lives, pwr) = canvas.data[player].getStatus()
-        if lives > 0 :
+        if (state == PlayerState.USER or state == PlayerState.COMP) and lives > 0 :
             score = score + lives*EXTRA_LIFE_POINTS
             if score > winningScore :
                 winner = name
@@ -101,14 +101,13 @@ def getWinner(canvas) :
 
 ### isGameOver - determine if the game has been completed
 def isGameOver(canvas) :
-    dead_count = 0
+    alive_count = 0
     # update all players
     for player in canvas.data['competitors'] :
         (name, state, score, lives, pwr) = canvas.data[player].getStatus()
-        if lives == 0 :
-            dead_count += 1
-
-    if dead_count == 3 :
+        if state in [PlayerState.USER, PlayerState.COMP, PlayerState.AI] and lives > 0 :
+            alive_count += 1
+    if alive_count == 1 :
         return True
     return False
 

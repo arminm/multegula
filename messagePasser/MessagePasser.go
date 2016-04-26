@@ -181,6 +181,7 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
 	dec := gob.NewDecoder(conn)
 	msg := &Message{}
 	err := dec.Decode(msg)
+	fmt.Println(msg)
 	if err != nil {
 		return *msg, err
 	}
@@ -327,7 +328,7 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  *			the message to be put into receiveQueue
  **/
 func addMessageToReceiveChannel(message Message) {
-	if message.Source == localNode.Name {
+	if message.Source == localNode.Name && message.Destination == defs.MULTICAST_DEST {
 		localReceivedSeqNum += 1
 	} else {
 		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
@@ -347,6 +348,14 @@ func receiveMessageFromConn(conn net.Conn) {
 		if err != nil {
 			name, _ := getConnectionName(conn)
 			if err.Error() == "EOF" {
+				// tel the UI that we've lost a node
+				// TODO MULTICAST. 
+				Multicast(&Message{
+	                Source: defs.MULTEGULA_DEST,
+	                Destination: defs.MULTICAST_DEST,
+	                Content: name,
+	                Kind: defs.MSG_DEAD_NODE,
+	            })
 				fmt.Println("Lost connection to:", name)
 				break
 			} else {

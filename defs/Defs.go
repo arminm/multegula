@@ -55,6 +55,8 @@ const CHANNEL_SIZE = 10
 const MSG_BALL_DEFLECTED string = "MBD"
 const MSG_BALL_MISSED string = "MBM"
 const MSG_BLOCK_BROKEN string = "MBB"
+const MSG_DEAD_NODE string = "MDN"
+const MSG_DEAD_UNICORN string = "MDU"
 const MSG_GAME_TYPE string = "MGT"
 const MSG_MYNAME string = "MMN"
 const MSG_PADDLE_DIR string = "MPD"
@@ -64,11 +66,11 @@ const MSG_PLAYER_LOC string = "MPL"
 const MSG_START_PLAY string = "MSP"
 const MSG_SYNC_ERROR string = "MSE"
 const MSG_UNICORN string = "MUN"
-const MSG_DEAD_UNICORN string = "MDU"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVR1"
 const MULTEGULA_DEST string = "MULT"
+const UI_DEST string = "UI"
 
 /*** MESSAGE SOURCE CONTENTS ***/
 const UI_SOURCE string = "UI"

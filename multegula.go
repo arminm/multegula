@@ -217,6 +217,18 @@ func BullyReceiver() {
 	}
 }
 
+/* 
+ * get unicorn update message from bullySelection,
+ * send unicorn update message to ui and consensus algorithm
+ */
+//TODO add code to send unicorn update message to consensus algorithm
+func UnicornReciever() {
+    for {
+        unicornUpdateMessage := bullySelection.GetUnicornUpdate()
+		go putMessageIntoSendChannel(unicornUpdateMessage)
+    }
+}
+
 /* wait for incoming messages from consensus algorithm */
 func ConsensusReceiverRoutine() {
 	for {
@@ -267,6 +279,8 @@ func inboundDispatcher() {
 			bridges.SendToPyBridge(message)
 		case defs.MSG_BLOCK_BROKEN:
 			bridges.SendToPyBridge(message)
+		case defs.MSG_DEAD_NODE:
+			bridges.SendToPyBridge(message)
 		case defs.MSG_PADDLE_DIR:
 			bridges.SendToPyBridge(message)
 		case defs.MSG_PADDLE_POS:
@@ -276,6 +290,8 @@ func inboundDispatcher() {
 		case defs.MSG_START_PLAY:
 			bridges.SendToPyBridge(message)
 		case defs.MSG_SYNC_ERROR:
+			bridges.SendToPyBridge(message)
+		case defs.MSG_UNICORN:
 			bridges.SendToPyBridge(message)
 
 		// election messages
@@ -331,18 +347,6 @@ func parseMainArguments(args []string) string {
 	}
 	fmt.Println("Local Node Name:", localNodeName)
 	return localNodeName
-}
-
-/*
- * get unicorn update message from bullySelection,
- * send unicorn update message to ui and consensus algorithm
- */
-//TODO add code to send unicorn update message to consensus algorithm
-func sendUnicornUpdate() {
-	for {
-		unicornUpdateMessage := bullySelection.GetUnicornUpdate()
-		bridges.SendToPyBridge(unicornUpdateMessage)
-	}
 }
 
 /* the Main function of the Multegula application */
@@ -466,9 +470,9 @@ func main() {
 		messagePasser.InitMessagePasser(*peers, localNodeName)
 		fmt.Println(localNodeName, "made message passer.")
 
-		go bullySelection.InitBullySelection(*peers, localNodeName)
-
-		go sendUnicornUpdate()
+		// initialize elections
+        go bullySelection.InitBullySelection(*peers, localNodeName)
+        go UnicornReciever()
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()

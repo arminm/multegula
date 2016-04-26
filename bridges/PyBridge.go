@@ -43,7 +43,7 @@ func decodeMessage(messageString string) messagePasser.Message {
  * @return	the string format of the message
  **/
 func encodeMessage(message messagePasser.Message) string {
-	return message.Source + defs.DELIMITER + message.Destination + defs.DELIMITER + message.Content + defs.DELIMITER + message.Kind
+	return message.Source + defs.DELIMITER + message.Destination + defs.DELIMITER + strconv.Itoa(message.SeqNum) + defs.DELIMITER + message.Content + defs.DELIMITER + message.Kind
 }
 
 /*
@@ -90,7 +90,7 @@ func receiveFromUI(conn net.Conn) {
 	for {
 		messageString, _ := bufio.NewReader(conn).ReadString('\n')
 		if len(messageString) > 0 {
-			//fmt.Printf("PyBridge: Message received from UI: %s\n", messageString[0:len(messageString)-1])
+			// fmt.Printf("PyBridge: Message received from UI: %s\n", messageString[0:len(messageString)-1])
 			go putMessageToSendQueue(decodeMessage(messageString[0 : len(messageString)-1]))
 		}
 	}
@@ -105,7 +105,7 @@ func sendToUI(conn net.Conn) {
 	for {
 		var message messagePasser.Message = <-receivedQueue
 		if (!reflect.DeepEqual(message, messagePasser.Message{})) {
-			//fmt.Printf("PyBridge: Message sent to UI: %s\n", encodeMessage(message))
+			// fmt.Printf("PyBridge: Message sent to UI: %s\n", encodeMessage(message))
 			conn.Write([]byte(encodeMessage(message) + "\n"))
 		}
 	}

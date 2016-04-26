@@ -19,17 +19,19 @@ class Ball :
         self.xCenter = round(CANVAS_WIDTH / 2, RD_FACT)
         self.yCenter = round(CANVAS_HEIGHT / 2, RD_FACT)
         self.radius = round(CANVAS_WIDTH / 50, RD_FACT)
-        self.color = 'green'
         self.xVelocity = 0
-        self.yVelocity = round(CANVAS_WIDTH / 110, RD_FACT)
+        self.yVelocity = round(BALL_SPEED_INIT, RD_FACT)
+        self.color = 'red'
         self.first = True
         self.lastToTouch = ''
 
     ### reset - reset dynamic ball location/speed properties 
     def reset(self) :
-        (self.xVelocity, self.yVelocity) = self.randomVelocity()
         self.xCenter = round(CANVAS_WIDTH / 2, RD_FACT)
         self.yCenter = round(CANVAS_HEIGHT / 2, RD_FACT)
+        self.radius = round(CANVAS_WIDTH / 50, RD_FACT)
+        self.xVelocity = 0
+        self.yVelocity = round(BALL_SPEED_INIT, RD_FACT)
         self.randomColor()
         self.lastToTouch = '';
 
@@ -71,20 +73,26 @@ class Ball :
         self.yVelocity = round(self.yVelocity * 0.9, RD_FACT)
 
     def randomXVelocity(self) :
-        speed = CANVAS_WIDTH / 110
-        factor = random.random()
-        factor *= random.randint(-2, 2)
+        speed = BALL_SPEED_INIT
+        factor = random.gauss(0, 1)
+        if abs(factor) < 0.05 :
+            factor += random.choice([-0.2, -0.15, -0.1, -0.05, 0.05, 0.1, 0.15, 0.2])
         return round(speed*factor, RD_FACT)
 
     def randomYVelocity(self) :
-        speed = CANVAS_WIDTH / 110
-        factor = random.random()
-        factor *= random.randint(-2, 2)
+        speed = BALL_SPEED_INIT
+        factor = random.gauss(0, 1)
+        if abs(factor) < 0.05 :
+            factor += random.choice([-0.2, -0.15, -0.1, -0.05, 0.05, 0.1, 0.15, 0.2])
         return round(speed*factor, RD_FACT)
 
     def randomVelocity(self) :
-        xSpeed = self.randomXVelocity()
-        ySpeed = round(random.choice([-1, 1])*CANVAS_WIDTH / 110, RD_FACT)
+        if random.choice([0, 1]) == 1 :
+            xSpeed = self.randomXVelocity()
+            ySpeed = round(random.choice([-1, 1])*BALL_SPEED_INIT, RD_FACT)
+        else :
+            xSpeed = round(random.choice([-1, 1])*BALL_SPEED_INIT, RD_FACT)
+            ySpeed = self.randomYVelocity()
         return (xSpeed, ySpeed)
 
     def getVelocity(self) :
