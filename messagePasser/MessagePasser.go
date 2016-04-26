@@ -256,7 +256,7 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
  * basic multicasts a message to all nodes
  */
 func Multicast(message *Message) {
-	fmt.Println("TX %s: Multicast message %v\n", localNode.Name, message)
+	fmt.Printf("TX %s: Multicast message %v\n", localNode.Name, message)
 	if message.Source == localNode.Name {
 		message.Destination = defs.MULTICAST_DEST
 		updateSeqNum(message)
@@ -468,7 +468,7 @@ func deliverMessage(message Message) {
 		}
 		sourceIndex, _, _ := FindNodeByName(peerNodes, message.Source)
 		if isMessageReady(message, sourceIndex, &vectorTimeStamp) {
-			fmt.Println("RX %s: Deliver message %v\n", localNode.Name, message)
+			fmt.Printf("RX %s: Deliver message %v\n", localNode.Name, message)
 			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
 		} else {
