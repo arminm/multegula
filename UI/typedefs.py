@@ -13,6 +13,7 @@ WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
 CANVAS_DIMENTSION = 350
 CANVAS_WIDTH = CANVAS_DIMENTSION;
 CANVAS_HEIGHT = CANVAS_DIMENTSION;
+DELAY = 20
 X_THIRD = CANVAS_WIDTH // 4
 X_CENTER = CANVAS_WIDTH // 2
 X_2THIRD = X_THIRD*3
@@ -61,8 +62,8 @@ BLOCK_WIDTH = CANVAS_WIDTH // 10
 BLOCK_HEIGHT = CANVAS_HEIGHT // 50  
 
 # speed constants
-BALL_SPEED_INIT = CANVAS_WIDTH // 100
-PADDLE_SPEED_INIT = CANVAS_WIDTH // 100
+BALL_SPEED_INIT = CANVAS_WIDTH // (150 - (DELAY*2))
+PADDLE_SPEED_INIT = CANVAS_WIDTH // (150 - (DELAY*2))
 
 # score int constants
 LOST_LIFE_POINTS = -20
@@ -166,7 +167,6 @@ class MsgType() :
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
-    MSG_PADDLE_POS      = 'MPP'
     MSG_PAUSE_UPDATE    = 'MPU'
     MSG_PLAYER_LOC      = 'MPL'
     MSG_START_PLAY      = 'MSP'
@@ -179,6 +179,7 @@ class MsgPayload() :
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
     PADDLE_DIR_RIGHT    = 'R'
+    PADDLE_DIR_STOP     = 'S'
     SYNC_ERR_BLOCK_BROKEN = 'BB'
     SYNC_ERR_BALL_DEFLECTED = 'BD'
     SYNC_ERR_CURRENT_STATE = 'CS'
@@ -207,9 +208,9 @@ class MsgIndex() :
     BLOCK_BROKEN_SCORE      = 5
     BLOCK_BROKEN_LIVES      = 6
     BLOCK_BROKEN_BLOCK      = 7
-    PADDLE_DIR              = 0
-    PADDLE_POS_CENTER       = 0
-    PADDLE_POS_WIDTH        = 1
+    PADDLE_DIR_DIR          = 0
+    PADDLE_DIR_CENTER       = 1
+    PADDLE_DIR_WIDTH        = 2
     PAUSE_UPDATE_VAL        = 0
     PAUSE_UPDATE_LEVEL      = 1
     PLAYER_LOC_NUMBER       = 0

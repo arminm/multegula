@@ -55,6 +55,9 @@ def translatePlayerDirection(payload, player) :
         direction = Direction.DIR_LEFT
     elif payload == MsgPayload.PADDLE_DIR_RIGHT :
         direction = Direction.DIR_RIGHT 
+    elif payload == MsgPayload.PADDLE_DIR_STOP :
+        direction = Direction.DIR_STOP
+        return direction
 
     # translate based on orientation
     if orientation == Orientation.DIR_SOUTH :

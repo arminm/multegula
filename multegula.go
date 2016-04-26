@@ -257,8 +257,6 @@ func inboundDispatcher() {
 			bridges.SendToPyBridge(message)
 		case defs.MSG_PADDLE_DIR:
 			bridges.SendToPyBridge(message)
-		case defs.MSG_PADDLE_POS:
-			bridges.SendToPyBridge(message)
 		case defs.MSG_PAUSE_UPDATE:
 			bridges.SendToPyBridge(message)
 		case defs.MSG_START_PLAY:
