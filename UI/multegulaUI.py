@@ -237,6 +237,7 @@ def react(canvas, received) :
     content = received.content
     myName = canvas.data['myName']
     currentState = canvas.data['currentState']
+    print(received.toString())
 
     if name == myName :
         canvas.data['myReceived'][kind] = True
@@ -385,7 +386,6 @@ def react(canvas, received) :
         if playerState in [PlayerState.USER, PlayerState.COMP] :
             # only can move paddles in the PAUSE and GAMEPLAY states
             if currentState in [State.STATE_PAUSE, State.STATE_GAMEPLAY] :
-                print(received.toString())
                 # get information out of payload
                 direction = content[MsgIndex.PADDLE_DIR_DIR]
                 center = int(content[MsgIndex.PADDLE_DIR_CENTER])
