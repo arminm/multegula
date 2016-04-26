@@ -1,7 +1,7 @@
 #!/bin/bash
 ###########################################################
-#Multegula - run.sh                                       #
-#Main Driver/Startup Script for Multegula                 #
+#Multegula - run_no_cleanup.sh                            #
+#Main Driver/Startup Script for Multegula without cleanup #
 #Armin Mahmoudi, Daniel Santoro, Garrett Miller, Lunwen He#
 ###########################################################
 
