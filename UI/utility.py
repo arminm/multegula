@@ -105,7 +105,7 @@ def isGameOver(canvas) :
     # update all players
     for player in canvas.data['competitors'] :
         (name, state, score, lives, pwr) = canvas.data[player].getStatus()
-        if (state == PlayerState.USER or state == PlayerState.COMP) and lives > 0 :
+        if state in [PlayerState.USER, PlayerState.COMP, PlayerState.AI] and lives > 0 :
             alive_count += 1
     if alive_count == 1 :
         return True

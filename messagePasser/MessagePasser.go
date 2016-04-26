@@ -180,6 +180,7 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
 	dec := gob.NewDecoder(conn)
 	msg := &Message{}
 	err := dec.Decode(msg)
+	fmt.Println(msg)
 	if err != nil {
 		return *msg, err
 	}
@@ -347,9 +348,10 @@ func receiveMessageFromConn(conn net.Conn) {
 			name, _ := getConnectionName(conn)
 			if err.Error() == "EOF" {
 				// tel the UI that we've lost a node
-				addMessageToReceiveChannel(Message{
+				// TODO MULTICAST. 
+				Multicast(&Message{
 	                Source: defs.MULTEGULA_DEST,
-	                Destination: defs.UI_DEST,
+	                Destination: defs.MULTICAST_DEST,
 	                Content: name,
 	                Kind: defs.MSG_DEAD_NODE,
 	            })
