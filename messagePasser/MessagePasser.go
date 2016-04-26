@@ -346,6 +346,13 @@ func receiveMessageFromConn(conn net.Conn) {
 		if err != nil {
 			name, _ := getConnectionName(conn)
 			if err.Error() == "EOF" {
+				// tel the UI that we've lost a node
+				addMessageToReceiveChannel(Message{
+	                Source: defs.MULTEGULA_DEST,
+	                Destination: defs.UI_DEST,
+	                Content: name,
+	                Kind: defs.MSG_DEAD_NODE,
+	            })
 				fmt.Println("Lost connection to:", name)
 				break
 			} else {
