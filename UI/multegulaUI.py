@@ -471,6 +471,7 @@ def react(canvas, received) :
     # MSG_UNICORN
     elif kind == MsgType.MSG_UNICORN :
         canvas.data['unicorn'] = content[MsgIndex.UNICORN_UNICORN]
+        print('UI (' + myName + ') got unicorn update: ' + canvas.data['unicorn'])
 
 ### receiveAll - get all messages from the GoBrige
 def receiveAll(canvas) :
