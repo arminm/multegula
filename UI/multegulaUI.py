@@ -69,7 +69,7 @@ def keyPressed(event) :
             toSend.kind = MsgType.MSG_MYNAME
             toSend.content = myName
             toSend.multicast = False
-            canvas.data['bridge'].sendMessage(toSend)
+            sendMessage(canvas, toSend)
 
     # pause screen / gameplay keyPressed events - move the paddle
     elif currentState in [State.STATE_PAUSE, State.STATE_GAMEPLAY] :
@@ -88,7 +88,7 @@ def keyPressed(event) :
                     toSend.kind = MsgType.MSG_PADDLE_DIR
                     toSend.content = MsgPayload.PADDLE_DIR_LEFT
                     toSend.multicast = True
-                    canvas.data['bridge'].sendMessage(toSend)
+                    sendMessage(canvas, toSend)
 
             # if this is a single player game, then go ahead and set the paddle direction
             elif canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
@@ -106,7 +106,7 @@ def keyPressed(event) :
                     toSend.kind = MsgType.MSG_PADDLE_DIR
                     toSend.content = MsgPayload.PADDLE_DIR_RIGHT
                     toSend.multicast = True
-                    canvas.data['bridge'].sendMessage(toSend)
+                    sendMessage(canvas, toSend)
 
             # if this is a single player game, then go ahead and set the paddle direction
             elif canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
@@ -137,7 +137,7 @@ def keyReleased(event) :
                     toSend.kind = MsgType.MSG_PADDLE_POS
                     toSend.content = str(CENTER) + '|' + str(WIDTH)
                     toSend.multicast = True
-                    canvas.data['bridge'].sendMessage(toSend)
+                    sendMessage(canvas, toSend)
 
             # if this is a single player game, then go ahead and set the paddle direction
             elif canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
@@ -162,7 +162,7 @@ def mousePressed(event) :
             toSend.kind = MsgType.MSG_GAME_TYPE
             toSend.content = MsgPayload.GAME_TYPE_SINGLE
             toSend.multicast = False
-            canvas.data['bridge'].sendMessage(toSend)
+            sendMessage(canvas, toSend)
 
             # initialize game
             canvas.data['currentState'] = State.STATE_PAUSE
@@ -181,11 +181,18 @@ def mousePressed(event) :
             toSend.kind = MsgType.MSG_GAME_TYPE
             toSend.content = MsgPayload.GAME_TYPE_MULTI
             toSend.multicast = False
-            canvas.data['bridge'].sendMessage(toSend)
+            sendMessage(canvas, toSend)
 
             # initialize game
             canvas.data['currentState'] = State.STATE_JOIN
             canvas.delete(ALL)
+
+def sendMessage(canvas, message) :
+    if canvas.data['myReceived'][message.kind] == True or message.kind == MsgType.St: 
+        canvas.data['bridge'].sendMessage(message)
+        canvas.data['myReceived'][message.kind] = False
+    else : 
+        print(canvas.data['myName'] + " UI DROPPING MSG: " + message.toString())
 
 ### react - react to messages
 def react(canvas, received) :
@@ -195,6 +202,9 @@ def react(canvas, received) :
     content = received.content
     myName = canvas.data['myName']
     currentState = canvas.data['currentState']
+
+    if name == myName :
+        canvas.data['myReceived'][kind] = True
 
     # MSG_BALL_DEFLECTED
     if kind == MsgType.MSG_BALL_DEFLECTED :
@@ -538,7 +548,7 @@ def playerUpdate(name, status, info, canvas) :
             toSend.content = str(SCORE) + '|' + str(LIVES)
             toSend.multicast = True 
             # send message
-            canvas.data['bridge'].sendMessage(toSend)
+            sendMessage(canvas, toSend)
 
         # BALL_DEFLECTED -> create MSG_BALL_DEFLECTED, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_DEFLECTED :
@@ -560,7 +570,7 @@ def playerUpdate(name, status, info, canvas) :
                                 str(YSPEED) + '|' + str(SCORE))
             toSend.multicast = True
             # send message
-            canvas.data['bridge'].sendMessage(toSend)
+            sendMessage(canvas, toSend)
 
         # WALL_BALL_DEFLECTED -> update ball properties, not a player -> Return False
         elif status == PlayerReturnStatus.WALL_BALL_DEFLECTED :
@@ -595,7 +605,7 @@ def playerUpdate(name, status, info, canvas) :
                                 str(LIVES) + '|' + str(BLOCK))
             toSend.multicast = True
             # send message
-            canvas.data['bridge'].sendMessage(toSend)
+            sendMessage(canvas, toSend)
 
         # BALL_OOB -> create MSG_ERROR, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_OOB :
@@ -620,7 +630,7 @@ def pauseUpdate(status, canvas) :
         toSend.content = '3|' + str(canvas.data['level'].currentLevel + 1)
         toSend.multicast = True
         # send message
-        canvas.data['bridge'].sendMessage(toSend)
+        sendMessage(canvas, toSend)
     # Two seconds left until the game starts...
     elif status == PauseReturnStatus.DISP_2 :
         # form message
@@ -630,7 +640,7 @@ def pauseUpdate(status, canvas) :
         toSend.content = '2|' + str(canvas.data['level'].currentLevel + 1)
         toSend.multicast = True
         # send message
-        canvas.data['bridge'].sendMessage(toSend)
+        sendMessage(canvas, toSend)
     # One second left until the game starts...
     elif status == PauseReturnStatus.DISP_1 :
         # form message
@@ -640,7 +650,7 @@ def pauseUpdate(status, canvas) :
         toSend.content = '1|' + str(canvas.data['level'].currentLevel + 1)
         toSend.multicast = True
         # send message
-        canvas.data['bridge'].sendMessage(toSend)
+        sendMessage(canvas, toSend)
     # Time for the game to begin
     elif status == PauseReturnStatus.MOVE_ON :
         (XSPEED, YSPEED) = canvas.data['ball'].randomVelocity()
@@ -651,7 +661,7 @@ def pauseUpdate(status, canvas) :
         toSend.content = str(XSPEED*FP_MULT) + '|' + str(YSPEED*FP_MULT)
         toSend.multicast = True
         # send message
-        canvas.data['bridge'].sendMessage(toSend)
+        sendMessage(canvas, toSend)
 
 def levelUpdate(status, canvas) :
     if status == LevelReturnStatus.COMPLETE :
@@ -817,6 +827,23 @@ def init(canvas) :
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
     canvas.data['level'] = Level()
+
+
+    canvas.data['myReceived'] = {}
+    canvas.data['myReceived'][MsgType.MSG_BALL_DEFLECTED] = True
+    canvas.data['myReceived'][MsgType.MSG_BALL_MISSED] = True
+    canvas.data['myReceived'][MsgType.MSG_BLOCK_BROKEN] = True
+    canvas.data['myReceived'][MsgType.MSG_DEAD_NODE] = True
+    canvas.data['myReceived'][MsgType.MSG_GAME_TYPE] = True
+    canvas.data['myReceived'][MsgType.MSG_MYNAME] = True
+    canvas.data['myReceived'][MsgType.MSG_PADDLE_DIR] = True
+    canvas.data['myReceived'][MsgType.MSG_PADDLE_POS] = True
+    canvas.data['myReceived'][MsgType.MSG_PAUSE_UPDATE] = True
+    canvas.data['myReceived'][MsgType.MSG_PLAYER_LOC] = True
+    canvas.data['myReceived'][MsgType.MSG_START_PLAY] = True
+    canvas.data['myReceived'][MsgType.MSG_SYNC_ERROR] = True
+    canvas.data['myReceived'][MsgType.MSG_UNICORN] = True
+
 
 ### initPlayers - initialize players
 def initPlayers(canvas, number=1, info=[]):

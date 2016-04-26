@@ -70,7 +70,7 @@ LOST_LIFE_LIVES = -1
 EXTRA_LIFE_POINTS = 100
 DEFLECT_POINTS  = 3
 BREAK_POINTS = 5
-INIT_LIVES = 3
+INIT_LIVES = 10
 
 # fixed point multiplier / rounding factor
 FP_MULT = 10

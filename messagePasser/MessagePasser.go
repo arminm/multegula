@@ -180,7 +180,6 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
 	dec := gob.NewDecoder(conn)
 	msg := &Message{}
 	err := dec.Decode(msg)
-	fmt.Println(msg)
 	if err != nil {
 		return *msg, err
 	}
@@ -407,6 +406,7 @@ func deliverMessage(message Message) {
 		} else {
 			// fmt.Printf("HBQ Message:%v\n", message)
 			holdbackQueueMutex.Lock()
+			fmt.Printf("%s: Add to holdbackQueue %v\n", localNode.Name, message)
 			Push(&holdbackQueue, message)
 			if len(holdbackQueue) > defs.HOLDBACKQUEUE_LIMIT {
 				fmt.Println("Flushing holdbackQueue!")

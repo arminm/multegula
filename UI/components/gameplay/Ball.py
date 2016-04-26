@@ -74,14 +74,14 @@ class Ball :
 
     def randomXVelocity(self) :
         speed = BALL_SPEED_INIT
-        factor = random.gauss(0, 1)
+        factor = random.gauss(0, 0.5)
         if abs(factor) < 0.05 :
             factor += random.choice([-0.2, -0.15, -0.1, -0.05, 0.05, 0.1, 0.15, 0.2])
         return round(speed*factor, RD_FACT)
 
     def randomYVelocity(self) :
         speed = BALL_SPEED_INIT
-        factor = random.gauss(0, 1)
+        factor = random.gauss(0, 0.5)
         if abs(factor) < 0.05 :
             factor += random.choice([-0.2, -0.15, -0.1, -0.05, 0.05, 0.1, 0.15, 0.2])
         return round(speed*factor, RD_FACT)
