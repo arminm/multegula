@@ -177,12 +177,14 @@ class MsgPayload() :
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
     PADDLE_DIR_RIGHT    = 'R'
-    SYNC_ERR_PLAYER_TYPE = 'PT'
     SYNC_ERR_BLOCK_BROKEN = 'BB'
+    SYNC_ERR_BALL_DEFLECTED = 'BD'
+    SYNC_ERR_CURRENT_STATE = 'CS'
     SYNC_ERR_LAST_TO_TOUCH = 'LT'
     SYNC_ERR_NOT_UNICORN = 'NU'
     SYNC_ERR_PLAYER_LOC = 'PL'
-    SYNC_ERR_CURRENT_SCREEN = 'CS'
+    SYNC_ERR_PLAYER_TYPE = 'PT'
+
 
 ### MsgIndex - defines the the standard placement of payload values
 class MsgIndex() :
