@@ -13,7 +13,6 @@ WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
 CANVAS_DIMENTSION = 350
 CANVAS_WIDTH = CANVAS_DIMENTSION;
 CANVAS_HEIGHT = CANVAS_DIMENTSION;
-DELAY = 30
 X_THIRD = CANVAS_WIDTH // 4
 X_CENTER = CANVAS_WIDTH // 2
 X_2THIRD = X_THIRD*3
@@ -60,6 +59,11 @@ PADDLE_WIDTH_MAX = (PADDLE_MAX - PADDLE_MIN) // 2
 # block sizing
 BLOCK_WIDTH = CANVAS_WIDTH // 10
 BLOCK_HEIGHT = CANVAS_HEIGHT // 50  
+
+
+# timing constants
+DELAY = 30
+REJOIN_TIMEOUT = 5000 // DELAY
 
 # speed constants
 BALL_SPEED_INIT = CANVAS_WIDTH // (120 - (DELAY*2))
@@ -168,11 +172,13 @@ class MsgType() :
     MSG_CON_REPLY       = 'MCP'
     MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
+    MSG_KILL_NODE       = 'MKN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
     MSG_PAUSE_UPDATE    = 'MPU'
     MSG_PLAYER_LOC      = 'MPL'
+    MSG_REJOIN_REQ      = 'MRR'
     MSG_START_PLAY      = 'MSP'
     MSG_SYNC_ERROR      = 'MSE'
     MSG_UNICORN         = 'MUN'
@@ -180,6 +186,7 @@ class MsgType() :
 ### ConType - defines consensus types
 class ConType() :
     CON_GAME_STATE = 'CGS'
+    CON_REJOIN     = 'CRJ'
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :

@@ -128,12 +128,26 @@ def sendSyncError(content, canvas) :
     # send message
     canvas.data['bridge'].sendMessage(toSend)
 
+### sendSyncError - formulate and send sync error
+def sendKillMessage(content, canvas) :
+    # form message
+    toSend = PyMessage()
+    toSend.src = canvas.data['myName']
+    toSend.kind = MsgType.MSG_KILL_NODE
+    toSend.content = content
+    toSend.multicast = True
+    print("SENDING: " + toSend.toString())
+    # send message
+    sendMessage(toSend, canvas)
+
 ### sendMessage - use dictionary flags in the 'myReceived' entry to avoid sending 
 ##      duplicate messages and avoid synchronization issues. (e.g. breaking the same block twice)
 def sendMessage(message, canvas) :
-    if canvas.data['myReceived'][message.kind] == True: 
+    if canvas.data['myReceived'][message.kind] == True and canvas.data['artificialDead'] != True : 
         canvas.data['bridge'].sendMessage(message)
         canvas.data['myReceived'][message.kind] = False
+    elif canvas.data['artificialDead'] == True :
+        print("LOOK WE DEAD")
     else : 
         print(canvas.data['myName'] + " UI DROPPING MSG: " + message.toString())
 
@@ -236,6 +250,7 @@ def clearMyReceivedFlags(canvas) :
     canvas.data['myReceived'][MsgType.MSG_BALL_MISSED] = True
     canvas.data['myReceived'][MsgType.MSG_BLOCK_BROKEN] = True
     canvas.data['myReceived'][MsgType.MSG_DEAD_NODE] = True
+    canvas.data['myReceived'][MsgType.MSG_KILL_NODE] = True
     canvas.data['myReceived'][MsgType.MSG_CON_CHECK] = True
     canvas.data['myReceived'][MsgType.MSG_CON_COMMIT] = True
     canvas.data['myReceived'][MsgType.MSG_CON_REQ] = True

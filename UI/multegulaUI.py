@@ -81,12 +81,23 @@ def keyPressed(event) :
         canvas.data['bridge'].sendMessage(toSend)
 
     ### ARTIFICIAL REJOIN ENGINE ###
-    elif event.char == '#' and gameType == GameType.MULTI_PLAYER and currentState == State.STATE_GAMEPLAY :
+    elif event.char == '#' and gameType == GameType.MULTI_PLAYER :
         toSend = PyMessage()
         toSend.src = myName
         toSend.kind = MsgType.MSG_DEAD_NODE
         toSend.content = myName
         toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+        canvas.data['artificialDead'] = True
+
+    elif event.char == '1' and gameType == GameType.MULTI_PLAYER and canvas.data['artificialDead'] == True :
+        toSend = PyMessage()
+        toSend.src = myName
+        toSend.kind = MsgType.MSG_REJOIN_REQ
+        toSend.content = myName
+        toSend.multicast = True
+        canvas.data['bridge'].sendMessage(toSend)
 
     # handle splash screen events - entering a name
     elif currentState == State.STATE_SPLASH :
@@ -405,13 +416,23 @@ def react(canvas, received) :
 
     # MSG_DEAD_NODE
     elif kind == MsgType.MSG_DEAD_NODE :
+        print("RECEIVED: " + received.toString())
         if currentState != State.STATE_REJOIN :
-            print("RECEIVED: " + received.toString())
             canvas.delete(ALL)
             canvas.data['gameScreen'].first = True
             canvas.data['level'].updated = True
             canvas.data['ball'].reset()
             canvas.data['currentState'] = State.STATE_REJOIN
+
+        missingNode = content[0]
+        canvas.data['missingNodes'].append(missingNode)
+        canvas.data[missingNode + 'Timer'] = REJOIN_TIMEOUT
+
+    # MSG_KILL_NODE
+    elif kind == MsgType.MSG_KILL_NODE :
+        missingNode = content[0]
+        canvas.data[missingNode].iAmDead()
+        canvas.data['missingNodes'].remove(missingNode)
 
     # MSG_PADDLE_DIR
     elif kind == MsgType.MSG_PADDLE_DIR :
@@ -486,6 +507,22 @@ def react(canvas, received) :
             if playerList != receivedList and currentState != State.STATE_SYNC :
                 content = MsgPayload.SYNC_ERR_PLAYER_LOC + '|' + name
                 sendSyncError(content, canvas)
+
+    elif kind == MsgType.MSG_REJOIN_REQ :
+        missingNode = content[0]
+        if canvas.data['unicorn'] == myName and missingNode in cavnas.data['missingNodes'] :
+            missingNode = content[0]
+            toSend = PyMessage()
+            toSend.src = myName
+            toSend.kind = MsgType.MSG_CON_REQ
+            toSend.content = ConType.CON_REJOIN + '|' + missingNode
+            toSend.multicast = False
+            #sendMessage(toSend, canvas)
+            print(toSend.toString())
+
+        timerKey = missingNode + 'Timer'
+        canvas.data[timerKey] = REJOIN_TIMEOUT
+
 
     # MSG_START_PLAY
     elif kind == MsgType.MSG_START_PLAY :
@@ -769,6 +806,41 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateMenu(canvas)  
         canvas.data['rejoinScreen'].draw(canvas)   
 
+        # get the list of missigng nodes 
+        missingNodes = canvas.data['missingNodes']
+
+        # make sure there is something in it
+        if missingNodes :
+            # loop through all nodes
+            for missing in missingNodes :
+                # update timer and send kill messages
+                timerKey = missing + 'Timer'
+                if canvas.data[timerKey] <= 0 and myName == canvas.data['unicorn']:
+                    sendKillMessage(missing, canvas)
+                else :
+                    canvas.data[timerKey] -= 1
+        else :
+            canvas.delete(ALL)
+            # reset the level
+            canvas.data['level'].first = True
+            canvas.data['level'].updated = True
+            for b, block in enumerate(canvas.data['level'].blocks) :
+                if canvas.data['level'].blocks[b].enabled == True :
+                    canvas.data['level'].blocks[b].first = True
+
+            # reset the game screen
+            canvas.data['gameScreen'].first = True
+
+            # reset the players
+            for player in canvas.data['competitors'] :
+                if canvas.data[player].state in [PlayerState.USER, PlayerState.COMP]:
+                    canvas.data[player].first = True
+                    canvas.data[player].paddle.first = True
+
+            # reset ball and go to pause state
+            canvas.data['ball'].reset()
+            canvas.data['currentState'] = State.STATE_PAUSE
+
     ### PAUSE SCREEN SINGLE PLAYER
     elif currentState == State.STATE_PAUSE and gameType == GameType.SINGLE_PLAYER :
         # draw screen and ball
@@ -886,7 +958,9 @@ def init(canvas) :
 
     canvas.data['playersInitialized'] = False
     canvas.data['artificalSync'] = False
+    canvas.data['artificialDead'] = False
 
+    canvas.data['missingNodes'] = []
 
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
