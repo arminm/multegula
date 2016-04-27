@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
@@ -30,6 +31,12 @@ import (
  * to messagePasser
  */
 var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
+
+/*
+ * keeping track of the proposal checks
+ */
+
+var propChecksMap map[string]*consensus.PropCheck = make(map[string]*consensus.PropCheck)
 
 /*
  * put message into sendChannel
@@ -205,7 +212,18 @@ func uiSetCompetitorLocation(myName string, peers *[]messagePasser.Node) {
 func PyBridgeReceiver() {
 	for {
 		message := bridges.ReceiveFromPyBridge()
-		go putMessageIntoSendChannel(message)
+		switch message.Kind {
+		case defs.MSG_CON_REQ:
+			valueType := strings.Split(message.Content, "|")[0]
+			consensus.Propose(message.Content, valueType)
+		case defs.MSG_CON_REPLY:
+			valueType := strings.Split(message.Content, "|")[0]
+			propCheck := propChecksMap[valueType]
+			(*propCheck.Callback)(message.Content)
+			delete(propChecksMap, valueType)
+		default:
+			go putMessageIntoSendChannel(message)
+		}
 	}
 }
 
@@ -243,10 +261,13 @@ func ConsensusReceiverRoutine() {
 func ConsensusCheckReceiverRoutine() {
 	for {
 		propCheck := consensus.ProposalCheck()
-		switch propCheck.Prop.Type {
-		case "test":
-			(*propCheck.Callback)("success")
-		}
+		propChecksMap[propCheck.Prop.Type] = propCheck
+		bridges.SendToPyBridge(messagePasser.Message{
+			Source:      messagePasser.LocalNode.Name,
+			Destination: messagePasser.LocalNode.Name,
+			Kind:        defs.MSG_CON_CHECK,
+			Content:     propCheck.Prop.Value,
+		})
 	}
 }
 
@@ -256,10 +277,13 @@ func ConsensusCheckReceiverRoutine() {
 func ConsensusReachedRoutine() {
 	for {
 		proposal := consensus.ProposalToCommit()
-		switch proposal.Type {
-		case "test":
-			fmt.Printf("SHOULD COMMIT PROPOSAL:%+v\n", proposal)
+		commitMessage := messagePasser.Message{
+			Source:      messagePasser.LocalNode.Name,
+			Destination: messagePasser.LocalNode.Name,
+			Kind:        defs.MSG_CON_COMMIT,
+			Content:     proposal.Value,
 		}
+		bridges.SendToPyBridge(commitMessage)
 	}
 }
 
@@ -290,6 +314,7 @@ func inboundDispatcher() {
 		case defs.MSG_SYNC_ERROR:
 			fallthrough
 		case defs.MSG_UNICORN:
+			initConsensus(message)
 			bridges.SendToPyBridge(message)
 
 		// election messages
@@ -298,11 +323,7 @@ func inboundDispatcher() {
 		case defs.MSG_BULLY_ANSWER:
 			fallthrough
 		case defs.MSG_BULLY_UNICORN:
-			nodeIndex, node, err := messagePasser.FindNodeByName(messagePasser.PeerNodes, message.Content)
-			if err == nil {
-				peers := append(messagePasser.PeerNodes[:nodeIndex], messagePasser.PeerNodes[nodeIndex+1:]...)
-				consensus.InitConsensus(node, peers, messagePasser.LocalNode.Name)
-			}
+			initConsensus(message)
 			fallthrough
 		case defs.MSG_BULLY_ARE_YOU_ALIVE:
 			fallthrough
@@ -351,6 +372,21 @@ func parseMainArguments(args []string) string {
 	}
 	fmt.Println("Local Node Name:", localNodeName)
 	return localNodeName
+}
+
+/*
+ * Inits consensus when we receive a unicorn message
+ */
+func initConsensus(message messagePasser.Message) {
+	nodeIndex, node, err := messagePasser.FindNodeByName(messagePasser.PeerNodes, message.Content)
+	if err == nil {
+		peers := append(messagePasser.PeerNodes[:nodeIndex], messagePasser.PeerNodes[nodeIndex+1:]...)
+		consensus.InitConsensus(node, peers, messagePasser.LocalNode.Name)
+		go ConsensusReceiverRoutine()
+		go ConsensusCheckReceiverRoutine()
+		go ConsensusReachedRoutine()
+		fmt.Println("Consensus initialized by leader:", node.Name)
+	}
 }
 
 /* the Main function of the Multegula application */
