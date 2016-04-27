@@ -13,7 +13,7 @@ import (
 const HOLDBACKQUEUE_LIMIT int = 5
 
 //Our bootstrap server.  Uncomment below for local testing.
-//const SERVER_DNS string = "multegula.dyndns.org:55555"
+// const SERVER_DNS string = "multegula.dyndns.org:55555"
 const SERVER_DNS string = "localhost:55555"
 
 /* The beginning of message types for bully algorithm */
@@ -60,12 +60,15 @@ const MSG_DEAD_UNICORN string = "MDU"
 const MSG_GAME_TYPE string = "MGT"
 const MSG_MYNAME string = "MMN"
 const MSG_PADDLE_DIR string = "MPD"
-const MSG_PADDLE_POS string = "MPP"
 const MSG_PAUSE_UPDATE string = "MPU"
 const MSG_PLAYER_LOC string = "MPL"
 const MSG_START_PLAY string = "MSP"
 const MSG_SYNC_ERROR string = "MSE"
 const MSG_UNICORN string = "MUN"
+const MSG_CON_COMMIT string = "MCC"
+const MSG_CON_CHECK string = "MCH"
+const MSG_CON_REPLY string = "MCP"
+const MSG_CON_REQ string = "MCR"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVR1"

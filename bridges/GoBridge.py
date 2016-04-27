@@ -18,7 +18,7 @@ class GoBridge :
     ### __init___ - initialize and return GoBridge
     ## # this function starts the GoBridge running
 	## # Returns a connected socket object GoBridge
-	def __init__(self, CLI_PORT, src = DEFAULT_SRC,) :
+	def __init__(self, CLI_PORT, src = DEFAULT_SRC) :
 		# set the self src
 		self.src = src;
 		
@@ -64,7 +64,7 @@ class GoBridge :
 			if(pyMessage.multicast == True):
 				pyMessage.dest = MULTICAST_DEST
 			else:
-				pyMessage.dest = MULTEGULA_DEST	
+				pyMessage.dest = pyMessage.src	
 
 			# assemble the string version of the message
 			toSend = pyMessage.assemble()

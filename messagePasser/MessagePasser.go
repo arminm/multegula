@@ -62,7 +62,7 @@ var wg sync.WaitGroup
 /*
  * local instance holding the peer nodes.
  */
-var peerNodes Nodes
+var PeerNodes Nodes
 
 /* map stores connections to each node
  * <key, value> = <name, connection>
@@ -70,6 +70,7 @@ var peerNodes Nodes
 var connections map[string]net.Conn = make(map[string]net.Conn)
 var decoders map[string]*gob.Decoder = make(map[string]*gob.Decoder)
 var encoders map[string]*gob.Encoder = make(map[string]*gob.Encoder)
+var localEncoder *gob.Encoder
 
 func getConnectionName(connection net.Conn) (string, error) {
 	for name, conn := range connections {
@@ -92,10 +93,16 @@ var vectorTimeStamp []int
 var localReceivedSeqNum = 0
 
 /*
+ * connection for localhost, this is the send side,
+ * the receive side is stored in connections map
+ **/
+var localConn net.Conn
+
+/*
  * The local node's information.
  */
-var localNode Node
-var localIndex int
+var LocalNode Node
+var LocalIndex int
 
 /* the queue for messages to be sent */
 var sendChannel chan Message = make(chan Message, defs.QUEUE_SIZE)
@@ -124,17 +131,17 @@ func updateSeqNum(message *Message) {
  * is not ready yet, and we have to receive [1,2,4] first.
  */
 func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) bool {
-	if localIndex == sourceIndex {
-		if message.Timestamp[localIndex] == (localReceivedSeqNum + 1) {
+	if LocalIndex == sourceIndex {
+		if message.Timestamp[LocalIndex] == (localReceivedSeqNum + 1) {
 			return true
 		}
 		return false
 	}
 	for i, val := range message.Timestamp {
 		localValue := (*localTimeStamp)[i]
-		if i == sourceIndex && i != localIndex && val != (localValue+1) {
+		if i == sourceIndex && i != LocalIndex && val != (localValue+1) {
 			return false
-		} else if i != sourceIndex && i != localIndex && val > localValue {
+		} else if i != sourceIndex && i != LocalIndex && val > localValue {
 			return false
 		}
 	}
@@ -146,9 +153,9 @@ func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) boo
  */
 func messageHasBeenReceived(message Message) bool {
 	/* check if message has been delivered already */
-	if message.Source == localNode.Name && message.Timestamp[localIndex] <= localReceivedSeqNum {
+	if message.Source == LocalNode.Name && message.Timestamp[LocalIndex] <= localReceivedSeqNum {
 		return true
-	} else if message.Source != localNode.Name && CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
+	} else if message.Source != LocalNode.Name && CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
 		return true
 	}
 
@@ -170,8 +177,12 @@ func messageHasBeenReceived(message Message) bool {
  * @param	message – message to be sent
  **/
 func sendMessageTCP(nodeName string, message *Message) {
-	if encoder, exists := encoders[nodeName]; exists {
-		encoder.Encode(message)
+	if nodeName == LocalNode.Name {
+		localEncoder.Encode(message)
+	} else {
+		if encoder, exists := encoders[nodeName]; exists {
+			encoder.Encode(message)
+		}
 	}
 }
 
@@ -192,7 +203,6 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
 	}
 	msg := &Message{}
 	err := dec.Decode(msg)
-	fmt.Println("Message:", msg)
 	return *msg, err
 }
 
@@ -200,13 +210,13 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
  * basic multicasts a message to all nodes
  */
 func Multicast(message *Message) {
-	if message.Source == localNode.Name {
+	if message.Source == LocalNode.Name {
 		message.Destination = defs.MULTICAST_DEST
 		updateSeqNum(message)
-		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, localIndex)
+		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, LocalIndex)
 	}
 
-	for _, node := range peerNodes {
+	for _, node := range PeerNodes {
 		sendMessageTCP(node.Name, message)
 	}
 }
@@ -228,18 +238,18 @@ func FindNodeByName(nodes []Node, name string) (int, Node, error) {
  * @param	nodes
  *			the nodes in the group
  *
- * @param	localNode
+ * @param	LocalNode
  *
  * @return	frontNodes – nodes smaller than localName
  *					latterNodes – nodes greater or equal to localName
  **/
-func getFrontAndLatterNodes(nodes []Node, localNode Node) (map[string]Node, map[string]Node) {
+func getFrontAndLatterNodes(nodes []Node) (map[string]Node, map[string]Node) {
 	var frontNodes map[string]Node = make(map[string]Node)
 	var latterNodes map[string]Node = make(map[string]Node)
 	for _, node := range nodes {
-		if node.Name < localNode.Name {
+		if node.Name < LocalNode.Name {
 			frontNodes[node.Name] = node
-		} else if node.Name > localNode.Name {
+		} else if node.Name > LocalNode.Name {
 			latterNodes[node.Name] = node
 		} else {
 			frontNodes[node.Name] = node
@@ -273,12 +283,12 @@ func GetNodeNames() []string {
  * @param	frontNodes
  *			map that contains all nodes with smaller Node names
  *
- * @param   localNode
+ * @param   LocalNode
  **/
-func acceptConnection(frontNodes map[string]Node, localNode Node) {
+func acceptConnection(frontNodes map[string]Node) {
 	defer wg.Done()
-	fmt.Println("Local Port:", strconv.Itoa(localNode.Port))
-	ln, err := net.Listen("tcp", ":"+strconv.Itoa(localNode.Port))
+	fmt.Println("Local Port:", strconv.Itoa(LocalNode.Port))
+	ln, err := net.Listen("tcp", ":"+strconv.Itoa(LocalNode.Port))
 	if err != nil {
 		fmt.Println("Couldn't Start Server...")
 		panic(err)
@@ -298,6 +308,7 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 		// remove the connected node from the frontNodes
 		delete(frontNodes, msg.Source)
 		addConnection(msg.Source, conn)
+
 	}
 }
 
@@ -307,9 +318,9 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
  * @param	latterNodes
  *			map that contains all nodes with greater or equal Node names
  *
- * @param	localNode
+ * @param	LocalNode
  **/
-func sendConnection(latterNodes map[string]Node, localNode Node) {
+func sendConnection(latterNodes map[string]Node) {
 	defer wg.Done()
 	for _, node := range latterNodes {
 		conn, err := net.Dial("tcp", node.IP+":"+strconv.Itoa(node.Port))
@@ -318,10 +329,15 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 			time.Sleep(time.Second * 1)
 			conn, err = net.Dial("tcp", node.IP+":"+strconv.Itoa(node.Port))
 		}
-		addConnection(node.Name, conn)
+		if node.Name == LocalNode.Name {
+			localConn = conn
+			localEncoder = gob.NewEncoder(conn)
+		} else {
+			addConnection(node.Name, conn)
+		}
 
 		/* send an initial ping message to other side of the connection */
-		msg := Message{localNode.Name, node.Name, "ping", "ping", 0, vectorTimeStamp}
+		msg := Message{LocalNode.Name, node.Name, "ping", "ping", 0, vectorTimeStamp}
 		encoder := gob.NewEncoder(conn)
 		encoder.Encode(msg)
 	}
@@ -336,7 +352,7 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
  *			the message to be put into receiveQueue
  **/
 func addMessageToReceiveChannel(message Message) {
-	if message.Source == localNode.Name && message.Destination == defs.MULTICAST_DEST {
+	if message.Source == LocalNode.Name && message.Destination == defs.MULTICAST_DEST {
 		localReceivedSeqNum += 1
 	} else {
 		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
@@ -360,7 +376,7 @@ func receiveMessageFromConn(conn net.Conn) {
 				// tel the UI that we've lost a node
 				// TODO MULTICAST.
 				Multicast(&Message{
-					Source:      localNode.Name,
+					Source:      LocalNode.Name,
 					Destination: defs.MULTICAST_DEST,
 					Content:     name,
 					Kind:        defs.MSG_DEAD_NODE,
@@ -410,7 +426,7 @@ func deliverMessage(message Message) {
 		if messageHasBeenReceived(message) {
 			return
 		}
-		sourceIndex, _, _ := FindNodeByName(peerNodes, message.Source)
+		sourceIndex, _, _ := FindNodeByName(PeerNodes, message.Source)
 		if isMessageReady(message, sourceIndex, &vectorTimeStamp) {
 			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
@@ -433,7 +449,7 @@ func deliverMessage(message Message) {
 		/* Once a message has been inspected locally, check to see if it should be
 		 * re-multicasted to other nodes
 		 */
-		if message.Source != localNode.Name {
+		if message.Source != LocalNode.Name {
 			go Multicast(&message)
 		}
 	} else {
@@ -451,7 +467,7 @@ func checkHoldbackQueue() {
 	var messageToDeliver *Message
 	holdbackQueueMutex.Lock()
 	for i, msg := range holdbackQueue {
-		sourceIndex, _, _ := FindNodeByName(peerNodes, msg.Source)
+		sourceIndex, _, _ := FindNodeByName(PeerNodes, msg.Source)
 		if isMessageReady(msg, sourceIndex, &vectorTimeStamp) {
 			messageToDeliver = &msg
 			Delete(&holdbackQueue, i)
@@ -570,10 +586,10 @@ func printNodesName(nodes []Node) {
  * initialize MessagePasser, this is a public method
  **/
 func InitMessagePasser(nodes Nodes, localName string) {
-	peerNodes = nodes
-	sort.Sort(peerNodes)
+	PeerNodes = nodes
+	sort.Sort(PeerNodes)
 	var err error
-	localIndex, localNode, err = FindNodeByName(peerNodes, localName)
+	LocalIndex, LocalNode, err = FindNodeByName(PeerNodes, localName)
 	if err != nil {
 		panic(err)
 	}
@@ -583,17 +599,17 @@ func InitMessagePasser(nodes Nodes, localName string) {
 	// keep track of group seqNum for multicasting
 	seqNums[localName] = 0
 	// initialize the vectorTimeStamp
-	vectorTimeStamp = make([]int, len(peerNodes))
+	vectorTimeStamp = make([]int, len(PeerNodes))
 
 	// separate Node names
-	frontNodes, latterNodes := getFrontAndLatterNodes(peerNodes, localNode)
+	frontNodes, latterNodes := getFrontAndLatterNodes(PeerNodes)
 
 	//TODO: Don't wait for connections
 	// wait for connections setup before proceeding
 	wg.Add(2)
 	// setup TCP connections
-	go acceptConnection(frontNodes, localNode)
-	go sendConnection(latterNodes, localNode)
+	go acceptConnection(frontNodes)
+	go sendConnection(latterNodes)
 	wg.Wait()
 
 	// start routines listening on each connection to receive messages

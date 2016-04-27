@@ -55,6 +55,9 @@ def translatePlayerDirection(payload, player) :
         direction = Direction.DIR_LEFT
     elif payload == MsgPayload.PADDLE_DIR_RIGHT :
         direction = Direction.DIR_RIGHT 
+    elif payload == MsgPayload.PADDLE_DIR_STOP :
+        direction = Direction.DIR_STOP
+        return direction
 
     # translate based on orientation
     if orientation == Orientation.DIR_SOUTH :
@@ -124,3 +127,123 @@ def sendSyncError(content, canvas) :
 
     # send message
     canvas.data['bridge'].sendMessage(toSend)
+
+### sendMessage - use dictionary flags in the 'myReceived' entry to avoid sending 
+##      duplicate messages and avoid synchronization issues. (e.g. breaking the same block twice)
+def sendMessage(message, canvas) :
+    if canvas.data['myReceived'][message.kind] == True: 
+        canvas.data['bridge'].sendMessage(message)
+        canvas.data['myReceived'][message.kind] = False
+    else : 
+        print(canvas.data['myName'] + " UI DROPPING MSG: " + message.toString())
+
+### getGameState - stringify the game state for sending in consensus requests
+def getGameState(canvas) :    
+    # get alphabetical player names
+    playerList = []
+    for player in canvas.data['competitors'] :
+        if canvas.data[player].state in [PlayerState.USER, PlayerState.COMP] :
+            playerList.append(player)    
+    numPlayers = str(len(playerList))
+    playerList = sorted(playerList)
+
+    # intialize content
+    content = numPlayers
+
+    # add player information to the message
+    for player in playerList :
+        content += '|'
+        name = canvas.data[player].name
+        score = str(canvas.data[player].score)
+        lives = str(canvas.data[player].lives)
+        center = str(canvas.data[player].paddle.center)
+        width = str(canvas.data[player].paddle.width)
+        content += (name + '|' + score + '|' + lives + '|' + center + '|' + width)
+
+    # add level information to the message
+    content += ('|' + str(canvas.data['level'].currentLevel))
+
+    # add block information to the message
+    for i, block in enumerate(canvas.data['level'].blocks) :
+        if block.enabled == True :
+            content += ('|' + str(i))
+
+    # finish and return message  
+    return content
+
+### getConsensusResponse - respond to a MSG_CON_CHECK with appropriate information
+def getConsensusResponse(conType, canvas) :
+    if conType == ConType.CON_GAME_STATE :
+        return ConType.CON_GAME_STATE + '|' + getGameState(canvas)
+
+### reactToCommit - set appropriate data values based on received messages
+def reactToCommit(content, canvas) :
+    conType = content[MsgIndex.CON_CHECK_TYPE]
+
+    if conType == ConType.CON_GAME_STATE :
+        i = MsgIndex.CON_CHECK_TYPE
+
+        i += 1
+        numPlayers = int(content[i]) # number of players
+        aliveList = []
+
+        ## update player stats
+        for j in range(0, numPlayers) :
+            i += 1
+            player = content[i] # name
+            aliveList.append(player)
+            canvas.data[player].first = True
+            canvas.data[player].paddle.first = True
+            i += 1
+            canvas.data[player].score = int(content[i]) # score
+            i += 1
+            canvas.data[player].lives = int(content[i]) # lives
+            i += 1
+            canvas.data[player].paddle.center = int(content[i]) # center
+            i += 1
+            canvas.data[player].paddle.width = int(content[i]) # width
+
+        ## kill players
+        for player in canvas.data['competitors'] :
+            if player not in aliveList :
+                canvas.data[player].iAmDead()
+
+        ## set the level
+        i += 1
+        level = int(content[i]) # level
+        canvas.data['level'].currentLevel = level
+        canvas.data['level'].blocks = canvas.data['level'].levels[level]
+        canvas.data['level'].first = True
+        canvas.data['level'].updated = True
+        canvas.data['gameScreen'].first = True
+
+        ## update the blocks
+        i += 1
+        # loop through all blocks 
+        for b, block in enumerate(canvas.data['level'].blocks) :
+            # disable any blocks that are appropriate to do so
+            if str(b) not in content[i:]:
+                canvas.data['level'].blocks[b].enabled = False
+            else :
+                canvas.data['level'].blocks[b].enabled = True
+                canvas.data['level'].blocks[b].first = True
+
+
+### clearMyReceivedFlags - so the game can persist in a graceful manner
+def clearMyReceivedFlags(canvas) :
+    canvas.data['myReceived'][MsgType.MSG_BALL_DEFLECTED] = True
+    canvas.data['myReceived'][MsgType.MSG_BALL_MISSED] = True
+    canvas.data['myReceived'][MsgType.MSG_BLOCK_BROKEN] = True
+    canvas.data['myReceived'][MsgType.MSG_DEAD_NODE] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_CHECK] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_COMMIT] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_REQ] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_REPLY] = True
+    canvas.data['myReceived'][MsgType.MSG_GAME_TYPE] = True
+    canvas.data['myReceived'][MsgType.MSG_MYNAME] = True
+    canvas.data['myReceived'][MsgType.MSG_PADDLE_DIR] = True
+    canvas.data['myReceived'][MsgType.MSG_PAUSE_UPDATE] = True
+    canvas.data['myReceived'][MsgType.MSG_PLAYER_LOC] = True
+    canvas.data['myReceived'][MsgType.MSG_START_PLAY] = True
+    canvas.data['myReceived'][MsgType.MSG_SYNC_ERROR] = True
+    canvas.data['myReceived'][MsgType.MSG_UNICORN] = True
