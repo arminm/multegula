@@ -36,7 +36,7 @@ go run bootstrapServer/bootstrapServer.go -port=${1:-55555} &
 #=======================================
 #Start multegula.go and wait for it to come up.
 go run multegula.go -uiport=${1:-11111} -gameport=${2:-1111} &
-sleep 4
+sleep 5
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
 if kill -0 $!; then
@@ -50,7 +50,7 @@ fi
 #=======================================
 #Start multegula.go and wait for it to come up.
 go run multegula.go -uiport=${1:-22222} -gameport=${2:-2222} &
-sleep 4
+sleep 5
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
 if kill -0 $!; then
@@ -64,7 +64,7 @@ fi
 #=======================================
 #Start multegula.go and wait for it to come up.
 go run multegula.go -uiport=${1:-33333} -gameport=${2:-3333} &
-sleep 4
+sleep 5
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
 if kill -0 $!; then
@@ -79,7 +79,7 @@ fi
 #=======================================
 #Start multegula.go and wait for it to come up.
 go run multegula.go -uiport=${1:-44444} -gameport=${2:-4444} &
-sleep 4
+sleep 5
 
 #Start UI only if background "go run" job succeeded. Works by checking if we have a process ID.
 if kill -0 $!; then
