@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"time"
 	"os"
+	"bytes"
 	"encoding/gob"
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
@@ -353,31 +354,6 @@ func parseMainArguments(args []string) string {
 	return localNodeName
 }
 
-func (d *Data) GobEncode() ([]byte, error) {
-    w := new(bytes.Buffer)
-    encoder := gob.NewEncoder(w)
-    err := encoder.Encode(d.id)
-    if err!=nil {
-        return nil, err
-    }
-    err = encoder.Encode(d.name)
-    if err!=nil {
-        return nil, err
-    }
-    return w.Bytes(), nil
-}
-
-func (d *Data) GobDecode(buf []byte) error {
-    r := bytes.NewBuffer(buf)
-    decoder := gob.NewDecoder(r)
-    err := decoder.Decode(&d.id)
-    if err!=nil {
-        return err
-    }
-    return decoder.Decode(&d.name)
-}
-
-
 /* the Main function of the Multegula application */
 func main() {
 	testFlag := flag.Bool("test", false, "Test Mode Flag")
@@ -495,12 +471,18 @@ func main() {
 		//Check to see if state file exists, and if it does, read timestamp from it.
 		//If timestamp is too old, delete and ignore.  If not, read nodes and ignore bootstrap.
 		f, err := os.Open("lastgame.mlg")
-    	timestampBuffer := make([]byte, 4)
-    	timestamp, err := f.Read(timestampBuffer)
-
-    	//Run as normal
-    	now := time.Now()
-		if (err != nil) && (now.Unix() - int64(300) > int64(timestamp)) {
+		var readBuffer bytes.Buffer
+		dec := gob.NewDecoder(&readBuffer) // Will read from array.
+//////////////////////////////EXAMPLE READ
+		var q Q
+		err = dec.Decode(&q)
+		if err != nil {
+			log.Fatal("decode error:", err)
+		}
+		fmt.Printf("%q: {%d,%d}\n", q.Name, *q.X, *q.Y)
+//////////////////////////////
+		var timestamp = 0 //PLACEHOLDER
+		if (err != nil) && (time.Now().Unix() - int64(300) > int64(timestamp)) {
 			// get fellow players
 			peers, err := bootstrapClient.GetNodes(localNode)
 			if err != nil {
@@ -517,18 +499,10 @@ func main() {
 		//Write peers to file with a timestamp to enable game rejoining.
 		//This is a dumb method of just dumping bytes to a file, but it should be enough.
 		//But first, remove old file.
-		d := Data{id: 7}
-	    copy(d.name[:], []byte("tree"))
-	    buffer := new(bytes.Buffer)
-	    // writing
-	    enc := gob.NewEncoder(buffer)
-	    err := enc.Encode(d)
-	    if err != nil {
-	        log.Fatal("encode error:", err)
-	    }
 		os.Remove("lastgame.mlg")
-		err = ioutil.WriteFile("lastgame.mlg", []byte(string(time.Now().Unix())), 0644)
-		err = ioutil.WriteFile("lastgame.mlg", []byte(peers), 0644)
+		var writeBuffer bytes.Buffer
+		enc := gob.NewEncoder(&writeBuffer) // Will write to array.
+		err = ioutil.WriteFile("lastgame.mlg", enc.Encode(*peers), 0644)
 
 		// set competitor location
 		uiSetCompetitorLocation(localNode.Name, peers)
