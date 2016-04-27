@@ -12,8 +12,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-//	"io/ioutil"
-//	"time"
+	"time"
 	"os"
 	"bytes"
 	"encoding/gob"
@@ -398,9 +397,9 @@ func initConsensus(message messagePasser.Message) {
 }
 
 /*
-* Stores data to a file
+* Stores nodes data to a file
 */
-func Store (fname string, peers *[]messagePasser.Node) error{
+func StoreNodes (fname string, peers *[]messagePasser.Node) error{
         b := new(bytes.Buffer)
         enc := gob.NewEncoder(b)
         err := enc.Encode(peers)
@@ -422,21 +421,63 @@ func Store (fname string, peers *[]messagePasser.Node) error{
 }
 
 /*
-* Reads data from a file
+* Stores time data to a file
 */
-func Load (fname string) ([]messagePasser.Node, error) {
+func StoreTime (fname string, timestamp int64) error{
+        b := new(bytes.Buffer)
+        enc := gob.NewEncoder(b)
+        err := enc.Encode(timestamp)
+        if err != nil {
+                return err
+        }
+        fh, eopen := os.OpenFile(fname, os.O_CREATE|os.O_WRONLY, 0666)
+        defer fh.Close()
+        if eopen != nil {
+                return eopen
+        }
+        n,e := fh.Write(b.Bytes())
+        if e != nil {
+                return e
+        }
+        fmt.Fprintf(os.Stderr, "%d bytes successfully written to file\n", n)
+        fh.Sync()
+        return nil
+}
+
+/*
+* Reads nodes data from a file
+*/
+func LoadNodes (fname string) ([]messagePasser.Node) {
         fh, err := os.Open(fname)
         if err != nil {
-            return nil, err
+            return nil
         }
         p := make([]messagePasser.Node, 4)
         dec := gob.NewDecoder(fh)
         err = dec.Decode(&p)
         if err != nil {
-            return nil, err
+            return nil
         }
-        return p, nil
+        return p
 }
+
+/*
+* Reads time data from a file
+*/
+func LoadTime (fname string) (int64, error) {
+        fh, err := os.Open(fname)
+        if err != nil {
+            return -1, err
+        }
+        var t int64
+        dec := gob.NewDecoder(fh)
+        err = dec.Decode(&t)
+        if err != nil {
+            return -1, err
+        }
+        return t, nil
+}
+
 
 /* the Main function of the Multegula application */
 func main() {
@@ -549,18 +590,14 @@ func main() {
 
 		var peers *[]messagePasser.Node
 		var err error
+		var lastTime int64
 		//Define ourselves
 		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
 
 		//Check to see if state file exists, and if it does, read timestamp from it.
 		//If timestamp is too old, delete and ignore.  If not, read nodes and ignore bootstrap.
-		_,err = Load("lastgame.mlg")
-		if err != nil {
-            fmt.Println(err)
-        }
-
-	//	var timestamp = 0 //PLACEHOLDER
-	//	if (err != nil) && (time.Now().Unix() - int64(300) > int64(timestamp)) {
+		lastTime,err = LoadTime("lastgametime.mlg")
+		if (err != nil) && (time.Now().Unix() - int64(300) > int64(lastTime)) {
 			// get fellow players
 			peers, err = bootstrapClient.GetNodes(localNode)
 			if err != nil {
@@ -568,14 +605,21 @@ func main() {
 				panic(err)
 			}
 			*peers = append(*peers, localNode)
-	//	} else {
+		} else { //We have a recent lost game that we can rejoin.
 			fmt.Println("Attempting to rejoin old game!")
-	//	}
+			*peers = append(LoadNodes("lastgamenodes.mlg"), localNode)
+			if err != nil {
+				fmt.Println("Couldn't get peers:", err)
+				panic(err)
+			}
+		}
 
 		//Write peers to file with a timestamp to enable game rejoining.
 		//But first, remove old file.
-		os.Remove("lastgame.mlg")
-		err = Store("lastgame.mlg", peers)
+		os.Remove("lastgamenodes.mlg")
+		os.Remove("lastgametime.mlg")
+		err = StoreNodes("lastgamenodes.mlg", peers)
+		err = StoreTime("lastgametime.mlg", time.Now().Unix())
 
 		// set competitor location
 		uiSetCompetitorLocation(localNode.Name, peers)
