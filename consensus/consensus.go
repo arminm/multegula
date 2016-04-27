@@ -247,14 +247,14 @@ func ProposalCheck() *PropCheck {
  * Accept the proposal
  */
 func accept(proposal *Proposal) {
-	addMessageToSendChannel(leaderNode.Name, defs.CONSENSUS_ACCEPT_KIND, proposal)
+	addMessageToSendChannel(defs.MULTICAST_DEST, defs.CONSENSUS_ACCEPT_KIND, proposal)
 }
 
 /*
  * Reject the proposal
  */
 func reject(proposal *Proposal) {
-	addMessageToSendChannel(leaderNode.Name, defs.CONSENSUS_REJECT_KIND, proposal)
+	addMessageToSendChannel(defs.MULTICAST_DEST, defs.CONSENSUS_REJECT_KIND, proposal)
 }
 
 /*
