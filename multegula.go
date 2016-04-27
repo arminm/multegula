@@ -312,7 +312,7 @@ func inboundDispatcher() {
 		case defs.MSG_START_PLAY:
 			fallthrough
 		case defs.MSG_SYNC_ERROR:
-			fallthrough
+			bridges.SendToPyBridge(message)
 		case defs.MSG_UNICORN:
 			initConsensus(message)
 			bridges.SendToPyBridge(message)
@@ -322,12 +322,12 @@ func inboundDispatcher() {
 			fallthrough
 		case defs.MSG_BULLY_ANSWER:
 			fallthrough
-		case defs.MSG_BULLY_UNICORN:
-			initConsensus(message)
-			fallthrough
 		case defs.MSG_BULLY_ARE_YOU_ALIVE:
 			fallthrough
 		case defs.MSG_BULLY_IAM_ALIVE:
+			bullySelection.PutMessageToReceiveChannel(message)
+		case defs.MSG_BULLY_UNICORN:
+			initConsensus(message)
 			bullySelection.PutMessageToReceiveChannel(message)
 
 		// consensus messages
