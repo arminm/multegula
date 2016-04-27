@@ -205,7 +205,7 @@ def reactToCommit(content, canvas) :
 
         ## kill players
         for player in canvas.data['competitors'] :
-            if player not in aliveList :
+            if player not in aliveList and player in canvas.data:
                 canvas.data[player].iAmDead()
 
         ## set the level
@@ -224,6 +224,7 @@ def reactToCommit(content, canvas) :
             # disable any blocks that are appropriate to do so
             if str(b) not in content[i:]:
                 canvas.data['level'].blocks[b].enabled = False
+                canvas.data['level'].blocks[b].first = False
             else :
                 canvas.data['level'].blocks[b].enabled = True
                 canvas.data['level'].blocks[b].first = True

@@ -36,32 +36,57 @@ from UI.utility import *
 def keyPressed(event) :
     canvas = event.widget.canvas
     currentState = canvas.data['currentState']
+    gameType = canvas.data['gameType']
+    myName  = canvas.data['myName']
 
-    if event.char == '!' and canvas.data['gameType'] == GameType.MULTI_PLAYER :
+    ### ARTIFICIAL SYNC ENGINE ###
+    ## start a natural game state sync
+    if event.char == '!' and gameType == GameType.MULTI_PLAYER and currentState == State.STATE_GAMEPLAY :
         content = MsgPayload.SYNC_ERR_EXECUTE + '|' + canvas.data['myName']
         sendSyncError(content, canvas)
 
-    elif event.char == '@' and canvas.data['gameType'] == GameType.MULTI_PLAYER :
+    ## start a manual game state sync - to be followed by the next two commands '#', '$', and '%' 
+    elif event.char == '@' and gameType == GameType.MULTI_PLAYER and currentState == State.STATE_GAMEPLAY :
         content = MsgPayload.SYNC_ERR_DN_EXECUTE + '|' + canvas.data['myName']
         sendSyncError(content, canvas)
 
-    elif event.char == "#" and canvas.data['artificalSync'] == True :
+    ## manual game sync #1
+    elif event.char == '1' and currentState == State.STATE_SYNC and canvas.data['artificalSync'] == True :
         toSend = PyMessage()
-        toSend.src = canvas.data['myName']
+        toSend.src = myName
         toSend.kind = MsgType.MSG_CON_COMMIT
         toSend.content = ARTIFICIAL_COMMIT_1
         toSend.multicast = True
         # send message
         canvas.data['bridge'].sendMessage(toSend)
 
-    elif event.char == "$" and canvas.data['artificalSync'] == True :
+    ## manual game sync #2
+    elif event.char == '2' and currentState == State.STATE_SYNC and canvas.data['artificalSync'] == True :
         toSend = PyMessage()
-        toSend.src = canvas.data['myName']
+        toSend.src = myName
         toSend.kind = MsgType.MSG_CON_COMMIT
         toSend.content = ARTIFICIAL_COMMIT_2
         toSend.multicast = True
         # send message
         canvas.data['bridge'].sendMessage(toSend)
+
+    ## manual game sync #3
+    elif event.char == '3' and currentState == State.STATE_SYNC and canvas.data['artificalSync'] == True :
+        toSend = PyMessage()
+        toSend.src = myName
+        toSend.kind = MsgType.MSG_CON_COMMIT
+        toSend.content = ARTIFICIAL_COMMIT_3
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+
+    ### ARTIFICIAL REJOIN ENGINE ###
+    elif event.char == '#' and gameType == GameType.MULTI_PLAYER and currentState == State.STATE_GAMEPLAY :
+        toSend = PyMessage()
+        toSend.src = myName
+        toSend.kind = MsgType.MSG_DEAD_NODE
+        toSend.content = myName
+        toSend.multicast = True
 
     # handle splash screen events - entering a name
     elif currentState == State.STATE_SPLASH :
@@ -101,7 +126,6 @@ def keyPressed(event) :
 
     # pause screen / gameplay keyPressed events - move the paddle
     elif currentState in [State.STATE_PAUSE, State.STATE_GAMEPLAY] :
-        myName  = canvas.data['myName']
         myPaddle = canvas.data[myName].paddle
 
         ### MOVE PADDLE LEFT ###
