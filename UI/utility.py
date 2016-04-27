@@ -55,6 +55,9 @@ def translatePlayerDirection(payload, player) :
         direction = Direction.DIR_LEFT
     elif payload == MsgPayload.PADDLE_DIR_RIGHT :
         direction = Direction.DIR_RIGHT 
+    elif payload == MsgPayload.PADDLE_DIR_STOP :
+        direction = Direction.DIR_STOP
+        return direction
 
     # translate based on orientation
     if orientation == Orientation.DIR_SOUTH :
@@ -124,3 +127,58 @@ def sendSyncError(content, canvas) :
 
     # send message
     canvas.data['bridge'].sendMessage(toSend)
+
+def sendMessage(canvas, message) :
+    if canvas.data['myReceived'][message.kind] == True: 
+        canvas.data['bridge'].sendMessage(message)
+        canvas.data['myReceived'][message.kind] = False
+    else : 
+        print(canvas.data['myName'] + " UI DROPPING MSG: " + message.toString())
+
+def getGameState(canvas) :    
+    # get alphabetical player names
+    playerList = []
+    for player in canvas.data['competitors'] :
+        if canvas.data[player].state in [PlayerState.USER, PlayerState.COMP] :
+            playerList.append(player)    
+    numPlayers = str(len(playerList))
+    playerList = sorted(playerList)
+
+    # intialize content
+    content = numPlayers
+
+    # add player information to the message
+    for player in playerList :
+        content += '|'
+        name = canvas.data[player].name
+        score = str(canvas.data[player].score)
+        lives = str(canvas.data[player].lives)
+        center = str(canvas.data[player].paddle.center)
+        width = str(canvas.data[player].paddle.width)
+        content += (name + '|' + score + '|' + lives + '|' + center + '|' + width)
+
+    # add level information to the message
+    content += ('|' + str(canvas.data['level'].currentLevel))
+
+    # add block information to the message
+    for i, block in enumerate(canvas.data['level'].blocks) :
+        if block.enabled == True :
+            content += ('|' + str(i))
+
+    # finish and return message  
+    return content
+
+def clearMyReceivedFlags(canvas) :
+    canvas.data['myReceived'][MsgType.MSG_BALL_DEFLECTED] = True
+    canvas.data['myReceived'][MsgType.MSG_BALL_MISSED] = True
+    canvas.data['myReceived'][MsgType.MSG_BLOCK_BROKEN] = True
+    canvas.data['myReceived'][MsgType.MSG_DEAD_NODE] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_REQ] = True
+    canvas.data['myReceived'][MsgType.MSG_GAME_TYPE] = True
+    canvas.data['myReceived'][MsgType.MSG_MYNAME] = True
+    canvas.data['myReceived'][MsgType.MSG_PADDLE_DIR] = True
+    canvas.data['myReceived'][MsgType.MSG_PAUSE_UPDATE] = True
+    canvas.data['myReceived'][MsgType.MSG_PLAYER_LOC] = True
+    canvas.data['myReceived'][MsgType.MSG_START_PLAY] = True
+    canvas.data['myReceived'][MsgType.MSG_SYNC_ERROR] = True
+    canvas.data['myReceived'][MsgType.MSG_UNICORN] = True

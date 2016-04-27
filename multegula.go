@@ -283,8 +283,6 @@ func inboundDispatcher() {
 			fallthrough
 		case defs.MSG_PADDLE_DIR:
 			fallthrough
-		case defs.MSG_PADDLE_POS:
-			fallthrough
 		case defs.MSG_PAUSE_UPDATE:
 			fallthrough
 		case defs.MSG_START_PLAY:

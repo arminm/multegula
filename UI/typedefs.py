@@ -13,6 +13,7 @@ WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
 CANVAS_DIMENTSION = 350
 CANVAS_WIDTH = CANVAS_DIMENTSION;
 CANVAS_HEIGHT = CANVAS_DIMENTSION;
+DELAY = 30
 X_THIRD = CANVAS_WIDTH // 4
 X_CENTER = CANVAS_WIDTH // 2
 X_2THIRD = X_THIRD*3
@@ -61,8 +62,8 @@ BLOCK_WIDTH = CANVAS_WIDTH // 10
 BLOCK_HEIGHT = CANVAS_HEIGHT // 50  
 
 # speed constants
-BALL_SPEED_INIT = CANVAS_WIDTH // 100
-PADDLE_SPEED_INIT = CANVAS_WIDTH // 100
+BALL_SPEED_INIT = CANVAS_WIDTH // (120 - (DELAY*2))
+PADDLE_SPEED_INIT = CANVAS_WIDTH // (120 - (DELAY*2))
 
 # score int constants
 LOST_LIFE_POINTS = -20
@@ -70,7 +71,7 @@ LOST_LIFE_LIVES = -1
 EXTRA_LIFE_POINTS = 100
 DEFLECT_POINTS  = 3
 BREAK_POINTS = 5
-INIT_LIVES = 3
+INIT_LIVES = 10
 
 # fixed point multiplier / rounding factor
 FP_MULT = 10
@@ -162,11 +163,14 @@ class MsgType() :
     MSG_BALL_DEFLECTED  = 'MBD'
     MSG_BALL_MISSED     = 'MBM'
     MSG_BLOCK_BROKEN    = 'MBB'
+    MSG_CON_COMMIT      = 'MCC'
+    MSG_CON_CHECK       = 'MCH'
+    MSG_CON_REPLY       = 'MCP'
+    MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
-    MSG_PADDLE_POS      = 'MPP'
     MSG_PAUSE_UPDATE    = 'MPU'
     MSG_PLAYER_LOC      = 'MPL'
     MSG_START_PLAY      = 'MSP'
@@ -175,13 +179,16 @@ class MsgType() :
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
+    CON_REQ_GAME_STATE  = 'CRG'
     GAME_TYPE_SINGLE    = 'S'
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
     PADDLE_DIR_RIGHT    = 'R'
+    PADDLE_DIR_STOP     = 'S'
     SYNC_ERR_BLOCK_BROKEN = 'BB'
     SYNC_ERR_BALL_DEFLECTED = 'BD'
     SYNC_ERR_CURRENT_STATE = 'CS'
+    SYNC_ERR_KEYBOARD_INPUT = 'KI'
     SYNC_ERR_LAST_TO_TOUCH = 'LT'
     SYNC_ERR_NOT_UNICORN = 'NU'
     SYNC_ERR_PLAYER_LOC = 'PL'
@@ -207,9 +214,9 @@ class MsgIndex() :
     BLOCK_BROKEN_SCORE      = 5
     BLOCK_BROKEN_LIVES      = 6
     BLOCK_BROKEN_BLOCK      = 7
-    PADDLE_DIR              = 0
-    PADDLE_POS_CENTER       = 0
-    PADDLE_POS_WIDTH        = 1
+    PADDLE_DIR_DIR          = 0
+    PADDLE_DIR_CENTER       = 1
+    PADDLE_DIR_WIDTH        = 2
     PAUSE_UPDATE_VAL        = 0
     PAUSE_UPDATE_LEVEL      = 1
     PLAYER_LOC_NUMBER       = 0

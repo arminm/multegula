@@ -203,7 +203,6 @@ func receiveMessageTCP(conn net.Conn) (Message, error) {
 	}
 	msg := &Message{}
 	err := dec.Decode(msg)
-	fmt.Println("Message:", msg)
 	return *msg, err
 }
 
