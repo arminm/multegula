@@ -13,7 +13,7 @@ WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
 CANVAS_DIMENTSION = 350
 CANVAS_WIDTH = CANVAS_DIMENTSION;
 CANVAS_HEIGHT = CANVAS_DIMENTSION;
-DELAY = 10
+DELAY = 30
 X_THIRD = CANVAS_WIDTH // 4
 X_CENTER = CANVAS_WIDTH // 2
 X_2THIRD = X_THIRD*3
@@ -163,6 +163,10 @@ class MsgType() :
     MSG_BALL_DEFLECTED  = 'MBD'
     MSG_BALL_MISSED     = 'MBM'
     MSG_BLOCK_BROKEN    = 'MBB'
+    MSG_CON_COMMIT      = 'MCC'
+    MSG_CON_CHECK       = 'MCH'
+    MSG_CON_REPLY       = 'MCP'
+    MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
@@ -175,6 +179,7 @@ class MsgType() :
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
+    CON_REQ_GAME_STATE  = 'CRG'
     GAME_TYPE_SINGLE    = 'S'
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
@@ -183,6 +188,7 @@ class MsgPayload() :
     SYNC_ERR_BLOCK_BROKEN = 'BB'
     SYNC_ERR_BALL_DEFLECTED = 'BD'
     SYNC_ERR_CURRENT_STATE = 'CS'
+    SYNC_ERR_KEYBOARD_INPUT = 'KI'
     SYNC_ERR_LAST_TO_TOUCH = 'LT'
     SYNC_ERR_NOT_UNICORN = 'NU'
     SYNC_ERR_PLAYER_LOC = 'PL'

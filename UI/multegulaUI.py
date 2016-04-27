@@ -37,6 +37,10 @@ def keyPressed(event) :
     canvas = event.widget.canvas
     currentState = canvas.data['currentState']
 
+    if event.char == '!' and canvas.data['gameType'] == GameType.MULTI_PLAYER :
+        content = MsgPayload.SYNC_ERR_KEYBOARD_INPUT + '|' + canvas.data['myName']
+        sendSyncError(content, canvas)
+
     # handle splash screen events - entering a name
     if currentState == State.STATE_SPLASH :
         # add new characters
@@ -60,6 +64,8 @@ def keyPressed(event) :
                 myName += '1'
             elif myName in [LOCALHOST_IP, DEFAULT_SRC, MULTICAST_DEST, MULTEGULA_DEST] :
                 myName += '1'
+            elif not myName :
+                myName += '1'
 
             canvas.data['myName'] = myName
 
@@ -82,7 +88,7 @@ def keyPressed(event) :
             # if this is a multi-player game, the direction is not already set, and the paddle can move,
             #   then it is okay to send an update
             if canvas.data['gameType'] == GameType.MULTI_PLAYER :
-                if myPaddle.direction != Direction.DIR_LEFT and myPaddle.canMove(Direction.DIR_LEFT):
+                if myPaddle.direction != Direction.DIR_LEFT and myPaddle.canMove(Direction.DIR_LEFT) :
                     # get message content
                     CENTER = canvas.data[myName].paddle.center
                     WIDTH = canvas.data[myName].paddle.width
@@ -94,10 +100,11 @@ def keyPressed(event) :
                     toSend.content = MsgPayload.PADDLE_DIR_LEFT + '|' + str(CENTER) + '|' + str(WIDTH)
                     toSend.multicast = True
                     sendMessage(canvas, toSend)
+                    canvas.data[canvas.data['myName']].paddle.direction = Direction.DIR_STOP
 
             # if this is a single player game, then go ahead and set the paddle direction
             elif canvas.data['gameType'] == GameType.SINGLE_PLAYER : 
-                myPaddle.direction = Direction.DIR_LEFT
+                canvas.data[canvas.data['myName']].paddle.direction = Direction.DIR_LEFT
 
         ### MOVE PADDLE RIGHT ####
         elif event.keysym in ['Right', 'd', 'D'] :
@@ -116,6 +123,7 @@ def keyPressed(event) :
                     toSend.content = MsgPayload.PADDLE_DIR_RIGHT + '|' + str(CENTER) + '|' + str(WIDTH)
                     toSend.multicast = True
                     sendMessage(canvas, toSend)
+                    canvas.data[canvas.data['myName']].paddle.direction = Direction.DIR_STOP
 
             # if this is a single player game, then go ahead and set the paddle direction
             elif canvas.data['gameType'] == GameType.SINGLE_PLAYER : 
@@ -139,42 +147,11 @@ def keyPressed(event) :
                     toSend.content = MsgPayload.PADDLE_DIR_STOP + '|' + str(CENTER) + '|' + str(WIDTH)
                     toSend.multicast = True
                     sendMessage(canvas, toSend)
+                    canvas.data[canvas.data['myName']].paddle.direction = Direction.DIR_STOP
 
             # if this is a single player game, then go ahead and set the paddle direction
             elif canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
                 canvas.data[canvas.data['myName']].paddle.direction = Direction.DIR_STOP
-
-
-### keyReleased - handle key release events
-def keyReleased(event) :
-    canvas = event.widget.canvas
-    currentState = canvas.data['currentState']
-    
-    ### STOP PADDLE MOTION ###
-    if currentState in [State.STATE_PAUSE, State.STATE_GAMEPLAY] :
-        if((event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') or 
-            (event.keysym == 'Right') or (event.keysym == 'd') or (event.keysym == 'D')) :
-
-            # if this is a multi-player game, the direction is not already set then it is okay to send and update
-            if canvas.data['gameType'] == GameType.MULTI_PLAYER: 
-                if canvas.data[canvas.data['myName']].paddle.direction != Direction.DIR_STOP:
-                    myName = canvas.data['myName']
-                    # get message content
-                    CENTER = canvas.data[myName].paddle.center
-                    WIDTH = canvas.data[myName].paddle.width
-
-                    #create and send message                    
-                    toSend = PyMessage()
-                    toSend.src = myName
-                    toSend.kind = MsgType.MSG_PADDLE_DIR
-                    toSend.content = MsgPayload.PADDLE_DIR_STOP + '|' + str(CENTER) + '|' + str(WIDTH)
-                    toSend.multicast = True
-                    sendMessage(canvas, toSend)
-
-            # if this is a single player game, then go ahead and set the paddle direction
-            elif canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
-                canvas.data[canvas.data['myName']].paddle.direction = Direction.DIR_STOP
-
 
 ### mousePressed - handle mouse press events
 def mousePressed(event) :
@@ -218,14 +195,6 @@ def mousePressed(event) :
             # initialize game
             canvas.data['currentState'] = State.STATE_JOIN
             canvas.delete(ALL)
-
-
-def sendMessage(canvas, message) :
-    if canvas.data['myReceived'][message.kind] == True: 
-        canvas.data['bridge'].sendMessage(message)
-        canvas.data['myReceived'][message.kind] = False
-    else : 
-        print(canvas.data['myName'] + " UI DROPPING MSG: " + message.toString())
 
 ### react - react to messages
 def react(canvas, received) :
@@ -302,6 +271,7 @@ def react(canvas, received) :
                     canvas.data['currentState'] = State.STATE_GAME_OVER
                 else :
                     canvas.data['currentState'] = State.STATE_PAUSE
+            # otherwise, we are out of sync!
             elif currentState != State.STATE_SYNC :
                 content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_BALL_MISSED + '|' + name
                 sendSyncError(content, canvas)
@@ -356,6 +326,7 @@ def react(canvas, received) :
                 elif currentState != State.STATE_SYNC :
                     content = MsgPayload.SYNC_ERR_LAST_TO_TOUCH + '|' + name
                     sendSyncError(content, canvas)
+            # otherwse we are out of sync !
             elif currentState != State.STATE_SYNC :
                 content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
                 sendSyncError(content, canvas)
@@ -579,6 +550,8 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True
             # send message
             sendMessage(canvas, toSend)
+            canvas.data['ball'].setVelocity(0, 0)
+
 
         # WALL_BALL_DEFLECTED -> update ball properties, not a player -> Return False
         elif status == PlayerReturnStatus.WALL_BALL_DEFLECTED :
@@ -614,6 +587,7 @@ def playerUpdate(name, status, info, canvas) :
             toSend.multicast = True
             # send message
             sendMessage(canvas, toSend)
+            canvas.data['ball'].setVelocity(0, 0)
 
         # BALL_OOB -> create MSG_ERROR, player is alive -> Return True
         elif status == PlayerReturnStatus.BALL_OOB :
@@ -689,6 +663,7 @@ def redrawAll(canvas) :
     myName = canvas.data['myName']
     currentState = canvas.data['currentState']
 
+
     ### SPLASH SCREEN
     if currentState == State.STATE_SPLASH :
         # draw screen background and ball
@@ -744,6 +719,7 @@ def redrawAll(canvas) :
         # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
+        clearMyReceivedFlags(canvas)
 
         # update all players
         for player in canvas.data['competitors'] :
@@ -792,6 +768,14 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateMenu(canvas)  
         canvas.data['syncScreen'].draw(canvas)   
 
+        if canvas.data['myReceived'][MsgType.MSG_CON_REQ] == True and canvas.data['unicorn'] == myName :
+            toSend = PyMessage()
+            toSend.src = myName
+            toSend.kind = MsgType.MSG_CON_REQ
+            toSend.content = MsgPayload.CON_REQ_GAME_STATE + '|' + getGameState(canvas)
+            toSend.multicast = False
+            print("Sending: " + toSend.toString())
+            sendMessage(canvas, toSend)
 
     # GAME OVER SCREEN
     elif canvas.data['currentState'] == State.STATE_GAME_OVER : 
@@ -835,21 +819,8 @@ def init(canvas) :
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
     canvas.data['level'] = Level()
 
-
     canvas.data['myReceived'] = {}
-    canvas.data['myReceived'][MsgType.MSG_BALL_DEFLECTED] = True
-    canvas.data['myReceived'][MsgType.MSG_BALL_MISSED] = True
-    canvas.data['myReceived'][MsgType.MSG_BLOCK_BROKEN] = True
-    canvas.data['myReceived'][MsgType.MSG_DEAD_NODE] = True
-    canvas.data['myReceived'][MsgType.MSG_GAME_TYPE] = True
-    canvas.data['myReceived'][MsgType.MSG_MYNAME] = True
-    canvas.data['myReceived'][MsgType.MSG_PADDLE_DIR] = True
-    canvas.data['myReceived'][MsgType.MSG_PAUSE_UPDATE] = True
-    canvas.data['myReceived'][MsgType.MSG_PLAYER_LOC] = True
-    canvas.data['myReceived'][MsgType.MSG_START_PLAY] = True
-    canvas.data['myReceived'][MsgType.MSG_SYNC_ERROR] = True
-    canvas.data['myReceived'][MsgType.MSG_UNICORN] = True
-
+    clearMyReceivedFlags(canvas)
 
 ### initPlayers - initialize players
 def initPlayers(canvas, number=1, info=[]):
@@ -956,7 +927,6 @@ def runUI(cmd_line_args) :
     # sets up events
     root.bind('<Button-1>', mousePressed)
     root.bind('<Key>', keyPressed)
-    #root.bind('<KeyRelease>', keyReleased)
 
     # get the GoBridge
     canvas.data['bridge'] = GoBridge(cmd_line_args[1]);
