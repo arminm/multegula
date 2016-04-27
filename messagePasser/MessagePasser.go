@@ -7,15 +7,13 @@
 package messagePasser
 
 import (
-	"bufio"
-	//"encoding/gob"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"net"
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 	"github.com/arminm/multegula/defs"
@@ -163,69 +161,13 @@ func messageHasBeenReceived(message Message) bool {
 }
 
 /*
- * construct message from it's string format
- * @param	messageString
- *			message in string format
- *
- * @return	message
- **/
-func decodeMessage(messageString string) Message {
-	var elements []string = strings.Split(messageString, defs.DELIMITER)
-	var strTime []string = strings.Split(elements[4], defs.PAYLOAD_DELIMITER)
-	src := elements[0]
-	dest := elements[1]
-	kind := elements[2]
-	seqNum, _ := strconv.Atoi(elements[3])
-
-	var timestamp []int
-	for i, _ := range strTime {
-		val, _ := strconv.Atoi(strTime[i])
-		timestamp = append(timestamp, val)
-	}
-	content := elements[5]
-	return Message{Source: src, Destination: dest, Content: content, Kind: kind, SeqNum: seqNum, Timestamp: timestamp}
-}
-
-/*
- * convert message to string
- * @param	message
- *			message to be converted
- *
- * @return	the string format of the message
- **/
-func encodeMessage(message Message) string {
-	src := message.Source
-	dest := message.Destination
-	seqNum := strconv.Itoa(message.SeqNum)
-	cont := message.Content
-	kind := message.Kind
-	del := defs.DELIMITER
-
-	ts := ""
-	for i, value := range message.Timestamp {
-		ts = ts + strconv.Itoa(value)
-		if i != len(message.Timestamp) - 1 {
-			ts = ts + "|"
-		}
-	}
-
-	// SRC:DEST:KIND:SEQNUM:TIMESTAMP:CONTENT
-	return src + del + dest + del + kind + del + seqNum + del + ts + del + cont
-}
-
-
-/*
  * send TCP messages
  * @param	conn – connection to send message over
  * @param	message – message to be sent
  **/
-// func sendMessageTCP(nodeName string, message *Message) {
-// 	encoder := gob.NewEncoder(connections[nodeName])
-// 	encoder.Encode(message)
-// }
 func sendMessageTCP(nodeName string, message *Message) {
-	conn := connections[nodeName]
-	conn.Write([]byte(encodeMessage(*message) + "\n"))
+	encoder := gob.NewEncoder(connections[nodeName])
+	encoder.Encode(message)
 }
 
 /*
@@ -234,29 +176,21 @@ func sendMessageTCP(nodeName string, message *Message) {
  *
  * @return	message
  **/
-// func receiveMessageTCP(conn net.Conn) (Message, error) {
-// 	dec := gob.NewDecoder(conn)
-// 	msg := &Message{}
-// 	err := dec.Decode(msg)
-// 	fmt.Println(msg)
-// 	if err != nil {
-// 		return *msg, err
-// 	}
-// 	return *msg, nil
-// }
 func receiveMessageTCP(conn net.Conn) (Message, error) {
-	messageString, err := bufio.NewReader(conn).ReadString('\n')
-	if err == nil {
-		return decodeMessage(messageString[0 : len(messageString)-1]), err
+	dec := gob.NewDecoder(conn)
+	msg := &Message{}
+	err := dec.Decode(msg)
+	fmt.Println(msg)
+	if err != nil {
+		return *msg, err
 	}
-	return Message{}, err
+	return *msg, nil
 }
 
 /*
  * basic multicasts a message to all nodes
  */
 func Multicast(message *Message) {
-	fmt.Printf("TX %s: Multicast message %v\n", localNode.Name, message)
 	if message.Source == localNode.Name {
 		message.Destination = defs.MULTICAST_DEST
 		updateSeqNum(message)
@@ -468,16 +402,14 @@ func deliverMessage(message Message) {
 		}
 		sourceIndex, _, _ := FindNodeByName(peerNodes, message.Source)
 		if isMessageReady(message, sourceIndex, &vectorTimeStamp) {
-			fmt.Printf("RX %s: Deliver message %v\n", localNode.Name, message)
 			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
 		} else {
 			// fmt.Printf("HBQ Message:%v\n", message)
 			holdbackQueueMutex.Lock()
-			fmt.Printf("TX %s: Add to holdbackQueue %v\n", localNode.Name, message)
 			Push(&holdbackQueue, message)
 			if len(holdbackQueue) > defs.HOLDBACKQUEUE_LIMIT {
-				fmt.Println("\tFlushing holdbackQueue!")
+				fmt.Println("Flushing holdbackQueue!")
 				for _, msg := range holdbackQueue {
 					addMessageToReceiveChannel(msg)
 				}
