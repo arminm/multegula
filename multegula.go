@@ -303,6 +303,8 @@ func inboundDispatcher() {
 			fallthrough
 		case defs.MSG_BLOCK_BROKEN:
 			fallthrough
+		case defs.MSG_CON_CHECK:
+			fallthrough
 		case defs.MSG_CON_COMMIT:
 			fallthrough
 		case defs.MSG_DEAD_NODE:

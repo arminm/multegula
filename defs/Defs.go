@@ -55,7 +55,6 @@ const CHANNEL_SIZE = 10
 const MSG_BALL_DEFLECTED string = "MBD"
 const MSG_BALL_MISSED string = "MBM"
 const MSG_BLOCK_BROKEN string = "MBB"
-const MSG_CON_COMMIT string = "MCC"
 const MSG_DEAD_NODE string = "MDN"
 const MSG_DEAD_UNICORN string = "MDU"
 const MSG_GAME_TYPE string = "MGT"
