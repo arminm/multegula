@@ -12,8 +12,8 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-	"io/ioutil"
-	"time"
+//	"io/ioutil"
+//	"time"
 	"os"
 	"bytes"
 	"encoding/gob"
@@ -397,6 +397,47 @@ func initConsensus(message messagePasser.Message) {
 	}
 }
 
+/*
+* Stores data to a file
+*/
+func Store (fname string, peers *[]messagePasser.Node) error{
+        b := new(bytes.Buffer)
+        enc := gob.NewEncoder(b)
+        err := enc.Encode(peers)
+        if err != nil {
+                return err
+        }
+        fh, eopen := os.OpenFile(fname, os.O_CREATE|os.O_WRONLY, 0666)
+        defer fh.Close()
+        if eopen != nil {
+                return eopen
+        }
+        n,e := fh.Write(b.Bytes())
+        if e != nil {
+                return e
+        }
+        fmt.Fprintf(os.Stderr, "%d bytes successfully written to file\n", n)
+        fh.Sync()
+        return nil
+}
+
+/*
+* Reads data from a file
+*
+func Load (fname string) (peers, error) {
+        fh, err := os.Open(fname)
+        if err != nil {
+                return nil, err
+        }
+        p := make(peers)
+        dec := gob.NewDecoder(fh)
+        err = dec.Decode(&t)
+        if err != nil {
+                return nil, err
+        }
+        return p, nil
+}*/
+
 /* the Main function of the Multegula application */
 func main() {
 	testFlag := flag.Bool("test", false, "Test Mode Flag")
@@ -507,45 +548,34 @@ func main() {
 	if gameType == defs.GAME_TYPE_MULTI {
 
 		var peers *[]messagePasser.Node
-
+		var err error
 		//Define ourselves
 		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
 
 		//Check to see if state file exists, and if it does, read timestamp from it.
 		//If timestamp is too old, delete and ignore.  If not, read nodes and ignore bootstrap.
-		f, err := os.Open("lastgame.mlg")
-		var readBuffer bytes.Buffer
-		dec := gob.NewDecoder(&readBuffer) // Will read from array.
-//////////////////////////////EXAMPLE READ
-		var q Q
-		err = dec.Decode(&q)
-		if err != nil {
-			log.Fatal("decode error:", err)
-		}
-		fmt.Printf("%q: {%d,%d}\n", q.Name, *q.X, *q.Y)
-//////////////////////////////
-		var timestamp = 0 //PLACEHOLDER
-		if (err != nil) && (time.Now().Unix() - int64(300) > int64(timestamp)) {
+//		_,err := Load("lastgame.mlg")
+//		if err != nil {
+  //              fmt.Println(err)
+    //    }
+
+	//	var timestamp = 0 //PLACEHOLDER
+	//	if (err != nil) && (time.Now().Unix() - int64(300) > int64(timestamp)) {
 			// get fellow players
-			peers, err := bootstrapClient.GetNodes(localNode)
+			peers, err = bootstrapClient.GetNodes(localNode)
 			if err != nil {
 				fmt.Println("Couldn't get peers:", err)
 				panic(err)
 			}
 			*peers = append(*peers, localNode)
-		} else {
+	//	} else {
 			fmt.Println("Attempting to rejoin old game!")
-			peersBuffer := make([]byte, 4)
-    		peers, err := f.Read(peersBuffer)
-		}
+	//	}
 
 		//Write peers to file with a timestamp to enable game rejoining.
-		//This is a dumb method of just dumping bytes to a file, but it should be enough.
 		//But first, remove old file.
 		os.Remove("lastgame.mlg")
-		var writeBuffer bytes.Buffer
-		enc := gob.NewEncoder(&writeBuffer) // Will write to array.
-		err = ioutil.WriteFile("lastgame.mlg", enc.Encode(*peers), 0644)
+		err = Store("lastgame.mlg", peers)
 
 		// set competitor location
 		uiSetCompetitorLocation(localNode.Name, peers)
