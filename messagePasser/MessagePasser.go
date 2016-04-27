@@ -68,6 +68,7 @@ var PeerNodes Nodes
  * <key, value> = <name, connection>
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
+var connectionsMutex = &sync.Mutex{}
 var decoders map[string]*gob.Decoder = make(map[string]*gob.Decoder)
 var encoders map[string]*gob.Encoder = make(map[string]*gob.Encoder)
 var localEncoder *gob.Encoder
@@ -82,10 +83,12 @@ func getConnectionName(connection net.Conn) (string, error) {
 }
 
 func addConnection(nodeName string, conn net.Conn) {
+	connectionsMutex.Lock()
 	connections[nodeName] = conn
 	seqNums[nodeName] = 0
 	encoders[nodeName] = gob.NewEncoder(conn)
 	decoders[nodeName] = gob.NewDecoder(conn)
+	connectionsMutex.Unlock()
 }
 
 var seqNums map[string]int = make(map[string]int)
