@@ -225,6 +225,7 @@ func BullyReceiver() {
 func UnicornReciever() {
 	for {
 		unicornUpdateMessage := bullySelection.GetUnicornUpdate()
+		//fmt.Printf("UnicornReciever got %v\n", unicornUpdateMessage)
 		go putMessageIntoSendChannel(unicornUpdateMessage)
 	}
 }
@@ -268,6 +269,7 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
+		//fmt.Printf("inbound: %v\n", message)
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
 
@@ -473,15 +475,15 @@ func main() {
 
 		// initialize elections
 		go bullySelection.InitBullySelection(*peers, localNodeName)
-		//go UnicornReciever()
+		go UnicornReciever()
 		/***** TODO: REPLACE WITH ACTUAL ELECTION INFORMATION *******/
 		// NOTE: This will happen somewhere else
-		var unicornMsg messagePasser.Message;
-		unicornMsg.Source = localNode.Name;
-		unicornMsg.Destination = defs.MULTICAST_DEST;
-		unicornMsg.Kind = defs.MSG_UNICORN;
-		unicornMsg.Content = "a";
-		bridges.SendToPyBridge(unicornMsg)
+		// var unicornMsg messagePasser.Message;
+		// unicornMsg.Source = localNode.Name;
+		// unicornMsg.Destination = defs.MULTICAST_DEST;
+		// unicornMsg.Kind = defs.MSG_UNICORN;
+		// unicornMsg.Content = "a";
+		// bridges.SendToPyBridge(unicornMsg)
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()
