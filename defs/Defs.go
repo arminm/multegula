@@ -19,25 +19,25 @@ const SERVER_DNS string = "localhost:55555"
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
 /* The election message */
-const MSG_BULLY_ELECTION string = "ELECTION"
+const MSG_BULLY_ELECTION string = "MUE"
 
 /* The answer message */
-const MSG_BULLY_ANSWER string = "ANSWER"
+const MSG_BULLY_ANSWER string = "MUA"
 
 /* The unicorn message */
-const MSG_BULLY_UNICORN string = "UNICORN"
+const MSG_BULLY_UNICORN string = "MUU"
 
 /* Nodes request if unicorn is alive */
-const MSG_BULLY_ARE_YOU_ALIVE string = "ARE_YOU_ALIVE"
+const MSG_BULLY_ARE_YOU_ALIVE string = "MUR"
 
 /* The unicorn heart beat message */
-const MSG_BULLY_IAM_ALIVE string = "IAM_ALIVE"
+const MSG_BULLY_IAM_ALIVE string = "MUL"
 
 /* The end of message types for bully algorithm */
 
 /* The default unicorn name */
 /* Note that this name is reserved in the system */
-const UNICORN_DEFAULT_NAME = "unicorn##default##name"
+const UNICORN_DEFAULT_NAME = "unicorn_default_name"
 
 const DELIMITER string = "##"
 const PAYLOAD_DELIMITER string = "|"

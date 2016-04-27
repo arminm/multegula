@@ -15,6 +15,7 @@ package bullySelection
 import (
 	"time"
     "fmt"
+    "strconv"
 	"github.com/arminm/multegula/messagePasser"
 	"github.com/arminm/multegula/defs"
 )
@@ -50,6 +51,11 @@ var frontNodes []string
 
 /* Nodes whose names are greater than local name in the group */
 var latterNodes []string
+
+/* The sequence number of message */
+var seqNum int = -1
+
+const SEQNUM_UPPER_BOUND int = 999999
 
 /* The queue for messages to be sent, messages in this queue
  * will be passed to messagePasser by mutegula
@@ -221,8 +227,8 @@ func sendAnswerMessage(destination string, timestamp string) {
  * @return	the current time in string format
  */
 func getCurrentTime() string {
-	currentTime := time.Now()
-	return currentTime.String()
+    seqNum = (seqNum + 1)%SEQNUM_UPPER_BOUND
+    return strconv.Itoa(seqNum)
 }
 
 func sendHealthCheckRequestMessage(timestamp string) {
