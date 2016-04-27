@@ -262,12 +262,8 @@ func reject(proposal *Proposal) {
  */
 func commitProposal(proposal *Proposal) {
 	// Make sure to remove the committed propsals
-	if prop, exists := acceptedProposals[proposal.Type]; exists {
-		if prop.SeqNum == proposal.SeqNum {
-			delete(acceptedProposals, proposal.Type)
-			commitChannel <- proposal
-		}
-	}
+	delete(acceptedProposals, proposal.Type)
+	commitChannel <- proposal
 }
 
 /*

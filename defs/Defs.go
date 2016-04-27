@@ -66,6 +66,10 @@ const MSG_PLAYER_LOC string = "MPL"
 const MSG_START_PLAY string = "MSP"
 const MSG_SYNC_ERROR string = "MSE"
 const MSG_UNICORN string = "MUN"
+const MSG_CON_COMMIT string = "MCC"
+const MSG_CON_CHECK string = "MCH"
+const MSG_CON_REPLY string = "MCP"
+const MSG_CON_REQ string = "MCR"
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVR1"
