@@ -300,6 +300,11 @@ func inboundDispatcher() {
 		case defs.MSG_BULLY_ANSWER:
 			fallthrough
 		case defs.MSG_BULLY_UNICORN:
+			nodeIndex, node, err := messagePasser.FindNodeByName(messagePasser.PeerNodes, message.Content)
+			if err == nil {
+				peers := append(messagePasser.PeerNodes[:nodeIndex], messagePasser.PeerNodes[nodeIndex+1:]...)
+				consensus.InitConsensus(node, peers, messagePasser.LocalNode.Name)
+			}
 			fallthrough
 		case defs.MSG_BULLY_ARE_YOU_ALIVE:
 			fallthrough
