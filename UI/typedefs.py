@@ -163,8 +163,8 @@ class MsgType() :
     MSG_BALL_DEFLECTED  = 'MBD'
     MSG_BALL_MISSED     = 'MBM'
     MSG_BLOCK_BROKEN    = 'MBB'
-    MSG_CON_COMMIT      = 'MCC'
     MSG_CON_CHECK       = 'MCH'
+    MSG_CON_COMMIT      = 'MCC'
     MSG_CON_REPLY       = 'MCP'
     MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
@@ -177,9 +177,12 @@ class MsgType() :
     MSG_SYNC_ERROR      = 'MSE'
     MSG_UNICORN         = 'MUN'
 
+### ConType - defines consensus types
+class ConType() :
+    CON_GAME_STATE = 'CGS'
+
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
-    CON_REQ_GAME_STATE  = 'CRG'
     GAME_TYPE_SINGLE    = 'S'
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
@@ -214,6 +217,7 @@ class MsgIndex() :
     BLOCK_BROKEN_SCORE      = 5
     BLOCK_BROKEN_LIVES      = 6
     BLOCK_BROKEN_BLOCK      = 7
+    CON_CHECK_TYPE          = 0
     PADDLE_DIR_DIR          = 0
     PADDLE_DIR_CENTER       = 1
     PADDLE_DIR_WIDTH        = 2
