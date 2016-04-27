@@ -128,7 +128,7 @@ def sendSyncError(content, canvas) :
     # send message
     canvas.data['bridge'].sendMessage(toSend)
 
-def sendMessage(canvas, message) :
+def sendMessage(message, canvas) :
     if canvas.data['myReceived'][message.kind] == True: 
         canvas.data['bridge'].sendMessage(message)
         canvas.data['myReceived'][message.kind] = False
@@ -168,12 +168,20 @@ def getGameState(canvas) :
     # finish and return message  
     return content
 
+def getConsensusResponse(conType, canvas) :
+    if conType == ConType.CON_GAME_STATE :
+        return ConType.CON_GAME_STATE + '|' + getGameState(canvas)
+
+
 def clearMyReceivedFlags(canvas) :
     canvas.data['myReceived'][MsgType.MSG_BALL_DEFLECTED] = True
     canvas.data['myReceived'][MsgType.MSG_BALL_MISSED] = True
     canvas.data['myReceived'][MsgType.MSG_BLOCK_BROKEN] = True
     canvas.data['myReceived'][MsgType.MSG_DEAD_NODE] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_CHECK] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_COMMIT] = True
     canvas.data['myReceived'][MsgType.MSG_CON_REQ] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_REPLY] = True
     canvas.data['myReceived'][MsgType.MSG_GAME_TYPE] = True
     canvas.data['myReceived'][MsgType.MSG_MYNAME] = True
     canvas.data['myReceived'][MsgType.MSG_PADDLE_DIR] = True
