@@ -149,9 +149,7 @@ def keyPressed(event) :
 def keyReleased(event) :
     canvas = event.widget.canvas
     currentState = canvas.data['currentState']
-
-    print("keyReleased: " + event.keysym)
-
+    
     ### STOP PADDLE MOTION ###
     if currentState in [State.STATE_PAUSE, State.STATE_GAMEPLAY] :
         if((event.keysym == 'Left') or (event.keysym == 'a') or (event.keysym == 'A') or 
