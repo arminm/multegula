@@ -225,7 +225,6 @@ func BullyReceiver() {
 func UnicornReciever() {
 	for {
 		unicornUpdateMessage := bullySelection.GetUnicornUpdate()
-		//fmt.Printf("UnicornReciever got %v\n", unicornUpdateMessage)
 		go putMessageIntoSendChannel(unicornUpdateMessage)
 	}
 }
@@ -269,7 +268,6 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
-		//fmt.Printf("inbound: %v\n", message)
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
 
