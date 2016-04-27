@@ -70,6 +70,7 @@ var peerNodes Nodes
 var connections map[string]net.Conn = make(map[string]net.Conn)
 var decoders map[string]*gob.Decoder = make(map[string]*gob.Decoder)
 var encoders map[string]*gob.Encoder = make(map[string]*gob.Encoder)
+var localEncoder *gob.Encoder
 
 func getConnectionName(connection net.Conn) (string, error) {
 	for name, conn := range connections {
@@ -90,6 +91,12 @@ func addConnection(nodeName string, conn net.Conn) {
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
 var localReceivedSeqNum = 0
+
+/*
+ * connection for localhost, this is the send side,
+ * the receive side is stored in connections map
+ **/
+var localConn net.Conn
 
 /*
  * The local node's information.
@@ -170,8 +177,12 @@ func messageHasBeenReceived(message Message) bool {
  * @param	message – message to be sent
  **/
 func sendMessageTCP(nodeName string, message *Message) {
-	if encoder, exists := encoders[nodeName]; exists {
-		encoder.Encode(message)
+	if nodeName == localNode.Name {
+		localEncoder.Encode(message)
+	} else {
+		if encoder, exists := encoders[nodeName]; exists {
+			encoder.Encode(message)
+		}
 	}
 }
 
@@ -298,6 +309,7 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 		// remove the connected node from the frontNodes
 		delete(frontNodes, msg.Source)
 		addConnection(msg.Source, conn)
+
 	}
 }
 
@@ -318,7 +330,12 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 			time.Sleep(time.Second * 1)
 			conn, err = net.Dial("tcp", node.IP+":"+strconv.Itoa(node.Port))
 		}
-		addConnection(node.Name, conn)
+		if node.Name == localNode.Name {
+			localConn = conn
+			localEncoder = gob.NewEncoder(conn)
+		} else {
+			addConnection(node.Name, conn)
+		}
 
 		/* send an initial ping message to other side of the connection */
 		msg := Message{localNode.Name, node.Name, "ping", "ping", 0, vectorTimeStamp}
