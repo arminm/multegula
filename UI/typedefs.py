@@ -191,7 +191,8 @@ class MsgPayload() :
     SYNC_ERR_BLOCK_BROKEN = 'BB'
     SYNC_ERR_BALL_DEFLECTED = 'BD'
     SYNC_ERR_CURRENT_STATE = 'CS'
-    SYNC_ERR_KEYBOARD_INPUT = 'KI'
+    SYNC_ERR_DN_EXECUTE = 'DE'
+    SYNC_ERR_EXECUTE = 'EX'
     SYNC_ERR_LAST_TO_TOUCH = 'LT'
     SYNC_ERR_NOT_UNICORN = 'NU'
     SYNC_ERR_PLAYER_LOC = 'PL'
@@ -282,6 +283,12 @@ class PyMessage :
     ### toString - return a visually appealing string relective of the contents in the message
     def toString(self):
         return 'source: ' + self.src + ', type: ' + self.kind + ', content: ' + str(self.content)
+
+
+
+#ARTIFICIAL_COMMIT_1 = "daniel##daniel##-1##CGS|4|a|0|10|175|58|b|0|10|175|58|c|0|10|175|58|d|0|10|175|58|0|0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20##MCC"
+ARTIFICIAL_COMMIT_1 = "CGS|4|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|garrett|19|4|167|58|0|0|1|2|5|6|7|8|9|11|12|13|14|16|18|19"
+ARTIFICIAL_COMMIT_2 = "CGS|4|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|garrett|19|4|167|58|2|0|1|2|5|6|7|8|9|11|12|13|14|16|18|19"
 
 
 

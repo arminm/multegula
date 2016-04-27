@@ -38,18 +38,30 @@ def keyPressed(event) :
     currentState = canvas.data['currentState']
 
     if event.char == '!' and canvas.data['gameType'] == GameType.MULTI_PLAYER :
-        content = MsgPayload.SYNC_ERR_KEYBOARD_INPUT + '|' + canvas.data['myName']
+        content = MsgPayload.SYNC_ERR_EXECUTE + '|' + canvas.data['myName']
         sendSyncError(content, canvas)
 
     elif event.char == '@' and canvas.data['gameType'] == GameType.MULTI_PLAYER :
-        content = ConType.CON_GAME_STATE + '|' + getGameState(canvas)
-        # create and send message
+        content = MsgPayload.SYNC_ERR_DN_EXECUTE + '|' + canvas.data['myName']
+        sendSyncError(content, canvas)
+
+    elif event.char == "#" and canvas.data['artificalSync'] == True :
         toSend = PyMessage()
-        toSend.src =  canvas.data['myName']
-        toSend.kind = MsgType.MSG_CON_CHECK
-        toSend.content = content
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_CON_COMMIT
+        toSend.content = ARTIFICIAL_COMMIT_1
         toSend.multicast = True
-        react(canvas, toSend)
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+
+    elif event.char == "$" and canvas.data['artificalSync'] == True :
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_CON_COMMIT
+        toSend.content = ARTIFICIAL_COMMIT_2
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
 
     # handle splash screen events - entering a name
     elif currentState == State.STATE_SPLASH :
@@ -345,6 +357,14 @@ def react(canvas, received) :
             content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
             sendSyncError(content, canvas)
 
+    # MSG_CON_COMMIT :
+    elif kind == MsgType.MSG_CON_COMMIT :
+        canvas.delete(ALL)
+        reactToCommit(content, canvas)
+        canvas.data['ball'].reset()
+        canvas.data['currentState'] = State.STATE_PAUSE
+        canvas.data['artificalSync'] = False
+
     # MSG_CON_CHECK
     elif kind == MsgType.MSG_CON_CHECK :
         # get the type of consensus 
@@ -480,6 +500,9 @@ def react(canvas, received) :
             canvas.data['level'].updated = True
             canvas.data['ball'].reset()
             canvas.data['currentState'] = State.STATE_SYNC
+
+            if content[0] == MsgPayload.SYNC_ERR_DN_EXECUTE :
+                canvas.data['artificalSync'] = True
 
     # MSG_UNICORN
     elif kind == MsgType.MSG_UNICORN :
@@ -792,7 +815,7 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateMenu(canvas)  
         canvas.data['syncScreen'].draw(canvas)   
 
-        if canvas.data['myReceived'][MsgType.MSG_CON_REQ] == True and canvas.data['unicorn'] == myName :
+        if canvas.data['myReceived'][MsgType.MSG_CON_REQ] == True and canvas.data['unicorn'] == myName and canvas.data['artificalSync'] == False :
             toSend = PyMessage()
             toSend.src = myName
             toSend.kind = MsgType.MSG_CON_REQ
@@ -838,6 +861,8 @@ def init(canvas) :
     canvas.data['splashScreen'] = SplashScreen()
 
     canvas.data['playersInitialized'] = False
+    canvas.data['artificalSync'] = False
+
 
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
