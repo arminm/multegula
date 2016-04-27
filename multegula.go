@@ -217,16 +217,16 @@ func BullyReceiver() {
 	}
 }
 
-/* 
+/*
  * get unicorn update message from bullySelection,
  * send unicorn update message to ui and consensus algorithm
  */
 //TODO add code to send unicorn update message to consensus algorithm
 func UnicornReciever() {
-    for {
-        unicornUpdateMessage := bullySelection.GetUnicornUpdate()
+	for {
+		unicornUpdateMessage := bullySelection.GetUnicornUpdate()
 		go putMessageIntoSendChannel(unicornUpdateMessage)
-    }
+	}
 }
 
 /* wait for incoming messages from consensus algorithm */
@@ -245,7 +245,7 @@ func ConsensusCheckReceiverRoutine() {
 		propCheck := consensus.ProposalCheck()
 		switch propCheck.Prop.Type {
 		case "test":
-			propCheck.Callback("success")
+			(*propCheck.Callback)("success")
 		}
 	}
 }
@@ -274,37 +274,39 @@ func inboundDispatcher() {
 
 		// UI Messages
 		case defs.MSG_BALL_DEFLECTED:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_BALL_MISSED:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_BLOCK_BROKEN:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_DEAD_NODE:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_PADDLE_DIR:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_PADDLE_POS:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_PAUSE_UPDATE:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_START_PLAY:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_SYNC_ERROR:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_UNICORN:
 			bridges.SendToPyBridge(message)
 
 		// election messages
 		case defs.MSG_BULLY_ELECTION:
-			bullySelection.PutMessageToReceiveChannel(message)
+			fallthrough
 		case defs.MSG_BULLY_ANSWER:
-			bullySelection.PutMessageToReceiveChannel(message)
+			fallthrough
 		case defs.MSG_BULLY_UNICORN:
-			bullySelection.PutMessageToReceiveChannel(message)
+			fallthrough
 		case defs.MSG_BULLY_ARE_YOU_ALIVE:
-			bullySelection.PutMessageToReceiveChannel(message)
+			fallthrough
 		case defs.MSG_BULLY_IAM_ALIVE:
 			bullySelection.PutMessageToReceiveChannel(message)
+
+		// consensus messages
 		case defs.CONSENSUS_ACCEPT_KIND:
 			fallthrough
 		case defs.CONSENSUS_REJECT_KIND:
@@ -324,7 +326,6 @@ func outboundDispatcher() {
 	for {
 		// get message from the send channel
 		message := <-sendChannel
-
 		// based on it's destination, determine which messagePasser
 		//	routine is appropriate
 		if message.Destination == defs.MULTICAST_DEST {
@@ -370,16 +371,19 @@ func main() {
 		messagePasser.InitMessagePasser(nodes, localName)
 		go outboundDispatcher()
 		go inboundDispatcher()
-		consensus.InitConsensus(nodes[0], nodes[1:], "armin")
+		leader := nodes[0]
+		consensus.InitConsensus(leader, nodes[1:], localName)
 		go ConsensusReceiverRoutine()
 		go ConsensusCheckReceiverRoutine()
 		go ConsensusReachedRoutine()
 
 		var proposalValue string
 		for {
-			fmt.Println("Hit enter to propose.")
-			fmt.Scanf("%s", &proposalValue)
-			consensus.Propose(proposalValue, "test")
+			if localName == leader.Name {
+				fmt.Println("Hit enter to propose.")
+				fmt.Scanf("%s", &proposalValue)
+				consensus.Propose(proposalValue, "test")
+			}
 		}
 	}
 
@@ -471,8 +475,8 @@ func main() {
 		fmt.Println(localNodeName, "made message passer.")
 
 		// initialize elections
-        go bullySelection.InitBullySelection(*peers, localNodeName)
-        go UnicornReciever()
+		go bullySelection.InitBullySelection(*peers, localNodeName)
+		go UnicornReciever()
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()

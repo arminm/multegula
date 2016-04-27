@@ -36,7 +36,7 @@ type Proposal struct {
 
 type PropCheck struct {
 	Prop     *Proposal
-	Callback func(string)
+	Callback *func(string)
 }
 
 func InitConsensus(leader messagePasser.Node, peers messagePasser.Nodes, localNodeName string) {
@@ -214,7 +214,7 @@ func parseProposal(proposal *Proposal) {
 		}
 	} else {
 		// It's a new proposal that hasn't been accepted
-		check(proposal, func(value string) {
+		callback := func(value string) {
 			if value == proposal.Value {
 				acceptedProposals[proposal.Type] = proposal
 				accept(proposal)
@@ -222,7 +222,8 @@ func parseProposal(proposal *Proposal) {
 				proposal.Value = value
 				reject(proposal)
 			}
-		})
+		}
+		check(proposal, &callback)
 	}
 }
 
@@ -230,7 +231,7 @@ func parseProposal(proposal *Proposal) {
  * Check with the application to see what value we agree to regarding the
  * proposal.Type
  */
-func check(proposal *Proposal, callback func(string)) {
+func check(proposal *Proposal, callback *func(string)) {
 	propCheck := PropCheck{proposal, callback}
 	proposalCheckChannel <- &propCheck
 }
@@ -281,7 +282,7 @@ func ProposalToCommit() *Proposal {
  */
 func addMessageToSendChannel(dest string, kind string, proposal *Proposal) {
 	message := messagePasser.Message{
-		Destination: leaderNode.Name,
+		Destination: dest,
 		Source:      localName,
 		Kind:        kind,
 		Content:     proposalToString(proposal)}
