@@ -423,20 +423,20 @@ func Store (fname string, peers *[]messagePasser.Node) error{
 
 /*
 * Reads data from a file
-*
-func Load (fname string) (peers, error) {
+*/
+func Load (fname string) ([]messagePasser.Node, error) {
         fh, err := os.Open(fname)
         if err != nil {
-                return nil, err
+            return nil, err
         }
-        p := make(peers)
+        p := make([]messagePasser.Node, 4)
         dec := gob.NewDecoder(fh)
-        err = dec.Decode(&t)
+        err = dec.Decode(&p)
         if err != nil {
-                return nil, err
+            return nil, err
         }
         return p, nil
-}*/
+}
 
 /* the Main function of the Multegula application */
 func main() {
@@ -554,10 +554,10 @@ func main() {
 
 		//Check to see if state file exists, and if it does, read timestamp from it.
 		//If timestamp is too old, delete and ignore.  If not, read nodes and ignore bootstrap.
-//		_,err := Load("lastgame.mlg")
-//		if err != nil {
-  //              fmt.Println(err)
-    //    }
+		_,err = Load("lastgame.mlg")
+		if err != nil {
+            fmt.Println(err)
+        }
 
 	//	var timestamp = 0 //PLACEHOLDER
 	//	if (err != nil) && (time.Now().Unix() - int64(300) > int64(timestamp)) {
