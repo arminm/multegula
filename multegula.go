@@ -16,6 +16,7 @@ import (
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/bullySelection"
+	"github.com/arminm/multegula/consensus"
 	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
 )
@@ -23,21 +24,12 @@ import (
 /*
  * This is the sendChannel for message dispatcher.
  * Any components like UI or bully algorithm will
- * put messages into this channel if they whan to
+ * put messages into this channel if they want to
  * send message out. Message dispatcher will get
  * messages out from this channel and send them
  * to messagePasser
  */
 var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, defs.QUEUE_SIZE)
-
-/*
- * get message out from sendChannel
- * @return the message got from sendChannel
- */
-func getMessageFromSendChannel() messagePasser.Message {
-	message := <-sendChannel
-	return message
-}
 
 /*
  * put message into sendChannel
@@ -225,16 +217,50 @@ func BullyReceiver() {
 	}
 }
 
-/* 
+/*
  * get unicorn update message from bullySelection,
  * send unicorn update message to ui and consensus algorithm
  */
 //TODO add code to send unicorn update message to consensus algorithm
 func UnicornReciever() {
-    for {
-        unicornUpdateMessage := bullySelection.GetUnicornUpdate()
+	for {
+		unicornUpdateMessage := bullySelection.GetUnicornUpdate()
 		go putMessageIntoSendChannel(unicornUpdateMessage)
-    }
+	}
+}
+
+/* wait for incoming messages from consensus algorithm */
+func ConsensusReceiverRoutine() {
+	for {
+		message := consensus.SendMessage()
+		go putMessageIntoSendChannel(*message)
+	}
+}
+
+/*
+ * Routine to check proposals for a local value and respond
+ */
+func ConsensusCheckReceiverRoutine() {
+	for {
+		propCheck := consensus.ProposalCheck()
+		switch propCheck.Prop.Type {
+		case "test":
+			(*propCheck.Callback)("success")
+		}
+	}
+}
+
+/*
+ * Routine to commit proposals that have reached consensus
+ */
+func ConsensusReachedRoutine() {
+	for {
+		proposal := consensus.ProposalToCommit()
+		switch proposal.Type {
+		case "test":
+			fmt.Printf("SHOULD COMMIT PROPOSAL:%+v\n", proposal)
+		}
+	}
 }
 
 /* receive message from messagePasser and route to correct location */
@@ -248,37 +274,49 @@ func inboundDispatcher() {
 
 		// UI Messages
 		case defs.MSG_BALL_DEFLECTED:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_BALL_MISSED:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_BLOCK_BROKEN:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_DEAD_NODE:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_PADDLE_DIR:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_PADDLE_POS:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_PAUSE_UPDATE:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_START_PLAY:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_SYNC_ERROR:
-			bridges.SendToPyBridge(message)
+			fallthrough
 		case defs.MSG_UNICORN:
 			bridges.SendToPyBridge(message)
 
 		// election messages
 		case defs.MSG_BULLY_ELECTION:
-			bullySelection.PutMessageToReceiveChannel(message)
+			fallthrough
 		case defs.MSG_BULLY_ANSWER:
-			bullySelection.PutMessageToReceiveChannel(message)
+			fallthrough
 		case defs.MSG_BULLY_UNICORN:
-			bullySelection.PutMessageToReceiveChannel(message)
+			fallthrough
 		case defs.MSG_BULLY_ARE_YOU_ALIVE:
-			bullySelection.PutMessageToReceiveChannel(message)
+			fallthrough
 		case defs.MSG_BULLY_IAM_ALIVE:
 			bullySelection.PutMessageToReceiveChannel(message)
+
+		// consensus messages
+		case defs.CONSENSUS_ACCEPT_KIND:
+			fallthrough
+		case defs.CONSENSUS_REJECT_KIND:
+			fallthrough
+		case defs.CONSENSUS_PROPOSE_KIND:
+			fallthrough
+		case defs.CONSENSUS_COMMIT_KIND:
+			consensus.ReceiveMessage(message)
+		default:
+			fmt.Printf("inboundDispatcher couldn't recognize message: %+v\n", message)
 		}
 	}
 }
@@ -287,7 +325,7 @@ func inboundDispatcher() {
 func outboundDispatcher() {
 	for {
 		// get message from the send channel
-		message := getMessageFromSendChannel()
+		message := <-sendChannel
 		// based on it's destination, determine which messagePasser
 		//	routine is appropriate
 		if message.Destination == defs.MULTICAST_DEST {
@@ -316,6 +354,7 @@ func parseMainArguments(args []string) string {
 func main() {
 	testFlag := flag.Bool("test", false, "Test Mode Flag")
 	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
+	consensusTestFlag := flag.Bool("ct", false, "Consensus Test Mode Flag")
 	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
 	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
 	flag.Parse()
@@ -323,8 +362,31 @@ func main() {
 	args := flag.Args()
 
 	// nodes used for testing purposes only
-	// nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011, DNS: "none"}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012, DNS: "none"}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013, DNS: "none"}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014, DNS: "none"}}
-	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "50.131.53.106", Port: 11111}, messagePasser.Node{Name: "garrett", IP: "71.199.96.75", Port: 44444}, messagePasser.Node{Name: "daniel", IP: "50.131.53.106", Port: 22222}, messagePasser.Node{Name: "lunwen", IP: "71.199.96.75", Port: 33333}}
+	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014}}
+	// nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "50.131.53.106", Port: 11111}, messagePasser.Node{Name: "garrett", IP: "71.199.96.75", Port: 44444}, messagePasser.Node{Name: "daniel", IP: "50.131.53.106", Port: 22222}, messagePasser.Node{Name: "lunwen", IP: "71.199.96.75", Port: 33333}}
+
+	// for testing consensus
+	if *consensusTestFlag {
+		localName := getLocalName()
+		messagePasser.InitMessagePasser(nodes, localName)
+		go outboundDispatcher()
+		go inboundDispatcher()
+		leader := nodes[0]
+		consensus.InitConsensus(leader, nodes[1:], localName)
+		go ConsensusReceiverRoutine()
+		go ConsensusCheckReceiverRoutine()
+		go ConsensusReachedRoutine()
+
+		var proposalValue string
+		for {
+			if localName == leader.Name {
+				fmt.Println("Hit enter to propose.")
+				fmt.Scanf("%s", &proposalValue)
+				consensus.Propose(proposalValue, "test")
+			}
+		}
+	}
+
 	// for testing the bootstrapping
 	if *bootstrapTestFlag {
 		localName := getLocalName()
@@ -413,8 +475,8 @@ func main() {
 		fmt.Println(localNodeName, "made message passer.")
 
 		// initialize elections
-        go bullySelection.InitBullySelection(*peers, localNodeName)
-        go UnicornReciever()
+		go bullySelection.InitBullySelection(*peers, localNodeName)
+		go UnicornReciever()
 
 		/* start the routine waiting for messages coming from UI */
 		go PyBridgeReceiver()

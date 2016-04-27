@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
 	"github.com/arminm/multegula/defs"
 )
 
@@ -67,6 +68,8 @@ var peerNodes Nodes
  * <key, value> = <name, connection>
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
+var decoders map[string]*gob.Decoder = make(map[string]*gob.Decoder)
+var encoders map[string]*gob.Encoder = make(map[string]*gob.Encoder)
 
 func getConnectionName(connection net.Conn) (string, error) {
 	for name, conn := range connections {
@@ -77,15 +80,16 @@ func getConnectionName(connection net.Conn) (string, error) {
 	return "Not Found", fmt.Errorf("Connection not found:%v\n", connection)
 }
 
+func addConnection(nodeName string, conn net.Conn) {
+	connections[nodeName] = conn
+	seqNums[nodeName] = 0
+	encoders[nodeName] = gob.NewEncoder(conn)
+	decoders[nodeName] = gob.NewDecoder(conn)
+}
+
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
 var localReceivedSeqNum = 0
-
-/*
- * connection for localhost, this is the receive side,
- * the send side is stored in connections map
- **/
-var localConn net.Conn
 
 /*
  * The local node's information.
@@ -166,8 +170,9 @@ func messageHasBeenReceived(message Message) bool {
  * @param	message – message to be sent
  **/
 func sendMessageTCP(nodeName string, message *Message) {
-	encoder := gob.NewEncoder(connections[nodeName])
-	encoder.Encode(message)
+	if encoder, exists := encoders[nodeName]; exists {
+		encoder.Encode(message)
+	}
 }
 
 /*
@@ -177,14 +182,18 @@ func sendMessageTCP(nodeName string, message *Message) {
  * @return	message
  **/
 func receiveMessageTCP(conn net.Conn) (Message, error) {
-	dec := gob.NewDecoder(conn)
+	connName, connErr := getConnectionName(conn)
+	if connErr != nil {
+		return Message{}, connErr
+	}
+	dec, exists := decoders[connName]
+	if !exists {
+		return Message{}, errors.New("Connection doesn't exist.")
+	}
 	msg := &Message{}
 	err := dec.Decode(msg)
-	fmt.Println(msg)
-	if err != nil {
-		return *msg, err
-	}
-	return *msg, nil
+	fmt.Println("Message:", msg)
+	return *msg, err
 }
 
 /*
@@ -280,15 +289,15 @@ func acceptConnection(frontNodes map[string]Node, localNode Node) {
 		 * send it's DNS name so that another node can know it's name
 		 **/
 		conn, _ := ln.Accept()
-		msg, _ := receiveMessageTCP(conn)
+		msg := &Message{}
+		dec := gob.NewDecoder(conn)
+		err := dec.Decode(msg)
+		if err != nil {
+			continue
+		}
 		// remove the connected node from the frontNodes
 		delete(frontNodes, msg.Source)
-		if msg.Source == localNode.Name {
-			localConn = conn
-		} else {
-			connections[msg.Source] = conn
-			seqNums[msg.Source] = 0
-		}
+		addConnection(msg.Source, conn)
 	}
 }
 
@@ -309,12 +318,12 @@ func sendConnection(latterNodes map[string]Node, localNode Node) {
 			time.Sleep(time.Second * 1)
 			conn, err = net.Dial("tcp", node.IP+":"+strconv.Itoa(node.Port))
 		}
-		connections[node.Name] = conn
-		seqNums[node.Name] = 0
+		addConnection(node.Name, conn)
 
 		/* send an initial ping message to other side of the connection */
 		msg := Message{localNode.Name, node.Name, "ping", "ping", 0, vectorTimeStamp}
-		sendMessageTCP(node.Name, &msg)
+		encoder := gob.NewEncoder(conn)
+		encoder.Encode(msg)
 	}
 	fmt.Println()
 }
@@ -341,6 +350,7 @@ func addMessageToReceiveChannel(message Message) {
  *			TCP connection
  **/
 func receiveMessageFromConn(conn net.Conn) {
+	defer conn.Close()
 	for {
 		msg, err := receiveMessageTCP(conn)
 		// fmt.Printf("holdbackQueue size: %v\n", len(holdbackQueue))
@@ -348,13 +358,13 @@ func receiveMessageFromConn(conn net.Conn) {
 			name, _ := getConnectionName(conn)
 			if err.Error() == "EOF" {
 				// tel the UI that we've lost a node
-				// TODO MULTICAST. 
+				// TODO MULTICAST.
 				Multicast(&Message{
-	                Source: defs.MULTEGULA_DEST,
-	                Destination: defs.MULTICAST_DEST,
-	                Content: name,
-	                Kind: defs.MSG_DEAD_NODE,
-	            })
+					Source:      localNode.Name,
+					Destination: defs.MULTICAST_DEST,
+					Content:     name,
+					Kind:        defs.MSG_DEAD_NODE,
+				})
 				fmt.Println("Lost connection to:", name)
 				break
 			} else {
@@ -464,7 +474,6 @@ func startReceiveRoutines() {
 	for _, conn := range connections {
 		go receiveMessageFromConn(conn)
 	}
-	go receiveMessageFromConn(localConn)
 }
 
 /*
