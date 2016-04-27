@@ -268,6 +268,7 @@ func inboundDispatcher() {
 	for {
 		// get message from MessagePasser
 		message := messagePasser.Receive()
+
 		// Based on the type of message, determine where it needs routed
 		switch message.Kind {
 
