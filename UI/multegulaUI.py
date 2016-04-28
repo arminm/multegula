@@ -215,7 +215,6 @@ def keyPressed(event) :
 ### mousePressed - handle mouse press events
 def mousePressed(event) :
     canvas = event.widget.canvas
-
     # main screen mouse pressed events - button clicks
     if canvas.data['currentState'] == State.STATE_MENU : 
         # check solo button pressed
@@ -397,14 +396,15 @@ def react(canvas, received) :
 
     # MSG_CON_COMMIT - commit a consensus result
     elif kind == MsgType.MSG_CON_COMMIT :
-        # con only receive this message while SYNCING or REJOINING 
-        if currentState in [State.STATE_SYNC, State.STATE_REJOIN] :
-            canvas.delete(ALL)
-            reactToCommit(content, canvas)
-        # otherwise, we are out of sync!
-        else :
-            content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
-            sendSyncError(content, canvas)
+        canvas.delete(ALL)
+        reactToCommit(content, canvas)
+        print("Multegula has been syncronized!")
+
+    # MSG_FORCE_COMMIT - force a commit
+    elif kind == MsgType.MSG_FORCE_COMMIT :
+        canvas.delete(ALL)
+        reactToCommit(content, canvas)
+        print("Multegula has been syncronized!")
 
     # MSG_CON_CHECK - respond to a concensus check
     elif kind == MsgType.MSG_CON_CHECK :
@@ -439,6 +439,8 @@ def react(canvas, received) :
 
     # MSG_DEAD_NODE - a dead node has been detected
     elif kind == MsgType.MSG_DEAD_NODE :
+        missingNode = content[MsgIndex.DEAD_NODE]
+
         # this message can happen at any time
         if currentState != State.STATE_REJOIN :
             canvas.delete(ALL)
@@ -448,15 +450,20 @@ def react(canvas, received) :
             canvas.data['currentState'] = State.STATE_REJOIN
 
         # get the dead node, add it to the list, make a timer
-        missingNode = content[MsgIndex.DEAD_NODE]
-        canvas.data['missingNodes'].append(missingNode)
-        canvas.data[missingNode + 'Timer'] = REJOIN_TIMEOUT
+
+        if missingNode not in canvas.data['missingNodes'] :
+            print("Multegula can't locate", name, "!")
+            canvas.data['missingNodes'].append(missingNode)
+            canvas.data[missingNode + 'Timer'] = REJOIN_TIMEOUT
+
 
     # MSG_KILL_NODE - this missing node's timeout has expired
     elif kind == MsgType.MSG_KILL_NODE :
         missingNode = content[MsgIndex.KILL_NODE]
         canvas.data[missingNode].iAmDead()
-        canvas.data['missingNodes'].remove(missingNode)
+        if missingNode in canvas.data['missingNodes'] :
+            canvas.data['missingNodes'].remove(missingNode)
+            print("We cannot wait for " + missingNode + " any longer...moving on.")
 
     # MSG_PADDLE_DIR - move a paddle
     elif kind == MsgType.MSG_PADDLE_DIR :
@@ -536,21 +543,30 @@ def react(canvas, received) :
     elif kind == MsgType.MSG_REJOIN_REQ :
         # get the missing node
         missingNode = content[MsgIndex.REJOIN_REQ_NODE]
+        print(missingNode + " has requested to rejoin the game.")
 
-        # if this is the unicorn, start consensus
-        if canvas.data['unicorn'] == myName and missingNode in canvas.data['missingNodes'] :
+        if missingNode in canvas.data['missingNodes'] and canvas.data['unicorn'] == myName :
+            # form message
             toSend = PyMessage()
             toSend.src = myName
-            toSend.kind = MsgType.MSG_CON_REQ
-            toSend.content = ConType.CON_REJOIN + '|' + missingNode + '|' + MsgPayload.CON_REJOIN_YES
-            toSend.multicast = False
+            toSend.kind = MsgType.MSG_REJOIN_ACK
+            toSend.content = missingNode
+            toSend.multicast = True 
+            # send message
             sendMessage(toSend, canvas)
-            canvas.data['attemptingRejoin'] = True
+            print("\tThe more the merrier. C'mon back " + missingNode + ".")
+
+        elif canvas.data['unicorn'] == myName :
+            print("\tThe game has moved on. " + missingNode + "cannot rejoin.")
 
         # reset the timer
         timerKey = missingNode + 'Timer'
         canvas.data[timerKey] = REJOIN_TIMEOUT
 
+    elif kind == MsgType.MSG_REJOIN_ACK :
+        missingNode = content[MsgIndex.REJOIN_ACK_NODE]
+        if missingNode in canvas.data['missingNodes'] :
+            canvas.data['missingNodes'].remove(missingNode)
 
     # MSG_START_PLAY
     elif kind == MsgType.MSG_START_PLAY :
@@ -596,7 +612,7 @@ def react(canvas, received) :
     # MSG_UNICORN
     elif kind == MsgType.MSG_UNICORN :
         canvas.data['unicorn'] = content[MsgIndex.UNICORN_UNICORN]
-        print('UI (' + myName + ') got unicorn update: ' + canvas.data['unicorn'])
+        print('UI now riding on ' + canvas.data['unicorn'] + '.')
 
 ### receiveAll - get all messages from the GoBrige
 def receiveAll(canvas) :
@@ -794,11 +810,14 @@ def levelUpdate(status, canvas) :
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
-    receiveAll(canvas)
+
+    if canvas.data['currentState'] != State.STATE_GAME_OVER :
+        receiveAll(canvas)
+
+    # get information
     gameType = canvas.data['gameType']
     myName = canvas.data['myName']
     currentState = canvas.data['currentState']
-
 
     ### SPLASH - get player name
     if currentState == State.STATE_SPLASH :
@@ -826,36 +845,6 @@ def redrawAll(canvas) :
         canvas.data['joinScreen'].draw(canvas)
         canvas.data['ball'].updateMenu(canvas)
 
-    ### REJOIN - allow a node to try and rejoin
-    elif currentState == State.STATE_REJOIN :
-        canvas.data['gameScreen'].draw(canvas)
-
-        # update the level and ball AFTER players update to allow for bouncing and breaking
-        canvas.data['level'].draw(canvas)
-        canvas.data['ball'].updateMenu(canvas)  
-        canvas.data['rejoinScreen'].draw(canvas)   
-
-        # get the list of missigng nodes 
-        missingNodes = canvas.data['missingNodes']
-
-        # count if we aren't attempting rejoin
-        if not canvas.data['attemptingRejoin'] :
-            # make sure there is something in it
-            if missingNodes :
-                # loop through all nodes
-                for missing in missingNodes :
-                    # update timer and send kill messages
-                    timerKey = missing + 'Timer'
-                    if canvas.data[timerKey] <= 0 and myName == canvas.data['unicorn']:
-                        sendKillMessage(missing, canvas)
-                    else :
-                        canvas.data[timerKey] -= 1
-            # if there is nothing in the missing nodes list then go back to playing the game! 
-            else :
-                canvas.delete(ALL)
-                resetGamePlay(canvas)
-                canvas.data['currentState'] = State.STATE_PAUSE
-
     ### PAUSE SINGLE PLAYER - countdown 
     elif currentState == State.STATE_PAUSE and gameType == GameType.SINGLE_PLAYER :
         # draw screen and ball
@@ -877,7 +866,7 @@ def redrawAll(canvas) :
         # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
-        clearMyReceivedFlags(canvas)
+        # clearMyReceivedFlags(canvas)
 
         # update all players
         for player in canvas.data['competitors'] :
@@ -918,6 +907,39 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateGame(canvas)
         levelUpdate(status, canvas)
 
+    ### REJOIN - allow a node to try and rejoin
+    elif currentState == State.STATE_REJOIN :
+        canvas.data['gameScreen'].draw(canvas)
+
+        # update the level and ball AFTER players update to allow for bouncing and breaking
+        canvas.data['level'].draw(canvas)
+        canvas.data['ball'].updateMenu(canvas)  
+        canvas.data['rejoinScreen'].draw(canvas)   
+
+        # get the list of missigng nodes 
+        missingNodes = canvas.data['missingNodes']
+
+        # make sure there is something in it
+        if missingNodes :
+            # loop through all nodes
+            for missing in missingNodes :
+                # update timer and send kill messages
+                timerKey = missing + 'Timer'
+                if canvas.data[timerKey] <= 0 and myName == canvas.data['unicorn']:
+                    sendKillMessage(missing, canvas)
+                else :
+                    canvas.data[timerKey] -= 1
+
+        # if there is nothing in the missing nodes list then go back to playing the game! 
+        elif myName == canvas.data['unicorn'] :
+            toSend = PyMessage()
+            toSend.src = myName
+            toSend.kind = MsgType.MSG_FORCE_COMMIT
+            toSend.content = ConType.CON_GAME_STATE + '|' + getGameState(canvas)
+            toSend.multicast = True
+            # send message
+            sendMessage(toSend, canvas)
+
     ### SYNC - perform game state consensus to sync everyone up
     elif currentState == State.STATE_SYNC :
         canvas.data['gameScreen'].draw(canvas)
@@ -934,6 +956,7 @@ def redrawAll(canvas) :
             toSend.content = ConType.CON_GAME_STATE + '|' + getGameState(canvas)
             toSend.multicast = False
             sendMessage(toSend, canvas)
+            print(myName + " has requested that we perform consensus.")
 
     # GAME OVER SCREEN
     elif canvas.data['currentState'] == State.STATE_GAME_OVER : 
@@ -1065,10 +1088,21 @@ def initPlayers(canvas, number=1, info=[]):
         
         # save competitor information
         canvas.data['competitors'] = info 
-        canvas.data['playersInitialized'] = True          
+        canvas.data['playersInitialized'] = True       
 
 ### run - run the program
 def runUI(cmd_line_args) :
+
+    def on_closing() :
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_EXIT
+        toSend.content = 'MISFITS_RULE'
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+        root.destroy()
+
 
     # initialize canvas
     root = Tk()
@@ -1083,6 +1117,7 @@ def runUI(cmd_line_args) :
 
     # Store canvas in root and in canvas itself for callbacks
     root.canvas = canvas.canvas = canvas
+    root.protocol("WM_DELETE_WINDOW", on_closing)
 
     # set up dicitonary
     canvas.data = {}
@@ -1103,8 +1138,8 @@ def runUI(cmd_line_args) :
     redrawAll(canvas)
     root.mainloop()
 
-    #Properly close receiveThread
     Process.join()
+    sys.exit(2)
 
 #Start UI
 runUI(sys.argv)

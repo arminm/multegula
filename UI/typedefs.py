@@ -10,7 +10,7 @@ WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
 
 ### CONSTANT VALUES
 # canvas dimensions
-CANVAS_DIMENTSION = 350
+CANVAS_DIMENTSION = 500
 CANVAS_WIDTH = CANVAS_DIMENTSION;
 CANVAS_HEIGHT = CANVAS_DIMENTSION;
 X_THIRD = CANVAS_WIDTH // 4
@@ -38,8 +38,8 @@ Y_LOC_WIN_TEASE = CANVAS_HEIGHT*0.6
 Y_LOC_WINNER = CANVAS_HEIGHT*0.7
 Y_LOC_TOP_BUTTON = 0.70*CANVAS_HEIGHT
 Y_LOC_BOTTOM_BUTTON = 0.85*CANVAS_HEIGHT
-S_TEXT_SIZE = CANVAS_WIDTH // 35
-M_TEXT_SIZE = CANVAS_WIDTH // 28
+S_TEXT_SIZE = CANVAS_WIDTH // 38
+M_TEXT_SIZE = CANVAS_WIDTH // 30
 L_TEXT_SIZE = CANVAS_WIDTH // 20
 XL_TEXT_SIZE = CANVAS_WIDTH // 10
 
@@ -72,10 +72,10 @@ PADDLE_SPEED_INIT = CANVAS_WIDTH // (120 - (DELAY*2))
 # score int constants
 LOST_LIFE_POINTS = -20
 LOST_LIFE_LIVES = -1
-EXTRA_LIFE_POINTS = 100
+EXTRA_LIFE_POINTS = 50
 DEFLECT_POINTS  = 3
 BREAK_POINTS = 5
-INIT_LIVES = 10
+INIT_LIVES = 5
 
 # fixed point multiplier / rounding factor
 FP_MULT = 10
@@ -172,12 +172,15 @@ class MsgType() :
     MSG_CON_REPLY       = 'MCP'
     MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
+    MSG_EXIT            = 'MEX'
+    MSG_FORCE_COMMIT    = 'MFC'
     MSG_KILL_NODE       = 'MKN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
     MSG_PAUSE_UPDATE    = 'MPU'
     MSG_PLAYER_LOC      = 'MPL'
+    MSG_REJOIN_ACK      = 'MRA'
     MSG_REJOIN_REQ      = 'MRR'
     MSG_START_PLAY      = 'MSP'
     MSG_SYNC_ERROR      = 'MSE'
@@ -186,7 +189,6 @@ class MsgType() :
 ### ConType - defines consensus types
 class ConType() :
     CON_GAME_STATE = 'CGS'
-    CON_REJOIN     = 'CRJ'
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
@@ -240,6 +242,7 @@ class MsgIndex() :
     PLAYER_LOC_NUMBER       = 0
     PLAYER_LOC_PLAYERS      = 1
     REJOIN_REQ_NODE         = 0
+    REJOIN_ACK_NODE         = 0
     START_PLAY_XSPEED       = 0
     START_PLAY_YSPEED       = 1
     UNICORN_UNICORN         = 0
@@ -298,12 +301,9 @@ class PyMessage :
     def toString(self):
         return 'source: ' + self.src + ', type: ' + self.kind + ', content: ' + str(self.content)
 
-
-
-#ARTIFICIAL_COMMIT_1 = "daniel##daniel##-1##CGS|4|a|0|10|175|58|b|0|10|175|58|c|0|10|175|58|d|0|10|175|58|0|0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20##MCC"
-ARTIFICIAL_COMMIT_1 = "CGS|4|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|garrett|19|4|167|58|0|0|1|2|5|6|7|8|9|11|12|13|14|16|18|19"
-ARTIFICIAL_COMMIT_2 = "CGS|4|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|garrett|19|4|167|58|2|0|1|2|5|6|7|8|9|11|12|13|14|16|18|19"
-ARTIFICIAL_COMMIT_3 = "CGS|3|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|1|0|1|2|5|6|7|8|9|11|12|13|14|16"
+ARTIFICIAL_COMMIT_1 = "CGS|4|armin|23|3|daniel|53|5|lunwen|10|1|garrett|19|4|0|101110111101110111010"
+ARTIFICIAL_COMMIT_2 = "CGS|3|armin|23|3|daniel|53|5|lunwen|10|1|1|101101101101101101011"
+ARTIFICIAL_COMMIT_3 = "CGS|4|armin|23|3|daniel|53|5|lunwen|10|1|garrett|19|4|2|1101101111011011101101100011"
 
 
 

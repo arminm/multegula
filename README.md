@@ -51,6 +51,7 @@ Click "Allow" on any Windows Firewall notifications upon running.
 Running:
 ---------------------------------------------------------
 1. `./run.sh` (OS X, Linux) or click `run.bat` (Windows)
+2. Multegula (by default) runs on TCP port 11111, so you'll either need a fully-public IP address, or to forward this port at your NAT router.
 
 Acknowledgements:
 ---------------------------------------------------------
