@@ -169,6 +169,7 @@ class MsgType() :
     MSG_BLOCK_BROKEN    = 'MBB'
     MSG_CON_CHECK       = 'MCH'
     MSG_CON_COMMIT      = 'MCC'
+    MSG_FORCE_COMMIT    = 'MFC'
     MSG_CON_REPLY       = 'MCP'
     MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'

@@ -396,14 +396,13 @@ def react(canvas, received) :
 
     # MSG_CON_COMMIT - commit a consensus result
     elif kind == MsgType.MSG_CON_COMMIT :
-        # # con only receive this message while SYNCING or REJOINING 
-        # if currentState in [State.STATE_SYNC, State.STATE_REJOIN] :
         canvas.delete(ALL)
         reactToCommit(content, canvas)
-        # # otherwise, we are out of sync!
-        # else :
-        #     content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
-        #     sendSyncError(content, canvas)
+
+    # MSG_FORCE_COMMIT - force a commit
+    elif kind == MsgType.MSG_FORCE_COMMIT :
+        canvas.detlet(ALL)
+        reactToCommit(content, canvas)
 
     # MSG_CON_CHECK - respond to a concensus check
     elif kind == MsgType.MSG_CON_CHECK :
