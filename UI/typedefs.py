@@ -7,6 +7,7 @@
 from enum import Enum
 
 WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
+AIS = ['arminAI', 'lunwenAI', 'garrettAI']
 
 ### CONSTANT VALUES
 # canvas dimensions
