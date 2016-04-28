@@ -397,7 +397,7 @@ func initConsensus(message messagePasser.Message) {
 
 /* the Main function of the Multegula application */
 func main() {
-	testFlag := flag.Bool("test", false, "Test Mode Flag")
+	messagePasserTestFlag := flag.Bool("test", false, "MessagePasser Test Mode Flag")
 	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
 	consensusTestFlag := flag.Bool("ct", false, "Consensus Test Mode Flag")
 	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
@@ -412,82 +412,21 @@ func main() {
 
 	// for testing consensus
 	if *consensusTestFlag {
-		localName := getLocalName()
-		messagePasser.InitMessagePasser(nodes, localName)
-		go outboundDispatcher()
-		go inboundDispatcher()
-		leader := nodes[0]
-		consensus.InitConsensus(leader, nodes[1:], localName)
-		go ConsensusReceiverRoutine()
-		go ConsensusCheckReceiverRoutine()
-		go ConsensusReachedRoutine()
-
-		var proposalValue string
-		for {
-			if localName == leader.Name {
-				fmt.Println("Hit enter to propose.")
-				fmt.Scanf("%s", &proposalValue)
-				consensus.Propose(proposalValue, "test")
-			}
-		}
+		testConsensus(nodes)
+		return
 	}
 
 	// for testing the bootstrapping
 	if *bootstrapTestFlag {
-		localName := getLocalName()
-		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
-		fmt.Println("Contacting the bootstrap server...")
-		peers, err := bootstrapClient.GetNodes(localNode)
-		if err != nil {
-			fmt.Println("Got error:", err)
-		} else {
-			fmt.Printf("Got peers: %+v\n", peers)
-		}
+		testBootstrap(nodes)
 		return
 	}
 
-	if *testFlag {
+	if *messagePasserTestFlag {
 		localNodeName := parseMainArguments(args)
 		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
-		peers, err := bootstrapClient.GetNodes(localNode)
-		if err != nil {
-			fmt.Println("Couldn't get peers:", err)
-			panic(err)
-		}
-		*peers = append(*peers, localNode)
-		fmt.Print("--------------------------------\n")
-		fmt.Println("Available Nodes:")
-		for id, node := range *peers {
-			fmt.Printf("  ID:%d – %+v\n", id, node)
-		}
-		fmt.Println("Initing with localName:", localNodeName)
-		messagePasser.InitMessagePasser(*peers, localNodeName)
-
-		/* start a receiveRoutine to be able to use nonBlockingReceive */
-		go receiveRoutine()
-
-		fmt.Println("Please select the operation you want to do:")
-		for {
-			fmt.Println("Getting operation")
-			operation := getOperation()
-			if operation == 0 {
-				message := getMessage(nodes, localNodeName)
-				messagePasser.Send(message)
-			} else if operation == 1 {
-				var message messagePasser.Message = nonBlockingReceive()
-				if (reflect.DeepEqual(message, messagePasser.Message{})) {
-					fmt.Print("No messages received.\n\n")
-				} else {
-					fmt.Printf("Received: %+v\n\n", message)
-				}
-			} else if operation == 2 {
-				message := getMessage(nodes, localNodeName)
-				messagePasser.Multicast(&message)
-				fmt.Println("Did multicast")
-			} else {
-				fmt.Println("Operation not recognized. Please try again.")
-			}
-		}
+		testMessagePasser(localNode)
+		return
 	}
 
 	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
@@ -513,39 +452,56 @@ func main() {
 		//Check to see if state file exists, and if it does, read timestamp from it.
 		//If timestamp is too old, delete and ignore.  If not, read nodes and ignore bootstrap.
 		lastTime, err = io.LoadTime("lastgametime.mlg")
-		if (err != nil) && (time.Now().Unix()-int64(300) > int64(lastTime)) {
+		lastGameIsTooOld := false
+		if err == nil {
+			lastGameIsTooOld = time.Now().Unix()-int64(defs.IO_REJOIN_DELAY_LIMIT) > int64(lastTime)
+		}
+		if err == nil && !lastGameIsTooOld {
+			//We have a recent lost game that we can rejoin.
+			fmt.Println("Attempting to rejoin old game!")
+			peers = io.LoadNodes(defs.IO_LASTGAME_NODES_FILENAME)
+			if err != nil {
+				fmt.Println("Couldn't load peers:", err)
+				panic(err)
+			}
+		} else {
+			if lastGameIsTooOld {
+				os.Remove(defs.IO_LASTGAME_NODES_FILENAME)
+				os.Remove(defs.IO_LASTGAME_TIME_FILENAME)
+			}
 			// get fellow players
 			peers, err = bootstrapClient.GetNodes(localNode)
 			if err != nil {
-				fmt.Println("Couldn't get peers:", err)
-				panic(err)
-			}
-			*peers = append(*peers, localNode)
-		} else { //We have a recent lost game that we can rejoin.
-			fmt.Println("Attempting to rejoin old game!")
-			*peers = append(io.LoadNodes("lastgamenodes.mlg"), localNode)
-			if err != nil {
-				fmt.Println("Couldn't get peers:", err)
+				fmt.Println("Couldn't get peers from server:", err)
 				panic(err)
 			}
 		}
 
 		//Write peers to file with a timestamp to enable game rejoining.
-		//But first, remove old file.
-		os.Remove("lastgamenodes.mlg")
-		os.Remove("lastgametime.mlg")
-		err = io.StoreNodes("lastgamenodes.mlg", peers)
-		err = io.StoreTime("lastgametime.mlg", time.Now().Unix())
+		err = io.StoreNodes(defs.IO_LASTGAME_NODES_FILENAME, peers)
+		if err != nil {
+			panic(err)
+		}
+		err = io.StoreTime(defs.IO_LASTGAME_TIME_FILENAME, time.Now().Unix())
+		if err != nil {
+			panic(err)
+		}
+		// Remove files if game exits gracefully
+		defer os.Remove(defs.IO_LASTGAME_NODES_FILENAME)
+		defer os.Remove(defs.IO_LASTGAME_TIME_FILENAME)
+
+		// Create the slice of all nodes
+		nodes = append(*peers, localNode)
 
 		// set competitor location
-		uiSetCompetitorLocation(localNode.Name, peers)
+		uiSetCompetitorLocation(localNode.Name, &nodes)
 
 		// initialize message passer
-		messagePasser.InitMessagePasser(*peers, localNodeName)
+		messagePasser.InitMessagePasser(nodes, localNodeName)
 		fmt.Println(localNodeName, "made message passer.")
 
 		// initialize elections
-		go bullySelection.InitBullySelection(*peers, localNodeName)
+		go bullySelection.InitBullySelection(nodes, localNodeName)
 		go UnicornReciever()
 
 		/* start the routine waiting for messages coming from UI */
@@ -568,4 +524,79 @@ func receiveRoutine() {
 
 func nonBlockingReceive() messagePasser.Message {
 	return messagePasser.Pop(&receiveQueue)
+}
+
+func testBootstrap(nodes messagePasser.Nodes) {
+	localName := getLocalName()
+	_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
+	fmt.Println("Contacting the bootstrap server...")
+	peers, err := bootstrapClient.GetNodes(localNode)
+	if err != nil {
+		fmt.Println("Got error:", err)
+	} else {
+		fmt.Printf("Got peers: %+v\n", peers)
+	}
+}
+
+func testMessagePasser(localNode messagePasser.Node) {
+	peers, err := bootstrapClient.GetNodes(localNode)
+	if err != nil {
+		fmt.Println("Couldn't get peers:", err)
+		panic(err)
+	}
+	*peers = append(*peers, localNode)
+	fmt.Print("--------------------------------\n")
+	fmt.Println("Available Nodes:")
+	for id, node := range *peers {
+		fmt.Printf("  ID:%d – %+v\n", id, node)
+	}
+	fmt.Println("Initing with localName:", localNode.Name)
+	messagePasser.InitMessagePasser(*peers, localNode.Name)
+
+	/* start a receiveRoutine to be able to use nonBlockingReceive */
+	go receiveRoutine()
+
+	fmt.Println("Please select the operation you want to do:")
+	for {
+		fmt.Println("Getting operation")
+		operation := getOperation()
+		if operation == 0 {
+			message := getMessage(*peers, localNode.Name)
+			messagePasser.Send(message)
+		} else if operation == 1 {
+			var message messagePasser.Message = nonBlockingReceive()
+			if (reflect.DeepEqual(message, messagePasser.Message{})) {
+				fmt.Print("No messages received.\n\n")
+			} else {
+				fmt.Printf("Received: %+v\n\n", message)
+			}
+		} else if operation == 2 {
+			message := getMessage(*peers, localNode.Name)
+			messagePasser.Multicast(&message)
+			fmt.Println("Did multicast")
+		} else {
+			fmt.Println("Operation not recognized. Please try again.")
+		}
+	}
+}
+
+func testConsensus(nodes messagePasser.Nodes) {
+	localName := getLocalName()
+	messagePasser.InitMessagePasser(nodes, localName)
+	go outboundDispatcher()
+	go inboundDispatcher()
+	leader := nodes[0]
+	consensus.InitConsensus(leader, nodes[1:], localName)
+	go ConsensusReceiverRoutine()
+	go ConsensusCheckReceiverRoutine()
+	go ConsensusReachedRoutine()
+
+	var proposalValue string
+	for {
+		if localName == leader.Name {
+			fmt.Println("Hit enter to propose.")
+			fmt.Scanf("%s", &proposalValue)
+			consensus.Propose(proposalValue, "test")
+		}
+	}
 }

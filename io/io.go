@@ -61,18 +61,18 @@ func StoreTime(fname string, timestamp int64) error {
 /*
 * Reads nodes data from a file
  */
-func LoadNodes(fname string) []messagePasser.Node {
+func LoadNodes(fname string) *[]messagePasser.Node {
 	fh, err := os.Open(fname)
 	if err != nil {
 		return nil
 	}
-	p := make([]messagePasser.Node, 4)
+	p := make([]messagePasser.Node, 3)
 	dec := gob.NewDecoder(fh)
 	err = dec.Decode(&p)
 	if err != nil {
 		return nil
 	}
-	return p
+	return &p
 }
 
 /*

@@ -93,3 +93,8 @@ const CONSENSUS_COMMIT_KIND string = "CCK"
 const CONSENSUS_CHANNEL_SIZE int = 10
 const CONSENSUS_TIMEOUT_INTERVAL time.Duration = 5 * time.Second
 const CONSENSUS_DELIMITER string = "::"
+
+/*** IO REJOIN CONSTANTS ***/
+const IO_REJOIN_DELAY_LIMIT int = 300
+const IO_LASTGAME_NODES_FILENAME string = "lastgamenodes.mlg"
+const IO_LASTGAME_TIME_FILENAME string = "lastgametime.mlg"
