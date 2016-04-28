@@ -853,7 +853,7 @@ def redrawAll(canvas) :
             # if there is nothing in the missing nodes list then go back to playing the game! 
             else :
                 canvas.delete(ALL)
-                resetGamePlay()
+                resetGamePlay(canvas)
                 canvas.data['currentState'] = State.STATE_PAUSE
 
     ### PAUSE SINGLE PLAYER - countdown 
