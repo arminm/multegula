@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/arminm/multegula/defs"
@@ -23,10 +24,12 @@ var proposalCheckChannel chan *PropCheck = make(chan *PropCheck, defs.CONSENSUS_
 
 // Client
 var acceptedProposals map[string]*Proposal
+var acceptedProposalsMutex = &sync.Mutex{}
 
 // Leader
 var SeqNum int = 0
 var propVotesMap map[string]*(map[string]*Proposal)
+var propVotesMutex = &sync.Mutex{}
 
 type Proposal struct {
 	SeqNum int
@@ -69,14 +72,19 @@ func Propose(value string, valueType string) {
 	// Add own proposal to votesMap
 	votesMap[localName] = &proposal
 	// Keep track of the votesMap for the valueType
+	propVotesMutex.Lock()
 	propVotesMap[valueType] = &votesMap
+	propVotesMutex.Unlock()
 	// Multicast the proposal
 	addMessageToSendChannel(defs.MULTICAST_DEST, defs.CONSENSUS_PROPOSE_KIND, &proposal)
 	// local copy of SeqNum for timeout checks
 	seqNum := SeqNum
 	time.AfterFunc(defs.CONSENSUS_TIMEOUT_INTERVAL, func() {
 		// check if the timeout is still relevant
-		if votes, exists := propVotesMap[valueType]; exists {
+		propVotesMutex.Lock()
+		votes, exists := propVotesMap[valueType]
+		propVotesMutex.Unlock()
+		if exists {
 			localVote := (*Proposal)((*votes)[localName])
 			if localVote.SeqNum == seqNum {
 				// Timed out, see if consensus is reached
@@ -101,6 +109,7 @@ func Propose(value string, valueType string) {
  */
 func multicastCommit(proposal *Proposal) {
 	// Check to see if we haven't already multicasted a commit for this proposal
+	propVotesMutex.Lock()
 	if votes, exists := propVotesMap[proposal.Type]; exists {
 		if (*votes)[localName].SeqNum == proposal.SeqNum {
 			delete(propVotesMap, proposal.Type)
@@ -109,6 +118,7 @@ func multicastCommit(proposal *Proposal) {
 			commitChannel <- proposal
 		}
 	}
+	propVotesMutex.Unlock()
 }
 
 /*
@@ -202,6 +212,7 @@ func parseProposal(proposal *Proposal) {
 	if isLeader {
 		return
 	}
+	acceptedProposalsMutex.Lock()
 	if accepted, exists := acceptedProposals[proposal.Type]; exists {
 		// A proposal of the same type have already been accepted
 		if accepted.Value == proposal.Value && accepted.SeqNum < proposal.SeqNum {
@@ -216,7 +227,9 @@ func parseProposal(proposal *Proposal) {
 		// It's a new proposal that hasn't been accepted
 		callback := func(value string) {
 			if value == proposal.Value {
+				acceptedProposalsMutex.Lock()
 				acceptedProposals[proposal.Type] = proposal
+				acceptedProposalsMutex.Unlock()
 				accept(proposal)
 			} else {
 				proposal.Value = value
@@ -225,6 +238,7 @@ func parseProposal(proposal *Proposal) {
 		}
 		check(proposal, &callback)
 	}
+	acceptedProposalsMutex.Unlock()
 }
 
 /*
@@ -262,7 +276,9 @@ func reject(proposal *Proposal) {
  */
 func commitProposal(proposal *Proposal) {
 	// Make sure to remove the committed propsals
+	acceptedProposalsMutex.Lock()
 	delete(acceptedProposals, proposal.Type)
+	acceptedProposalsMutex.Unlock()
 	commitChannel <- proposal
 }
 
