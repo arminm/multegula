@@ -401,7 +401,7 @@ def react(canvas, received) :
 
     # MSG_FORCE_COMMIT - force a commit
     elif kind == MsgType.MSG_FORCE_COMMIT :
-        canvas.detlet(ALL)
+        canvas.delete(ALL)
         reactToCommit(content, canvas)
 
     # MSG_CON_CHECK - respond to a concensus check
@@ -535,20 +535,24 @@ def react(canvas, received) :
         # get the missing node
         missingNode = content[MsgIndex.REJOIN_REQ_NODE]
 
-        # if this is the unicorn, start consensus
-        if canvas.data['unicorn'] == myName and missingNode in canvas.data['missingNodes'] :
+        if missingNode in canvas.data['missingNodes'] and canvas.data['unicorn'] == myName :
+            # form message
             toSend = PyMessage()
             toSend.src = myName
-            toSend.kind = MsgType.MSG_CON_REQ
-            toSend.content = ConType.CON_REJOIN + '|' + missingNode + '|' + MsgPayload.CON_REJOIN_YES
-            toSend.multicast = False
+            toSend.kind = MsgType.MSG_REJOIN_ACK
+            toSend.content = missingNode
+            toSend.multicast = True 
+            # send message
             sendMessage(toSend, canvas)
-            canvas.data['attemptingRejoin'] = True
 
         # reset the timer
         timerKey = missingNode + 'Timer'
         canvas.data[timerKey] = REJOIN_TIMEOUT
 
+    elif kind == MsgType.MSG_REJOIN_ACK :
+        missingNode = content[MsgIndex.REJOIN_ACK_NODE]
+        if missingNode in canvas.data['missingNodes'] :
+            canvas.data['missingNodes'].remove(missingNode)
 
     # MSG_START_PLAY
     elif kind == MsgType.MSG_START_PLAY :
@@ -796,8 +800,7 @@ def redrawAll(canvas) :
     gameType = canvas.data['gameType']
     myName = canvas.data['myName']
     currentState = canvas.data['currentState']
-
-
+    
     ### SPLASH - get player name
     if currentState == State.STATE_SPLASH :
         # draw screen background and ball
@@ -836,23 +839,26 @@ def redrawAll(canvas) :
         # get the list of missigng nodes 
         missingNodes = canvas.data['missingNodes']
 
-        # count if we aren't attempting rejoin
-        if not canvas.data['attemptingRejoin'] :
-            # make sure there is something in it
-            if missingNodes :
-                # loop through all nodes
-                for missing in missingNodes :
-                    # update timer and send kill messages
-                    timerKey = missing + 'Timer'
-                    if canvas.data[timerKey] <= 0 and myName == canvas.data['unicorn']:
-                        sendKillMessage(missing, canvas)
-                    else :
-                        canvas.data[timerKey] -= 1
-            # if there is nothing in the missing nodes list then go back to playing the game! 
-            else :
-                canvas.delete(ALL)
-                resetGamePlay(canvas)
-                canvas.data['currentState'] = State.STATE_PAUSE
+        # make sure there is something in it
+        if missingNodes :
+            # loop through all nodes
+            for missing in missingNodes :
+                # update timer and send kill messages
+                timerKey = missing + 'Timer'
+                if canvas.data[timerKey] <= 0 and myName == canvas.data['unicorn']:
+                    sendKillMessage(missing, canvas)
+                else :
+                    canvas.data[timerKey] -= 1
+
+        # if there is nothing in the missing nodes list then go back to playing the game! 
+        elif myName == canvas.data['unicorn'] :
+            toSend = PyMessage()
+            toSend.src = myName
+            toSend.kind = MsgType.MSG_FORCE_COMMIT
+            toSend.content = ConType.CON_GAME_STATE + '|' + getGameState(canvas)
+            toSend.multicast = True
+            # send message
+            canvas.data['bridge'].sendMessage(toSend)
 
     ### PAUSE SINGLE PLAYER - countdown 
     elif currentState == State.STATE_PAUSE and gameType == GameType.SINGLE_PLAYER :
@@ -875,7 +881,7 @@ def redrawAll(canvas) :
         # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
         canvas.data['ball'].draw(canvas)
-        clearMyReceivedFlags(canvas)
+        # clearMyReceivedFlags(canvas)
 
         # update all players
         for player in canvas.data['competitors'] :

@@ -189,10 +189,10 @@ def getGameState(canvas) :
 
 ### reactToCommit - set appropriate data values based on received messages
 def reactToCommit(content, canvas) :
-    print(canvas.data['myName'] + " COMMITING : " + str(content))
     conType = content[MsgIndex.CON_CHECK_TYPE]
-
     if conType == ConType.CON_GAME_STATE :
+        print(canvas.data['myName'] + " COMMITING : " + str(content))
+
         i = MsgIndex.CON_CHECK_TYPE
 
         i += 1
@@ -240,48 +240,28 @@ def reactToCommit(content, canvas) :
         canvas.data['ball'].reset()
         canvas.data['currentState'] = State.STATE_PAUSE
         canvas.data['artificalSync'] = False
-
-    elif conType == ConType.CON_REJOIN :
-        # get the node in question and the reply
-        missingNode = content[MsgIndex.CON_REJOIN_NODE]
-        reply = content[MsgIndex.CON_REJOIN_REPLY]
-        
-        # remove missing node from the list
-        if missingNode in canvas.data['missingNodes'] :
-            canvas.data['missingNodes'].remove(missingNode)
-
-        # kill node if appropriate
-        if reply == MsgPayload.CON_REJOIN_NO :
-            canvas.data[missingNode].iAmDead()
-
-        # reset flags
         canvas.data['artificialDead'] = False
-        canvas.data['attemptingRejoin'] = False
-        clearMyReceivedFlags(canvas)
-
-        # if there are still missing nodes, go back to the rejoin state. Otherwise, sync up!
-        if canvas.data['missingNodes'] :
-            canvas.data['currentState'] = State.STATE_REJOIN
-        else :
-            canvas.data['currentState'] = State.STATE_SYNC
-
 
 ### clearMyReceivedFlags - so the game can persist in a graceful manner
 def clearMyReceivedFlags(canvas) :
     canvas.data['myReceived'][MsgType.MSG_BALL_DEFLECTED] = True
     canvas.data['myReceived'][MsgType.MSG_BALL_MISSED] = True
     canvas.data['myReceived'][MsgType.MSG_BLOCK_BROKEN] = True
-    canvas.data['myReceived'][MsgType.MSG_DEAD_NODE] = True
-    canvas.data['myReceived'][MsgType.MSG_KILL_NODE] = True
     canvas.data['myReceived'][MsgType.MSG_CON_CHECK] = True
     canvas.data['myReceived'][MsgType.MSG_CON_COMMIT] = True
-    canvas.data['myReceived'][MsgType.MSG_CON_REQ] = True
     canvas.data['myReceived'][MsgType.MSG_CON_REPLY] = True
+    canvas.data['myReceived'][MsgType.MSG_CON_REQ] = True
+    canvas.data['myReceived'][MsgType.MSG_DEAD_NODE] = True
+    canvas.data['myReceived'][MsgType.MSG_EXIT] = True
+    canvas.data['myReceived'][MsgType.MSG_FORCE_COMMIT] = True
+    canvas.data['myReceived'][MsgType.MSG_KILL_NODE] = True
     canvas.data['myReceived'][MsgType.MSG_GAME_TYPE] = True
     canvas.data['myReceived'][MsgType.MSG_MYNAME] = True
     canvas.data['myReceived'][MsgType.MSG_PADDLE_DIR] = True
     canvas.data['myReceived'][MsgType.MSG_PAUSE_UPDATE] = True
     canvas.data['myReceived'][MsgType.MSG_PLAYER_LOC] = True
+    canvas.data['myReceived'][MsgType.MSG_REJOIN_ACK] = True
+    canvas.data['myReceived'][MsgType.MSG_REJOIN_REQ] = True
     canvas.data['myReceived'][MsgType.MSG_START_PLAY] = True
     canvas.data['myReceived'][MsgType.MSG_SYNC_ERROR] = True
     canvas.data['myReceived'][MsgType.MSG_UNICORN] = True

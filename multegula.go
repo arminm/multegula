@@ -305,6 +305,8 @@ func inboundDispatcher() {
 			fallthrough
 		case defs.MSG_PAUSE_UPDATE:
 			fallthrough
+		case defs.MSG_REJOIN_ACK:
+			fallthrough
 		case defs.MSG_REJOIN_REQ:
 			fallthrough
 		case defs.MSG_START_PLAY:

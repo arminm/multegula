@@ -10,7 +10,7 @@ WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
 
 ### CONSTANT VALUES
 # canvas dimensions
-CANVAS_DIMENTSION = 500
+CANVAS_DIMENTSION = 350
 CANVAS_WIDTH = CANVAS_DIMENTSION;
 CANVAS_HEIGHT = CANVAS_DIMENTSION;
 X_THIRD = CANVAS_WIDTH // 4
@@ -169,17 +169,18 @@ class MsgType() :
     MSG_BLOCK_BROKEN    = 'MBB'
     MSG_CON_CHECK       = 'MCH'
     MSG_CON_COMMIT      = 'MCC'
-    MSG_FORCE_COMMIT    = 'MFC'
     MSG_CON_REPLY       = 'MCP'
     MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
     MSG_EXIT            = 'MEX'
+    MSG_FORCE_COMMIT    = 'MFC'
     MSG_KILL_NODE       = 'MKN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
     MSG_PAUSE_UPDATE    = 'MPU'
     MSG_PLAYER_LOC      = 'MPL'
+    MSG_REJOIN_ACK      = 'MRA'
     MSG_REJOIN_REQ      = 'MRR'
     MSG_START_PLAY      = 'MSP'
     MSG_SYNC_ERROR      = 'MSE'
@@ -188,7 +189,6 @@ class MsgType() :
 ### ConType - defines consensus types
 class ConType() :
     CON_GAME_STATE = 'CGS'
-    CON_REJOIN     = 'CRJ'
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
@@ -242,6 +242,7 @@ class MsgIndex() :
     PLAYER_LOC_NUMBER       = 0
     PLAYER_LOC_PLAYERS      = 1
     REJOIN_REQ_NODE         = 0
+    REJOIN_ACK_NODE         = 0
     START_PLAY_XSPEED       = 0
     START_PLAY_YSPEED       = 1
     UNICORN_UNICORN         = 0
