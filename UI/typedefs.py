@@ -10,7 +10,7 @@ WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
 
 ### CONSTANT VALUES
 # canvas dimensions
-CANVAS_DIMENTSION = 350
+CANVAS_DIMENTSION = 500
 CANVAS_WIDTH = CANVAS_DIMENTSION;
 CANVAS_HEIGHT = CANVAS_DIMENTSION;
 X_THIRD = CANVAS_WIDTH // 4
@@ -169,9 +169,11 @@ class MsgType() :
     MSG_BLOCK_BROKEN    = 'MBB'
     MSG_CON_CHECK       = 'MCH'
     MSG_CON_COMMIT      = 'MCC'
+    MSG_FORCE_COMMIT    = 'MFC'
     MSG_CON_REPLY       = 'MCP'
     MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
+    MSG_EXIT            = 'MEX'
     MSG_KILL_NODE       = 'MKN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
@@ -298,12 +300,9 @@ class PyMessage :
     def toString(self):
         return 'source: ' + self.src + ', type: ' + self.kind + ', content: ' + str(self.content)
 
-
-
-#ARTIFICIAL_COMMIT_1 = "daniel##daniel##-1##CGS|4|a|0|10|175|58|b|0|10|175|58|c|0|10|175|58|d|0|10|175|58|0|0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20##MCC"
-ARTIFICIAL_COMMIT_1 = "CGS|4|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|garrett|19|4|167|58|0|0|1|2|5|6|7|8|9|11|12|13|14|16|18|19"
-ARTIFICIAL_COMMIT_2 = "CGS|4|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|garrett|19|4|167|58|2|0|1|2|5|6|7|8|9|11|12|13|14|16|18|19"
-ARTIFICIAL_COMMIT_3 = "CGS|3|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|1|0|1|2|5|6|7|8|9|11|12|13|14|16"
+ARTIFICIAL_COMMIT_1 = "CGS|4|armin|23|3|daniel|53|5|lunwen|10|1|garrett|19|4|0|101110111101110111010"
+ARTIFICIAL_COMMIT_2 = "CGS|4|armin|23|3|daniel|53|5|lunwen|10|1|garrett|19|4|2|1101101111011011101101100011"
+ARTIFICIAL_COMMIT_3 = "CGS|3|armin|23|3|daniel|53|5|lunwen|10|1|1|101101101101101101011"
 
 
 

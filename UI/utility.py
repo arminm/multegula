@@ -170,17 +170,19 @@ def getGameState(canvas) :
         name = canvas.data[player].name
         score = str(canvas.data[player].score)
         lives = str(canvas.data[player].lives)
-        center = str(canvas.data[player].paddle.center)
-        width = str(canvas.data[player].paddle.width)
-        content += (name + '|' + score + '|' + lives + '|' + center + '|' + width)
+        content += (name + '|' + score + '|' + lives)
 
     # add level information to the message
     content += ('|' + str(canvas.data['level'].currentLevel))
 
     # add block information to the message
+    blockstatus = ''
     for i, block in enumerate(canvas.data['level'].blocks) :
         if block.enabled == True :
-            content += ('|' + str(i))
+            blockstatus += '1'
+        else :
+            blockstatus += '0'
+    content += '|' + blockstatus
 
     # finish and return message  
     return content
@@ -208,10 +210,8 @@ def reactToCommit(content, canvas) :
             canvas.data[player].score = int(content[i]) # score
             i += 1
             canvas.data[player].lives = int(content[i]) # lives
-            i += 1
-            canvas.data[player].paddle.center = int(content[i]) # center
-            i += 1
-            canvas.data[player].paddle.width = int(content[i]) # width
+            canvas.data[player].paddle.center = X_CENTER # center
+            canvas.data[player].paddle.width = PADDLE_WIDTH_INIT # width
 
         ## kill players
         for player in canvas.data['competitors'] :
@@ -229,15 +229,13 @@ def reactToCommit(content, canvas) :
 
         ## update the blocks
         i += 1
-        # loop through all blocks 
-        for b, block in enumerate(canvas.data['level'].blocks) :
-            # disable any blocks that are appropriate to do so
-            if str(b) not in content[i:]:
-                canvas.data['level'].blocks[b].enabled = False
-                canvas.data['level'].blocks[b].first = False
+        for i, flag in enumerate(content[i]) :
+            if flag == '1': 
+                canvas.data['level'].blocks[i].enabled = True
+                canvas.data['level'].blocks[i].first = True
             else :
-                canvas.data['level'].blocks[b].enabled = True
-                canvas.data['level'].blocks[b].first = True
+                canvas.data['level'].blocks[i].enabled = False
+                canvas.data['level'].blocks[i].first = False
 
         canvas.data['ball'].reset()
         canvas.data['currentState'] = State.STATE_PAUSE

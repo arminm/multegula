@@ -215,7 +215,6 @@ def keyPressed(event) :
 ### mousePressed - handle mouse press events
 def mousePressed(event) :
     canvas = event.widget.canvas
-
     # main screen mouse pressed events - button clicks
     if canvas.data['currentState'] == State.STATE_MENU : 
         # check solo button pressed
@@ -397,14 +396,13 @@ def react(canvas, received) :
 
     # MSG_CON_COMMIT - commit a consensus result
     elif kind == MsgType.MSG_CON_COMMIT :
-        # con only receive this message while SYNCING or REJOINING 
-        if currentState in [State.STATE_SYNC, State.STATE_REJOIN] :
-            canvas.delete(ALL)
-            reactToCommit(content, canvas)
-        # otherwise, we are out of sync!
-        else :
-            content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
-            sendSyncError(content, canvas)
+        canvas.delete(ALL)
+        reactToCommit(content, canvas)
+
+    # MSG_FORCE_COMMIT - force a commit
+    elif kind == MsgType.MSG_FORCE_COMMIT :
+        canvas.detlet(ALL)
+        reactToCommit(content, canvas)
 
     # MSG_CON_CHECK - respond to a concensus check
     elif kind == MsgType.MSG_CON_CHECK :
@@ -1065,10 +1063,22 @@ def initPlayers(canvas, number=1, info=[]):
         
         # save competitor information
         canvas.data['competitors'] = info 
-        canvas.data['playersInitialized'] = True          
+        canvas.data['playersInitialized'] = True       
 
 ### run - run the program
 def runUI(cmd_line_args) :
+
+    def on_closing() :
+        toSend = PyMessage()
+        toSend.src = canvas.data['myName']
+        toSend.kind = MsgType.MSG_EXIT
+        toSend.content = 'MISFITS_RULE'
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+        #Properly close receiveThread
+        root.destroy()
+
 
     # initialize canvas
     root = Tk()
@@ -1083,6 +1093,7 @@ def runUI(cmd_line_args) :
 
     # Store canvas in root and in canvas itself for callbacks
     root.canvas = canvas.canvas = canvas
+    root.protocol("WM_DELETE_WINDOW", on_closing)
 
     # set up dicitonary
     canvas.data = {}
@@ -1103,8 +1114,8 @@ def runUI(cmd_line_args) :
     redrawAll(canvas)
     root.mainloop()
 
-    #Properly close receiveThread
     Process.join()
+    sys.exit(2)
 
 #Start UI
 runUI(sys.argv)
