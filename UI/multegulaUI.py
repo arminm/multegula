@@ -905,6 +905,7 @@ def redrawAll(canvas) :
 
     ### GAMEPLAY MULTI_PLAYER - send the game messgaes
     elif currentState == State.STATE_GAMEPLAY and (gameType == GameType.MULTI_PLAYER) :
+        print(getGameState(canvas))
         canvas.data['gameScreen'].draw(canvas)
 
         # update all players
