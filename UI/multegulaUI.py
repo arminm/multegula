@@ -122,6 +122,8 @@ def keyPressed(event) :
             myName = myName.replace(' ', '')
             if myName in WALL_NAMES :
                 myName += '1'
+            elif myName in AIS:
+                myName += '1'
             elif myName in [LOCALHOST_IP, DEFAULT_SRC, MULTICAST_DEST, MULTEGULA_DEST] :
                 myName += '1'
             elif not myName :
@@ -1013,10 +1015,10 @@ def initPlayers(canvas, number=1, info=[]):
     myName = canvas.data['myName']
     if canvas.data['gameType'] == GameType.SINGLE_PLAYER: 
         canvas.data[myName] = Player(Orientation.DIR_SOUTH, PlayerState.USER, myName, GameType.SINGLE_PLAYER)
-        canvas.data['armin'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'armin', GameType.MULTI_PLAYER)
-        canvas.data['lunwen'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'lunwen', GameType.MULTI_PLAYER)
-        canvas.data['garrett'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'garrett', GameType.MULTI_PLAYER)
-        canvas.data['competitors'] = [myName, 'armin', 'lunwen', 'garrett']
+        canvas.data['arminAI'] = Player(Orientation.DIR_NORTH, PlayerState.AI, 'arminAI', GameType.MULTI_PLAYER)
+        canvas.data['lunwenAI'] = Player(Orientation.DIR_EAST, PlayerState.AI, 'lunwenAI', GameType.MULTI_PLAYER)
+        canvas.data['garrettAI'] = Player(Orientation.DIR_WEST, PlayerState.AI, 'garrettAI', GameType.MULTI_PLAYER)
+        canvas.data['competitors'] = [myName, 'arminAI', 'lunwenAI', 'garrettAI']
         canvas.data['playersInitialized'] = True
     
     elif canvas.data['gameType'] == GameType.MULTI_PLAYER: 
