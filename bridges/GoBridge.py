@@ -102,6 +102,7 @@ class GoBridge :
 		if not(self.receiveQueue.empty()):
 			received = self.receiveQueue.get()
 			message.crack(received)
+			print(message.toString())
 			self.receiveQueue.task_done()
 
 		return message

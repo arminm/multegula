@@ -190,6 +190,8 @@ class ConType() :
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
+    CON_REJOIN_YES      = 'Y'
+    CON_REJOIN_NO       = 'N'
     GAME_TYPE_SINGLE    = 'S'
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
@@ -226,6 +228,10 @@ class MsgIndex() :
     BLOCK_BROKEN_LIVES      = 6
     BLOCK_BROKEN_BLOCK      = 7
     CON_CHECK_TYPE          = 0
+    CON_REJOIN_NODE         = 1
+    CON_REJOIN_REPLY        = 2
+    DEAD_NODE               = 0
+    KILL_NODE               = 0
     PADDLE_DIR_DIR          = 0
     PADDLE_DIR_CENTER       = 1
     PADDLE_DIR_WIDTH        = 2
@@ -233,6 +239,7 @@ class MsgIndex() :
     PAUSE_UPDATE_LEVEL      = 1
     PLAYER_LOC_NUMBER       = 0
     PLAYER_LOC_PLAYERS      = 1
+    REJOIN_REQ_NODE         = 0
     START_PLAY_XSPEED       = 0
     START_PLAY_YSPEED       = 1
     UNICORN_UNICORN         = 0

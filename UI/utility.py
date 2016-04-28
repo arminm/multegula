@@ -147,7 +147,7 @@ def sendMessage(message, canvas) :
         canvas.data['bridge'].sendMessage(message)
         canvas.data['myReceived'][message.kind] = False
     elif canvas.data['artificialDead'] == True :
-        print("LOOK WE DEAD")
+        print("LOOK WE DEAD -> " + message.toString())
     else : 
         print(canvas.data['myName'] + " UI DROPPING MSG: " + message.toString())
 
@@ -185,13 +185,9 @@ def getGameState(canvas) :
     # finish and return message  
     return content
 
-### getConsensusResponse - respond to a MSG_CON_CHECK with appropriate information
-def getConsensusResponse(conType, canvas) :
-    if conType == ConType.CON_GAME_STATE :
-        return ConType.CON_GAME_STATE + '|' + getGameState(canvas)
-
 ### reactToCommit - set appropriate data values based on received messages
 def reactToCommit(content, canvas) :
+    print(canvas.data['myName'] + " COMMITING : " + str(content))
     conType = content[MsgIndex.CON_CHECK_TYPE]
 
     if conType == ConType.CON_GAME_STATE :
@@ -243,6 +239,34 @@ def reactToCommit(content, canvas) :
                 canvas.data['level'].blocks[b].enabled = True
                 canvas.data['level'].blocks[b].first = True
 
+        canvas.data['ball'].reset()
+        canvas.data['currentState'] = State.STATE_PAUSE
+        canvas.data['artificalSync'] = False
+
+    elif conType == ConType.CON_REJOIN :
+        # get the node in question and the reply
+        missingNode = content[MsgIndex.CON_REJOIN_NODE]
+        reply = content[MsgIndex.CON_REJOIN_REPLY]
+        
+        # remove missing node from the list
+        if missingNode in canvas.data['missingNodes'] :
+            canvas.data['missingNodes'].remove(missingNode)
+
+        # kill node if appropriate
+        if reply == MsgPayload.CON_REJOIN_NO :
+            canvas.data[missingNode].iAmDead()
+
+        # reset flags
+        canvas.data['artificialDead'] = False
+        canvas.data['attemptingRejoin'] = False
+        clearMyReceivedFlags(canvas)
+
+        # if there are still missing nodes, go back to the rejoin state. Otherwise, sync up!
+        if canvas.data['missingNodes'] :
+            canvas.data['currentState'] = State.STATE_REJOIN
+        else :
+            canvas.data['currentState'] = State.STATE_SYNC
+
 
 ### clearMyReceivedFlags - so the game can persist in a graceful manner
 def clearMyReceivedFlags(canvas) :
@@ -263,3 +287,24 @@ def clearMyReceivedFlags(canvas) :
     canvas.data['myReceived'][MsgType.MSG_START_PLAY] = True
     canvas.data['myReceived'][MsgType.MSG_SYNC_ERROR] = True
     canvas.data['myReceived'][MsgType.MSG_UNICORN] = True
+
+### resetGamePlay - reset the screen for play
+def resetGamePlay(canvas) :
+    # reset the level
+    canvas.data['level'].first = True
+    canvas.data['level'].updated = True
+    for b, block in enumerate(canvas.data['level'].blocks) :
+        if canvas.data['level'].blocks[b].enabled == True :
+            canvas.data['level'].blocks[b].first = True
+
+    # reset the game screen
+    canvas.data['gameScreen'].first = True
+
+    # reset the players
+    for player in canvas.data['competitors'] :
+        if canvas.data[player].state in [PlayerState.USER, PlayerState.COMP]:
+            canvas.data[player].first = True
+            canvas.data[player].paddle.first = True
+
+    # reset ball and go to pause state
+    canvas.data['ball'].reset()
