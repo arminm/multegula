@@ -376,8 +376,7 @@ func receiveMessageFromConn(conn net.Conn) {
 		if err != nil {
 			name, _ := getConnectionName(conn)
 			if err.Error() == "EOF" {
-				// tel the UI that we've lost a node
-				// TODO MULTICAST.
+				// tell the UI that we've lost a node
 				Multicast(&Message{
 					Source:      LocalNode.Name,
 					Destination: defs.MULTICAST_DEST,

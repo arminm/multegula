@@ -309,9 +309,13 @@ func inboundDispatcher() {
 			fallthrough
 		case defs.MSG_DEAD_NODE:
 			fallthrough
+		case defs.MSG_KILL_NODE:
+			fallthrough
 		case defs.MSG_PADDLE_DIR:
 			fallthrough
 		case defs.MSG_PAUSE_UPDATE:
+			fallthrough
+		case defs.MSG_REJOIN_REQ:
 			fallthrough
 		case defs.MSG_START_PLAY:
 			fallthrough

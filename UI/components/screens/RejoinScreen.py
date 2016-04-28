@@ -12,7 +12,7 @@ class RejoinScreen :
     def __init__(self) :
         self.counter = 0
         self.first = True
-        self.text = 'Loo.'
+        self.text = "Let's wait for them to come back."
 
     ### reset -- resets the screen data
     def reset(self, canvas) :

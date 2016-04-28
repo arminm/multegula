@@ -13,7 +13,6 @@ WALL_NAMES = ['warmin', 'waniel', 'warrett', 'wunwen']
 CANVAS_DIMENTSION = 350
 CANVAS_WIDTH = CANVAS_DIMENTSION;
 CANVAS_HEIGHT = CANVAS_DIMENTSION;
-DELAY = 30
 X_THIRD = CANVAS_WIDTH // 4
 X_CENTER = CANVAS_WIDTH // 2
 X_2THIRD = X_THIRD*3
@@ -60,6 +59,11 @@ PADDLE_WIDTH_MAX = (PADDLE_MAX - PADDLE_MIN) // 2
 # block sizing
 BLOCK_WIDTH = CANVAS_WIDTH // 10
 BLOCK_HEIGHT = CANVAS_HEIGHT // 50  
+
+
+# timing constants
+DELAY = 30
+REJOIN_TIMEOUT = 10000 // DELAY
 
 # speed constants
 BALL_SPEED_INIT = CANVAS_WIDTH // (120 - (DELAY*2))
@@ -168,11 +172,13 @@ class MsgType() :
     MSG_CON_REPLY       = 'MCP'
     MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
+    MSG_KILL_NODE       = 'MKN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'
     MSG_PADDLE_DIR      = 'MPD'
     MSG_PAUSE_UPDATE    = 'MPU'
     MSG_PLAYER_LOC      = 'MPL'
+    MSG_REJOIN_REQ      = 'MRR'
     MSG_START_PLAY      = 'MSP'
     MSG_SYNC_ERROR      = 'MSE'
     MSG_UNICORN         = 'MUN'
@@ -180,9 +186,12 @@ class MsgType() :
 ### ConType - defines consensus types
 class ConType() :
     CON_GAME_STATE = 'CGS'
+    CON_REJOIN     = 'CRJ'
 
 ### MsgPayload - defines standard message payloads
 class MsgPayload() :
+    CON_REJOIN_YES      = 'Y'
+    CON_REJOIN_NO       = 'N'
     GAME_TYPE_SINGLE    = 'S'
     GAME_TYPE_MULTI     = 'M'
     PADDLE_DIR_LEFT     = 'L'
@@ -219,6 +228,10 @@ class MsgIndex() :
     BLOCK_BROKEN_LIVES      = 6
     BLOCK_BROKEN_BLOCK      = 7
     CON_CHECK_TYPE          = 0
+    CON_REJOIN_NODE         = 1
+    CON_REJOIN_REPLY        = 2
+    DEAD_NODE               = 0
+    KILL_NODE               = 0
     PADDLE_DIR_DIR          = 0
     PADDLE_DIR_CENTER       = 1
     PADDLE_DIR_WIDTH        = 2
@@ -226,6 +239,7 @@ class MsgIndex() :
     PAUSE_UPDATE_LEVEL      = 1
     PLAYER_LOC_NUMBER       = 0
     PLAYER_LOC_PLAYERS      = 1
+    REJOIN_REQ_NODE         = 0
     START_PLAY_XSPEED       = 0
     START_PLAY_YSPEED       = 1
     UNICORN_UNICORN         = 0
@@ -289,6 +303,7 @@ class PyMessage :
 #ARTIFICIAL_COMMIT_1 = "daniel##daniel##-1##CGS|4|a|0|10|175|58|b|0|10|175|58|c|0|10|175|58|d|0|10|175|58|0|0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20##MCC"
 ARTIFICIAL_COMMIT_1 = "CGS|4|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|garrett|19|4|167|58|0|0|1|2|5|6|7|8|9|11|12|13|14|16|18|19"
 ARTIFICIAL_COMMIT_2 = "CGS|4|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|garrett|19|4|167|58|2|0|1|2|5|6|7|8|9|11|12|13|14|16|18|19"
+ARTIFICIAL_COMMIT_3 = "CGS|3|armin|23|3|75|58|daniel|53|5|250|58|lunwen|10|1|175|58|1|0|1|2|5|6|7|8|9|11|12|13|14|16"
 
 
 

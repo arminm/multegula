@@ -11,8 +11,8 @@ import os.path, sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 
 # import stuff from our package
-from bridges.GoBridge import * #This is our GoBridge
-import threading #To run receiveThread
+import threading
+from bridges.GoBridge import *
 from UI.components.control.Level import *
 from UI.components.control.Player import *
 from UI.components.gameplay.Ball import *
@@ -36,31 +36,69 @@ from UI.utility import *
 def keyPressed(event) :
     canvas = event.widget.canvas
     currentState = canvas.data['currentState']
+    gameType = canvas.data['gameType']
+    myName  = canvas.data['myName']
 
-    if event.char == '!' and canvas.data['gameType'] == GameType.MULTI_PLAYER :
+    ### ARTIFICIAL SYNC ENGINE ###
+    ## start a natural game state sync
+    if event.char == '!' and gameType == GameType.MULTI_PLAYER and currentState == State.STATE_GAMEPLAY :
         content = MsgPayload.SYNC_ERR_EXECUTE + '|' + canvas.data['myName']
         sendSyncError(content, canvas)
 
-    elif event.char == '@' and canvas.data['gameType'] == GameType.MULTI_PLAYER :
+    ## start a manual game state sync - to be followed by the next two commands '#', '$', and '%' 
+    elif event.char == '@' and gameType == GameType.MULTI_PLAYER and currentState == State.STATE_GAMEPLAY :
         content = MsgPayload.SYNC_ERR_DN_EXECUTE + '|' + canvas.data['myName']
         sendSyncError(content, canvas)
 
-    elif event.char == "#" and canvas.data['artificalSync'] == True :
+    ## manual game sync #1
+    elif event.char == '1' and currentState == State.STATE_SYNC and canvas.data['artificalSync'] == True :
         toSend = PyMessage()
-        toSend.src = canvas.data['myName']
+        toSend.src = myName
         toSend.kind = MsgType.MSG_CON_COMMIT
         toSend.content = ARTIFICIAL_COMMIT_1
         toSend.multicast = True
         # send message
         canvas.data['bridge'].sendMessage(toSend)
 
-    elif event.char == "$" and canvas.data['artificalSync'] == True :
+    ## manual game sync #2
+    elif event.char == '2' and currentState == State.STATE_SYNC and canvas.data['artificalSync'] == True :
         toSend = PyMessage()
-        toSend.src = canvas.data['myName']
+        toSend.src = myName
         toSend.kind = MsgType.MSG_CON_COMMIT
         toSend.content = ARTIFICIAL_COMMIT_2
         toSend.multicast = True
         # send message
+        canvas.data['bridge'].sendMessage(toSend)
+
+    ## manual game sync #3
+    elif event.char == '3' and currentState == State.STATE_SYNC and canvas.data['artificalSync'] == True :
+        toSend = PyMessage()
+        toSend.src = myName
+        toSend.kind = MsgType.MSG_CON_COMMIT
+        toSend.content = ARTIFICIAL_COMMIT_3
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+
+    ### ARTIFICIAL REJOIN ENGINE ###
+    # lost the node
+    elif event.char == '#' and gameType == GameType.MULTI_PLAYER :
+        toSend = PyMessage()
+        toSend.src = myName
+        toSend.kind = MsgType.MSG_DEAD_NODE
+        toSend.content = myName
+        toSend.multicast = True
+        # send message
+        canvas.data['bridge'].sendMessage(toSend)
+        canvas.data['artificialDead'] = True
+
+    # attempt rejoin
+    elif event.char == '1' and gameType == GameType.MULTI_PLAYER and canvas.data['artificialDead'] == True :
+        toSend = PyMessage()
+        toSend.src = myName
+        toSend.kind = MsgType.MSG_REJOIN_REQ
+        toSend.content = myName
+        toSend.multicast = True
         canvas.data['bridge'].sendMessage(toSend)
 
     # handle splash screen events - entering a name
@@ -101,7 +139,6 @@ def keyPressed(event) :
 
     # pause screen / gameplay keyPressed events - move the paddle
     elif currentState in [State.STATE_PAUSE, State.STATE_GAMEPLAY] :
-        myName  = canvas.data['myName']
         myPaddle = canvas.data[myName].paddle
 
         ### MOVE PADDLE LEFT ###
@@ -227,10 +264,11 @@ def react(canvas, received) :
     myName = canvas.data['myName']
     currentState = canvas.data['currentState']
 
+    # reset teh myReceived blag
     if name == myName :
         canvas.data['myReceived'][kind] = True
 
-    # MSG_BALL_DEFLECTED
+    # MSG_BALL_DEFLECTED - deflect a ball
     if kind == MsgType.MSG_BALL_DEFLECTED :
         # get sending players state
         playerState = canvas.data[name].state
@@ -268,7 +306,7 @@ def react(canvas, received) :
             content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BALL_DEFLECTED + '|' + name
             sendSyncError(content, canvas)
 
-    # MSG_BALL_MISSED
+    # MSG_BALL_MISSED - miss the ball
     elif kind == MsgType.MSG_BALL_MISSED : 
         # get sending players state
         playerState = canvas.data[name].state
@@ -302,7 +340,7 @@ def react(canvas, received) :
             content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BALL_MISSED + '|' + name
             sendSyncError(content, canvas)
 
-    # MSG_BLOCK_BROKEN
+    # MSG_BLOCK_BROKEN - break a block
     elif kind == MsgType.MSG_BLOCK_BROKEN :
         # get sending players state
         playerState = canvas.data[name].state
@@ -357,39 +395,70 @@ def react(canvas, received) :
             content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
             sendSyncError(content, canvas)
 
-    # MSG_CON_COMMIT :
+    # MSG_CON_COMMIT - commit a consensus result
     elif kind == MsgType.MSG_CON_COMMIT :
-        canvas.delete(ALL)
-        reactToCommit(content, canvas)
-        canvas.data['ball'].reset()
-        canvas.data['currentState'] = State.STATE_PAUSE
-        canvas.data['artificalSync'] = False
+        # con only receive this message while SYNCING or REJOINING 
+        if currentState in [State.STATE_SYNC, State.STATE_REJOIN] :
+            canvas.delete(ALL)
+            reactToCommit(content, canvas)
+        # otherwise, we are out of sync!
+        else :
+            content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
+            sendSyncError(content, canvas)
 
-    # MSG_CON_CHECK
+    # MSG_CON_CHECK - respond to a concensus check
     elif kind == MsgType.MSG_CON_CHECK :
-        # get the type of consensus 
-        conType = content[MsgIndex.CON_CHECK_TYPE]
-        response = getConsensusResponse(conType, canvas)
+        # con only receive this message while SYNCING or REJOINING 
+        if currentState in [State.STATE_SYNC, State.STATE_REJOIN] :
+            # get the type of consensus 
+            conType = content[MsgIndex.CON_CHECK_TYPE]
 
-        # respond
-        toSend = PyMessage()
-        toSend.src = myName
-        toSend.kind = MsgType.MSG_CON_REPLY
-        toSend.content = response
-        toSend.multicast = False
-        sendMessage(toSend, canvas)
+            # if this is game state concensus, respond appropriates
+            if conType == ConType.CON_GAME_STATE :
+                response = ConType.CON_GAME_STATE + '|' + getGameState(canvas)
 
-    # MSG_DEAD_NODE
+            # rejoin consensus, respond appropriately
+            elif conType == ConType.CON_REJOIN :
+                requestingNode = content[MsgIndex.CON_REJOIN_NODE]
+                if requestingNode in canvas.data['missingNodes'] :
+                    response = ConType.CON_REJOIN + '|' + requestingNode + '|' + MsgPayload.CON_REJOIN_YES
+                else :
+                    response = ConType.CON_REJOIN + '|' + requestingNode + '|' + MsgPayload.CON_REJOIN_NO
+
+            # respond
+            toSend = PyMessage()
+            toSend.src = myName
+            toSend.kind = MsgType.MSG_CON_REPLY
+            toSend.content = response
+            toSend.multicast = False
+            sendMessage(toSend, canvas)
+        # otherwise, we are out of sync!
+        else :
+            content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_BLOCK_BROKEN + '|' + name
+            sendSyncError(content, canvas)           
+
+    # MSG_DEAD_NODE - a dead node has been detected
     elif kind == MsgType.MSG_DEAD_NODE :
+        # this message can happen at any time
         if currentState != State.STATE_REJOIN :
-            print("RECEIVED: " + received.toString())
             canvas.delete(ALL)
             canvas.data['gameScreen'].first = True
             canvas.data['level'].updated = True
             canvas.data['ball'].reset()
             canvas.data['currentState'] = State.STATE_REJOIN
 
-    # MSG_PADDLE_DIR
+        # get the dead node, add it to the list, make a timer
+        missingNode = content[MsgIndex.DEAD_NODE]
+        canvas.data['missingNodes'].append(missingNode)
+        canvas.data[missingNode + 'Timer'] = REJOIN_TIMEOUT
+
+    # MSG_KILL_NODE - this missing node's timeout has expired
+    elif kind == MsgType.MSG_KILL_NODE :
+        missingNode = content[MsgIndex.KILL_NODE]
+        canvas.data[missingNode].iAmDead()
+        canvas.data['missingNodes'].remove(missingNode)
+
+    # MSG_PADDLE_DIR - move a paddle
     elif kind == MsgType.MSG_PADDLE_DIR :
         # get sending players state
         playerState = canvas.data[name].state
@@ -421,7 +490,7 @@ def react(canvas, received) :
             content = MsgPayload.SYNC_ERR_PLAYER_TYPE + '|' + MsgType.MSG_PADDLE_DIR + '|' + name
             sendSyncError(content, canvas)
 
-    # MSG_PAUSE_UPDATE
+    # MSG_PAUSE_UPDATE - update the pause screen
     elif kind == MsgType.MSG_PAUSE_UPDATE :
         # should only get this in the PAUSE state
         if currentState == State.STATE_PAUSE :
@@ -440,7 +509,7 @@ def react(canvas, received) :
             content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_PAUSE_UPDATE + '|' + name
             sendSyncError(content, canvas)
 
-    # MSG_PLAYER_LOC
+    # MSG_PLAYER_LOC - player location on startup
     elif kind == MsgType.MSG_PLAYER_LOC :
         # if the players have not been initialized, then go ahead and do that
         if canvas.data['playersInitialized'] == False: 
@@ -462,6 +531,26 @@ def react(canvas, received) :
             if playerList != receivedList and currentState != State.STATE_SYNC :
                 content = MsgPayload.SYNC_ERR_PLAYER_LOC + '|' + name
                 sendSyncError(content, canvas)
+
+    # MSG_REJOIN_REQ  - try and rejoin the network
+    elif kind == MsgType.MSG_REJOIN_REQ :
+        # get the missing node
+        missingNode = content[MsgIndex.REJOIN_REQ_NODE]
+
+        # if this is the unicorn, start consensus
+        if canvas.data['unicorn'] == myName and missingNode in canvas.data['missingNodes'] :
+            toSend = PyMessage()
+            toSend.src = myName
+            toSend.kind = MsgType.MSG_CON_REQ
+            toSend.content = ConType.CON_REJOIN + '|' + missingNode + '|' + MsgPayload.CON_REJOIN_YES
+            toSend.multicast = False
+            sendMessage(toSend, canvas)
+            canvas.data['attemptingRejoin'] = True
+
+        # reset the timer
+        timerKey = missingNode + 'Timer'
+        canvas.data[timerKey] = REJOIN_TIMEOUT
+
 
     # MSG_START_PLAY
     elif kind == MsgType.MSG_START_PLAY :
@@ -491,17 +580,17 @@ def react(canvas, received) :
             content = MsgPayload.SYNC_ERR_CURRENT_STATE + '|' + str(currentState) + '|' + MsgType.MSG_START_PLAY + '|' + name
             sendSyncError(content, canvas)
 
-    # MSG_SYNC_ERROR
+    # MSG_SYNC_ERROR - syncronization error has occurrect
     elif kind == MsgType.MSG_SYNC_ERROR :
+        # go to the sync error state
         if currentState not in [State.STATE_SYNC, State.STATE_REJOIN] :
-            print("RECEIVED: " + received.toString())
             canvas.delete(ALL)
             canvas.data['gameScreen'].first = True
             canvas.data['level'].updated = True
             canvas.data['ball'].reset()
             canvas.data['currentState'] = State.STATE_SYNC
 
-            if content[0] == MsgPayload.SYNC_ERR_DN_EXECUTE :
+            if content[MsgIndex.CON_CHECK_TYPE] == MsgPayload.SYNC_ERR_DN_EXECUTE :
                 canvas.data['artificalSync'] = True
 
     # MSG_UNICORN
@@ -711,7 +800,7 @@ def redrawAll(canvas) :
     currentState = canvas.data['currentState']
 
 
-    ### SPLASH SCREEN
+    ### SPLASH - get player name
     if currentState == State.STATE_SPLASH :
         # draw screen background and ball
         canvas.data['splashScreen'].drawBackground(canvas)
@@ -721,7 +810,7 @@ def redrawAll(canvas) :
         canvas.data['splashScreen'].drawText(canvas)
         canvas.data['splashTextField'].draw(canvas)        
 
-    ### MAIN SCREEN 
+    ### MENU - start a game
     elif currentState == State.STATE_MENU :
         # draw screen background and ball
         canvas.data['menuScreen'].drawBackground(canvas)
@@ -732,11 +821,12 @@ def redrawAll(canvas) :
         canvas.data['soloButton'].draw(canvas)
         canvas.data['joinButton'].draw(canvas)
 
-    ### JOIN SCREEN - wait for everyone to connect
+    ### JOIN - wait for everyone to connect to a multiplayer game
     elif currentState == State.STATE_JOIN :
         canvas.data['joinScreen'].draw(canvas)
         canvas.data['ball'].updateMenu(canvas)
 
+    ### REJOIN - allow a node to try and rejoin
     elif currentState == State.STATE_REJOIN :
         canvas.data['gameScreen'].draw(canvas)
 
@@ -745,7 +835,28 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateMenu(canvas)  
         canvas.data['rejoinScreen'].draw(canvas)   
 
-    ### PAUSE SCREEN SINGLE PLAYER
+        # get the list of missigng nodes 
+        missingNodes = canvas.data['missingNodes']
+
+        # count if we aren't attempting rejoin
+        if not canvas.data['attemptingRejoin'] :
+            # make sure there is something in it
+            if missingNodes :
+                # loop through all nodes
+                for missing in missingNodes :
+                    # update timer and send kill messages
+                    timerKey = missing + 'Timer'
+                    if canvas.data[timerKey] <= 0 and myName == canvas.data['unicorn']:
+                        sendKillMessage(missing, canvas)
+                    else :
+                        canvas.data[timerKey] -= 1
+            # if there is nothing in the missing nodes list then go back to playing the game! 
+            else :
+                canvas.delete(ALL)
+                resetGamePlay(canvas)
+                canvas.data['currentState'] = State.STATE_PAUSE
+
+    ### PAUSE SINGLE PLAYER - countdown 
     elif currentState == State.STATE_PAUSE and gameType == GameType.SINGLE_PLAYER :
         # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
@@ -761,7 +872,7 @@ def redrawAll(canvas) :
         if status == PauseReturnStatus.MOVE_ON :
             canvas.data['currentState'] = State.STATE_GAMEPLAY
 
-    ### PAUSE SCREEN MULTIPLAYER 
+    ### PAUSE MULTI_PLAYER - send message updates
     elif currentState == State.STATE_PAUSE and gameType == GameType.MULTI_PLAYER :
         # draw screen and ball
         canvas.data['gameScreen'].draw(canvas)
@@ -777,7 +888,7 @@ def redrawAll(canvas) :
         status = canvas.data['pauseScreen'].draw(canvas)
         pauseUpdate(status, canvas)
 
-    ### GAME SCREEN SINGLE PLAYER
+    ### GAMEPLAY SINGLE PLAYER - play the game
     elif currentState == State.STATE_GAMEPLAY and gameType == GameType.SINGLE_PLAYER:
         # draw screen
         canvas.data['gameScreen'].draw(canvas)
@@ -792,7 +903,7 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateGame(canvas)
         levelUpdate(status, canvas)
 
-    ### GAME SCREEN MULTI PLAYER
+    ### GAMEPLAY MULTI_PLAYER - send the game messgaes
     elif currentState == State.STATE_GAMEPLAY and (gameType == GameType.MULTI_PLAYER) :
         canvas.data['gameScreen'].draw(canvas)
 
@@ -807,6 +918,7 @@ def redrawAll(canvas) :
         canvas.data['ball'].updateGame(canvas)
         levelUpdate(status, canvas)
 
+    ### SYNC - perform game state consensus to sync everyone up
     elif currentState == State.STATE_SYNC :
         canvas.data['gameScreen'].draw(canvas)
 
@@ -822,7 +934,6 @@ def redrawAll(canvas) :
             toSend.content = ConType.CON_GAME_STATE + '|' + getGameState(canvas)
             toSend.multicast = False
             sendMessage(toSend, canvas)
-
 
     # GAME OVER SCREEN
     elif canvas.data['currentState'] == State.STATE_GAME_OVER : 
@@ -861,8 +972,11 @@ def init(canvas) :
     canvas.data['splashScreen'] = SplashScreen()
 
     canvas.data['playersInitialized'] = False
+    canvas.data['attemptingRejoin'] = False
     canvas.data['artificalSync'] = False
+    canvas.data['artificialDead'] = False
 
+    canvas.data['missingNodes'] = []
 
     # screen objects
     canvas.data['splashTextField'] = TextField(X_CENTER, Y_LOC_TOP_BUTTON, 'Type name...', L_TEXT_SIZE)
