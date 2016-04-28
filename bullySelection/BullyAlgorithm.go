@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"strings"
 
 	"github.com/arminm/multegula/defs"
 	"github.com/arminm/multegula/messagePasser"
@@ -68,6 +69,9 @@ var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, de
  * @param	message - message to be put into sendChannel
  */
 func putMessageToSendChannel(message messagePasser.Message) {
+	message.Content = message.Content + defs.DELIMITER + message.Destination
+	message.Destination = defs.MULTICAST_DEST
+	fmt.Printf("Message will be sent: %+v\n", message)
 	sendChannel <- message
 }
 
@@ -81,6 +85,18 @@ func GetMessageFromSendChannel() messagePasser.Message {
 	return message
 }
 
+/*
+ * When using reliable multicast, the destination of message is MULTICAST_DEST,
+ * the realy destination of message is append after message.Content
+ * @param	message 	message to be interpreted
+ *
+ * @return	the content and real destination of message 
+ */
+func getMessageContentAndDestination(message messagePasser.Message) (string, string) {
+	elements := strings.Split(message.Content, defs.DELIMITER)
+	return elements[0], elements[1]
+}
+
 /* The queue for received messages, mutegula will put messages,
  * which come from messagePasser, into this queue
  */
@@ -92,7 +108,17 @@ var receiveChannel chan messagePasser.Message = make(chan messagePasser.Message,
  * @param	message - message to be put into receiveChannel
  */
 func PutMessageToReceiveChannel(message messagePasser.Message) {
-	receiveChannel <- message
+	/* 
+	 * If the muticast message's destination is this node,
+	 * reconstruct this message; otherwise, the message is dropped
+	 */
+	 content, destination := getMessageContentAndDestination(message)
+	if destination == localName {
+		message.Content = content
+		message.Destination = destination
+		fmt.Printf("Message received: %+v\n", message)
+		receiveChannel <- message
+	}
 }
 
 /*
