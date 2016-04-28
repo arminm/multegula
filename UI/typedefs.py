@@ -172,6 +172,7 @@ class MsgType() :
     MSG_CON_REPLY       = 'MCP'
     MSG_CON_REQ         = 'MCR'
     MSG_DEAD_NODE       = 'MDN'
+    MSG_EXIT            = 'MEX'
     MSG_KILL_NODE       = 'MKN'
     MSG_GAME_TYPE       = 'MGT'
     MSG_MYNAME          = 'MMN'

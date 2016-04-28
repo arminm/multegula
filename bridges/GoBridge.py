@@ -94,6 +94,9 @@ class GoBridge :
 					if message :
 						self.receiveQueue.put(message)
 
+					if MsgType.MSG_EXIT in message :
+						return
+
 	## Receive Message
 	## # this function pulls a message from the receive queue
 	def receiveMessage(self):
