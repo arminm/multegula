@@ -28,6 +28,12 @@ import (
 var exitChannel chan bool = make(chan bool)
 
 /*
+ * channels to get game info at the start
+ */
+var localNameChannel chan string = make(chan string)
+var gameTypeChannel chan string = make(chan string)
+
+/*
  * This is the sendChannel for message dispatcher.
  * Any components like UI or bully algorithm will
  * put messages into this channel if they want to
@@ -156,34 +162,6 @@ func getMessage(nodes []messagePasser.Node, localNodeName string) messagePasser.
 }
 
 /*
- * retreives local name from the UI
- */
-func uiGetLocalName() (localName string) {
-	for {
-		message := bridges.ReceiveFromPyBridge()
-		if message.Kind == defs.MSG_MYNAME {
-			localName = message.Content
-			break
-		}
-	}
-	return localName
-}
-
-/*
- * retreives game type from the UI
- */
-func uiGetGameType() (gameType string) {
-	for {
-		message := bridges.ReceiveFromPyBridge()
-		if message.Kind == defs.MSG_GAME_TYPE {
-			gameType = message.Content
-			break
-		}
-	}
-	return gameType
-}
-
-/*
  * sets the orientation of the players to alphabetical
  */
 func uiSetCompetitorLocation(myName string, peers *[]messagePasser.Node) {
@@ -218,6 +196,10 @@ func PyBridgeReceiver() {
 	for {
 		message := bridges.ReceiveFromPyBridge()
 		switch message.Kind {
+		case defs.MSG_MYNAME:
+			localNameChannel <- message.Content
+		case defs.MSG_GAME_TYPE:
+			gameTypeChannel <- message.Content
 		case defs.MSG_CON_REQ:
 			valueType := strings.Split(message.Content, "|")[0]
 			consensus.Propose(message.Content, valueType)
@@ -502,13 +484,14 @@ func main() {
 	// initialize communication with the UI
 	fmt.Printf("Port is:%d\n", *uiPortFlag)
 	bridges.InitPyBridge(*uiPortFlag)
+	go PyBridgeReceiver()
 
 	// get the localname
-	localNodeName := uiGetLocalName()
+	localNodeName := <-localNameChannel
 	fmt.Println("My name is:", localNodeName)
 
 	// determine the game type (multi or single player)
-	gameType := uiGetGameType()
+	gameType := <-gameTypeChannel
 
 	if gameType == defs.GAME_TYPE_MULTI {
 		// get fellow players
@@ -532,7 +515,6 @@ func main() {
 		go UnicornReciever()
 
 		/* start the routine waiting for messages coming from UI */
-		go PyBridgeReceiver()
 		go BullyReceiver()
 		go inboundDispatcher()
 		go outboundDispatcher()
