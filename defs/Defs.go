@@ -13,8 +13,8 @@ import (
 const HOLDBACKQUEUE_LIMIT int = 5
 
 //Our bootstrap server.  Uncomment below for local testing.
-const SERVER_DNS string = "multegula.dyndns.org:55555"
-// const SERVER_DNS string = "localhost:55555"
+// const SERVER_DNS string = "multegula.dyndns.org:55555"
+const SERVER_DNS string = "localhost:55555"
 
 /* The beginning of message types for bully algorithm */
 /* These kinds of message will be used in bully algorithm */
@@ -60,10 +60,10 @@ const MSG_CON_CHECK string = "MCH"
 const MSG_CON_REPLY string = "MCP"
 const MSG_CON_REQ string = "MCR"
 const MSG_DEAD_NODE string = "MDN"
+const MSG_DEAD_UNICORN string = "MDU"
 const MSG_EXIT string = "MEX"
 const MSG_FORCE_COMMIT string = "MFC"
 const MSG_KILL_NODE string = "MKN"
-const MSG_DEAD_UNICORN string = "MDU"
 const MSG_GAME_TYPE string = "MGT"
 const MSG_MYNAME string = "MMN"
 const MSG_PADDLE_DIR string = "MPD"

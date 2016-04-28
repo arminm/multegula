@@ -396,7 +396,7 @@ func receiveMessageFromConn(conn net.Conn) {
 					Content:     name,
 					Kind:        defs.MSG_DEAD_NODE,
 				})
-				fmt.Println("Lost connection to:", name)
+				fmt.Println("Multegula: Cannot locate", name, "!")
 				break
 			} else {
 				fmt.Printf("Error from connection:%v, Error:%v\n", name, err.Error())

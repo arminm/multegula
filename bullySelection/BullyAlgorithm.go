@@ -262,7 +262,7 @@ func startHealthCheck() {
 			 */
 			case <-waitHealthCheckReplyTimeout:
 				close(waitHealthCheckReplyTimeout)
-				fmt.Println("Time out without health check received, start election")
+				fmt.Println("Bully: Our unicorn has not returned home, find a replacement.")
 				if count >= 0 {
 					go putUnicornUpdate(messagePasser.Message{
 						Source:      localName,
@@ -309,7 +309,7 @@ func startElection() {
 		/* no answer after timeout, the node it self is unicorn */
 		case <-timeoutWaitAnswer:
 			close(timeoutWaitAnswer)
-			fmt.Printf("Change unicorn from %s to %s\n", unicorn, localName)
+			fmt.Printf("Bully: %s usurped. %s is now our magical steed.\n", unicorn, localName)
 			// set self as unicorn, put an unicorn update message into unicornUpdateChannel
 			go putUnicornUpdate(messagePasser.Message{
 				Source:      localName,
@@ -346,7 +346,7 @@ func startElection() {
 					 * start health check
 					 */
 				case unicornMessage := <-receivedUnicornChannel:
-					fmt.Printf("Change unicorn from %s to %s\n", unicorn, unicornMessage.Content)
+					fmt.Printf("Bully: %s usurped. %s is now our magical steed.\n", unicorn, unicornMessage.Content)
 					go putUnicornUpdate(messagePasser.Message{
 						Source:      unicornMessage.Source,
 						Destination: unicornMessage.Destination,

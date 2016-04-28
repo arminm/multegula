@@ -122,9 +122,7 @@ def sendSyncError(content, canvas) :
     toSend.kind = MsgType.MSG_SYNC_ERROR
     toSend.content = content
     toSend.multicast = True
-
-    print("SENDING: " + toSend.toString())
-
+    print(canvas.data['myName'] + " has detected a syncronization error!")
     # send message
     canvas.data['bridge'].sendMessage(toSend)
 
@@ -136,7 +134,7 @@ def sendKillMessage(content, canvas) :
     toSend.kind = MsgType.MSG_KILL_NODE
     toSend.content = content
     toSend.multicast = True
-    print("SENDING: " + toSend.toString())
+    print("We cannot wait much longer for " + content + " to return...")
     # send message
     sendMessage(toSend, canvas)
 
@@ -146,10 +144,6 @@ def sendMessage(message, canvas) :
     if canvas.data['myReceived'][message.kind] == True and canvas.data['artificialDead'] != True : 
         canvas.data['bridge'].sendMessage(message)
         canvas.data['myReceived'][message.kind] = False
-    elif canvas.data['artificialDead'] == True :
-        print("LOOK WE DEAD -> " + message.toString())
-    else : 
-        print(canvas.data['myName'] + " UI DROPPING MSG: " + message.toString())
 
 ### getGameState - stringify the game state for sending in consensus requests
 def getGameState(canvas) :    
@@ -191,8 +185,6 @@ def getGameState(canvas) :
 def reactToCommit(content, canvas) :
     conType = content[MsgIndex.CON_CHECK_TYPE]
     if conType == ConType.CON_GAME_STATE :
-        print(canvas.data['myName'] + " COMMITING : " + str(content))
-
         i = MsgIndex.CON_CHECK_TYPE
 
         i += 1

@@ -306,6 +306,8 @@ func inboundDispatcher() {
 			fallthrough
 		case defs.MSG_DEAD_NODE:
 			fallthrough
+		case defs.MSG_DEAD_UNICORN:
+			fallthrough
 		case defs.MSG_FORCE_COMMIT:
 			fallthrough
 		case defs.MSG_KILL_NODE:
@@ -389,12 +391,12 @@ func parseMainArguments(args []string) string {
 func initConsensus(message messagePasser.Message) {
 	nodeIndex, node, err := messagePasser.FindNodeByName(messagePasser.PeerNodes, message.Content)
 	if err == nil {
-		peers := append(messagePasser.PeerNodes[:nodeIndex], messagePasser.PeerNodes[nodeIndex+1:]...)
+		peers := append(messagePasser.PeerNodes[:nodeIndex])
 		consensus.InitConsensus(node, peers, messagePasser.LocalNode.Name)
+
 		go ConsensusReceiverRoutine()
 		go ConsensusCheckReceiverRoutine()
 		go ConsensusReachedRoutine()
-		fmt.Println("Consensus initialized by leader:", node.Name)
 	}
 }
 

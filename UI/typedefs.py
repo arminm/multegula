@@ -302,8 +302,8 @@ class PyMessage :
         return 'source: ' + self.src + ', type: ' + self.kind + ', content: ' + str(self.content)
 
 ARTIFICIAL_COMMIT_1 = "CGS|4|armin|23|3|daniel|53|5|lunwen|10|1|garrett|19|4|0|101110111101110111010"
-ARTIFICIAL_COMMIT_2 = "CGS|4|armin|23|3|daniel|53|5|lunwen|10|1|garrett|19|4|2|1101101111011011101101100011"
-ARTIFICIAL_COMMIT_3 = "CGS|3|armin|23|3|daniel|53|5|lunwen|10|1|1|101101101101101101011"
+ARTIFICIAL_COMMIT_2 = "CGS|3|armin|23|3|daniel|53|5|lunwen|10|1|1|101101101101101101011"
+ARTIFICIAL_COMMIT_3 = "CGS|4|armin|23|3|daniel|53|5|lunwen|10|1|garrett|19|4|2|1101101111011011101101100011"
 
 
 
