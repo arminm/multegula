@@ -394,105 +394,14 @@ func initConsensus(message messagePasser.Message) {
 	}
 }
 
-/* the Main function of the Multegula application */
-func main() {
-	testFlag := flag.Bool("test", false, "Test Mode Flag")
-	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
-	consensusTestFlag := flag.Bool("ct", false, "Consensus Test Mode Flag")
-	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
-	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
-	flag.Parse()
-	// Read command-line arguments and prompt the user if not provided
-	args := flag.Args()
-
-	// nodes used for testing purposes only
-	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014}}
-	// nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "50.131.53.106", Port: 11111}, messagePasser.Node{Name: "garrett", IP: "71.199.96.75", Port: 44444}, messagePasser.Node{Name: "daniel", IP: "50.131.53.106", Port: 22222}, messagePasser.Node{Name: "lunwen", IP: "71.199.96.75", Port: 33333}}
-
-	// for testing consensus
-	if *consensusTestFlag {
-		localName := getLocalName()
-		messagePasser.InitMessagePasser(nodes, localName)
-		go outboundDispatcher()
-		go inboundDispatcher()
-		leader := nodes[0]
-		consensus.InitConsensus(leader, nodes[1:], localName)
-		go ConsensusReceiverRoutine()
-		go ConsensusCheckReceiverRoutine()
-		go ConsensusReachedRoutine()
-
-		var proposalValue string
-		for {
-			if localName == leader.Name {
-				fmt.Println("Hit enter to propose.")
-				fmt.Scanf("%s", &proposalValue)
-				consensus.Propose(proposalValue, "test")
-			}
-		}
-	}
-
-	// for testing the bootstrapping
-	if *bootstrapTestFlag {
-		localName := getLocalName()
-		_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
-		fmt.Println("Contacting the bootstrap server...")
-		peers, err := bootstrapClient.GetNodes(localNode)
-		if err != nil {
-			fmt.Println("Got error:", err)
-		} else {
-			fmt.Printf("Got peers: %+v\n", peers)
-		}
-		return
-	}
-
-	if *testFlag {
-		localNodeName := parseMainArguments(args)
-		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
-		peers, err := bootstrapClient.GetNodes(localNode)
-		if err != nil {
-			fmt.Println("Couldn't get peers:", err)
-			panic(err)
-		}
-		*peers = append(*peers, localNode)
-		fmt.Print("--------------------------------\n")
-		fmt.Println("Available Nodes:")
-		for id, node := range *peers {
-			fmt.Printf("  ID:%d – %+v\n", id, node)
-		}
-		fmt.Println("Initing with localName:", localNodeName)
-		messagePasser.InitMessagePasser(*peers, localNodeName)
-
-		/* start a receiveRoutine to be able to use nonBlockingReceive */
-		go receiveRoutine()
-
-		fmt.Println("Please select the operation you want to do:")
-		for {
-			fmt.Println("Getting operation")
-			operation := getOperation()
-			if operation == 0 {
-				message := getMessage(nodes, localNodeName)
-				messagePasser.Send(message)
-			} else if operation == 1 {
-				var message messagePasser.Message = nonBlockingReceive()
-				if (reflect.DeepEqual(message, messagePasser.Message{})) {
-					fmt.Print("No messages received.\n\n")
-				} else {
-					fmt.Printf("Received: %+v\n\n", message)
-				}
-			} else if operation == 2 {
-				message := getMessage(nodes, localNodeName)
-				messagePasser.Multicast(&message)
-				fmt.Println("Did multicast")
-			} else {
-				fmt.Println("Operation not recognized. Please try again.")
-			}
-		}
-	}
-
+/*
+ *
+ */
+func runGame(gamePort int, uiPort int) {
 	/**** THIS IS LIKE ACTUAL GAMEPLAY ***/
 	// initialize communication with the UI
-	fmt.Printf("Port is:%d\n", *uiPortFlag)
-	bridges.InitPyBridge(*uiPortFlag)
+	fmt.Printf("Port is:%d\n", uiPort)
+	bridges.InitPyBridge(uiPort)
 	go PyBridgeReceiver()
 
 	// get the localname
@@ -504,7 +413,7 @@ func main() {
 
 	if gameType == defs.GAME_TYPE_MULTI {
 		// get fellow players
-		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: gamePort}
 		peers, err := bootstrapClient.GetNodes(localNode)
 		if err != nil {
 			fmt.Println("Couldn't get peers:", err)
@@ -528,6 +437,44 @@ func main() {
 		go inboundDispatcher()
 		go outboundDispatcher()
 	}
+}
+
+/* the Main function of the Multegula application */
+func main() {
+	messagePasserTestFlag := flag.Bool("test", false, "MessagePasser Test Mode Flag")
+	bootstrapTestFlag := flag.Bool("bt", false, "Bootstrap Test Mode Flag")
+	consensusTestFlag := flag.Bool("ct", false, "Consensus Test Mode Flag")
+	uiPortFlag := flag.Int("uiport", defs.DEFAULT_UI_PORT, "Local port number for Python-Go bridge.")
+	gamePortFlag := flag.Int("gameport", defs.DEFAULT_GAME_PORT, "Local port number for MessagePasser.")
+	flag.Parse()
+	// Read command-line arguments and prompt the user if not provided
+	args := flag.Args()
+
+	// nodes used for testing purposes only
+	nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "127.0.0.1", Port: 10011}, messagePasser.Node{Name: "garrett", IP: "127.0.0.1", Port: 10012}, messagePasser.Node{Name: "lunwen", IP: "127.0.0.1", Port: 10013}, messagePasser.Node{Name: "daniel", IP: "127.0.0.1", Port: 10014}}
+	// nodes := []messagePasser.Node{messagePasser.Node{Name: "armin", IP: "50.131.53.106", Port: 11111}, messagePasser.Node{Name: "garrett", IP: "71.199.96.75", Port: 44444}, messagePasser.Node{Name: "daniel", IP: "50.131.53.106", Port: 22222}, messagePasser.Node{Name: "lunwen", IP: "71.199.96.75", Port: 33333}}
+
+	// for testing consensus
+	if *consensusTestFlag {
+		testConsensus(nodes)
+		return
+	}
+
+	// for testing the bootstrapping
+	if *bootstrapTestFlag {
+		testBootstrap(nodes)
+		return
+	}
+
+	if *messagePasserTestFlag {
+		localNodeName := parseMainArguments(args)
+		localNode := messagePasser.Node{Name: localNodeName, IP: "127.0.0.1", Port: *gamePortFlag}
+		testMessagePasser(localNode)
+		return
+	}
+
+	// run actual game
+	runGame(*gamePortFlag, *uiPortFlag)
 
 	// Exit gracefully
 	<-exitChannel
@@ -545,4 +492,79 @@ func receiveRoutine() {
 
 func nonBlockingReceive() messagePasser.Message {
 	return messagePasser.Pop(&receiveQueue)
+}
+
+func testBootstrap(nodes messagePasser.Nodes) {
+	localName := getLocalName()
+	_, localNode, _ := messagePasser.FindNodeByName(nodes, localName)
+	fmt.Println("Contacting the bootstrap server...")
+	peers, err := bootstrapClient.GetNodes(localNode)
+	if err != nil {
+		fmt.Println("Got error:", err)
+	} else {
+		fmt.Printf("Got peers: %+v\n", peers)
+	}
+}
+
+func testMessagePasser(localNode messagePasser.Node) {
+	peers, err := bootstrapClient.GetNodes(localNode)
+	if err != nil {
+		fmt.Println("Couldn't get peers:", err)
+		panic(err)
+	}
+	*peers = append(*peers, localNode)
+	fmt.Print("--------------------------------\n")
+	fmt.Println("Available Nodes:")
+	for id, node := range *peers {
+		fmt.Printf("  ID:%d – %+v\n", id, node)
+	}
+	fmt.Println("Initing with localName:", localNode.Name)
+	messagePasser.InitMessagePasser(*peers, localNode.Name)
+
+	/* start a receiveRoutine to be able to use nonBlockingReceive */
+	go receiveRoutine()
+
+	fmt.Println("Please select the operation you want to do:")
+	for {
+		fmt.Println("Getting operation")
+		operation := getOperation()
+		if operation == 0 {
+			message := getMessage(*peers, localNode.Name)
+			messagePasser.Send(message)
+		} else if operation == 1 {
+			var message messagePasser.Message = nonBlockingReceive()
+			if (reflect.DeepEqual(message, messagePasser.Message{})) {
+				fmt.Print("No messages received.\n\n")
+			} else {
+				fmt.Printf("Received: %+v\n\n", message)
+			}
+		} else if operation == 2 {
+			message := getMessage(*peers, localNode.Name)
+			messagePasser.Multicast(&message)
+			fmt.Println("Did multicast")
+		} else {
+			fmt.Println("Operation not recognized. Please try again.")
+		}
+	}
+}
+
+func testConsensus(nodes messagePasser.Nodes) {
+	localName := getLocalName()
+	messagePasser.InitMessagePasser(nodes, localName)
+	go outboundDispatcher()
+	go inboundDispatcher()
+	leader := nodes[0]
+	consensus.InitConsensus(leader, nodes[1:], localName)
+	go ConsensusReceiverRoutine()
+	go ConsensusCheckReceiverRoutine()
+	go ConsensusReachedRoutine()
+
+	var proposalValue string
+	for {
+		if localName == leader.Name {
+			fmt.Println("Hit enter to propose.")
+			fmt.Scanf("%s", &proposalValue)
+			consensus.Propose(proposalValue, "test")
+		}
+	}
 }
