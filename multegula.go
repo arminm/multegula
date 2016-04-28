@@ -23,6 +23,11 @@ import (
 )
 
 /*
+ * Channel to exit gracefully
+ */
+var exitChannel chan bool = make(chan bool)
+
+/*
  * This is the sendChannel for message dispatcher.
  * Any components like UI or bully algorithm will
  * put messages into this channel if they want to
@@ -221,6 +226,8 @@ func PyBridgeReceiver() {
 			propCheck := propChecksMap[valueType]
 			(*propCheck.Callback)(message.Content)
 			delete(propChecksMap, valueType)
+		case defs.MSG_EXIT:
+			exitChannel <- true
 		default:
 			go putMessageIntoSendChannel(message)
 		}
@@ -239,7 +246,6 @@ func BullyReceiver() {
  * get unicorn update message from bullySelection,
  * send unicorn update message to ui and consensus algorithm
  */
-//TODO add code to send unicorn update message to consensus algorithm
 func UnicornReciever() {
 	for {
 		unicornUpdateMessage := bullySelection.GetUnicornUpdate()
@@ -529,9 +535,12 @@ func main() {
 		go PyBridgeReceiver()
 		go BullyReceiver()
 		go inboundDispatcher()
-		outboundDispatcher()
+		go outboundDispatcher()
 	}
 
+	// Exit gracefully
+	<-exitChannel
+	fmt.Println("Quitting Multegula! Thank you for playing. :)")
 }
 
 /* testing functions */

@@ -60,6 +60,7 @@ const MSG_CON_CHECK string = "MCH"
 const MSG_CON_REPLY string = "MCP"
 const MSG_CON_REQ string = "MCR"
 const MSG_DEAD_NODE string = "MDN"
+const MSG_EXIT string = "MEX"
 const MSG_KILL_NODE string = "MKN"
 const MSG_DEAD_UNICORN string = "MDU"
 const MSG_GAME_TYPE string = "MGT"
@@ -71,7 +72,6 @@ const MSG_REJOIN_REQ string = "MRR"
 const MSG_START_PLAY string = "MSP"
 const MSG_SYNC_ERROR string = "MSE"
 const MSG_UNICORN string = "MUN"
-
 
 /*** MESSAGE DESTINATION CONSTANTS ***/
 const MULTICAST_DEST string = "EVR1"
