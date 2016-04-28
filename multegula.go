@@ -227,6 +227,9 @@ func PyBridgeReceiver() {
 			(*propCheck.Callback)(message.Content)
 			delete(propChecksMap, valueType)
 		case defs.MSG_EXIT:
+			// echo back to UI
+			bridges.SendToPyBridge(message)
+			// exit multegula
 			exitChannel <- true
 		default:
 			go putMessageIntoSendChannel(message)
