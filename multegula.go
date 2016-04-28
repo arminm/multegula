@@ -9,19 +9,19 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
-	"time"
-	"os"
-	"bytes"
-	"encoding/gob"
 	"strings"
+	"time"
+
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
 	"github.com/arminm/multegula/bullySelection"
 	"github.com/arminm/multegula/consensus"
 	"github.com/arminm/multegula/defs"
+	"github.com/arminm/multegula/io"
 	"github.com/arminm/multegula/messagePasser"
 )
 
@@ -242,7 +242,6 @@ func BullyReceiver() {
  * get unicorn update message from bullySelection,
  * send unicorn update message to ui and consensus algorithm
  */
-//TODO add code to send unicorn update message to consensus algorithm
 func UnicornReciever() {
 	for {
 		unicornUpdateMessage := bullySelection.GetUnicornUpdate()
@@ -396,89 +395,6 @@ func initConsensus(message messagePasser.Message) {
 	}
 }
 
-/*
-* Stores nodes data to a file
-*/
-func StoreNodes (fname string, peers *[]messagePasser.Node) error{
-        b := new(bytes.Buffer)
-        enc := gob.NewEncoder(b)
-        err := enc.Encode(peers)
-        if err != nil {
-                return err
-        }
-        fh, eopen := os.OpenFile(fname, os.O_CREATE|os.O_WRONLY, 0666)
-        defer fh.Close()
-        if eopen != nil {
-                return eopen
-        }
-        n,e := fh.Write(b.Bytes())
-        if e != nil {
-                return e
-        }
-        fmt.Fprintf(os.Stderr, "%d bytes successfully written to file\n", n)
-        fh.Sync()
-        return nil
-}
-
-/*
-* Stores time data to a file
-*/
-func StoreTime (fname string, timestamp int64) error{
-        b := new(bytes.Buffer)
-        enc := gob.NewEncoder(b)
-        err := enc.Encode(timestamp)
-        if err != nil {
-                return err
-        }
-        fh, eopen := os.OpenFile(fname, os.O_CREATE|os.O_WRONLY, 0666)
-        defer fh.Close()
-        if eopen != nil {
-                return eopen
-        }
-        n,e := fh.Write(b.Bytes())
-        if e != nil {
-                return e
-        }
-        fmt.Fprintf(os.Stderr, "%d bytes successfully written to file\n", n)
-        fh.Sync()
-        return nil
-}
-
-/*
-* Reads nodes data from a file
-*/
-func LoadNodes (fname string) ([]messagePasser.Node) {
-        fh, err := os.Open(fname)
-        if err != nil {
-            return nil
-        }
-        p := make([]messagePasser.Node, 4)
-        dec := gob.NewDecoder(fh)
-        err = dec.Decode(&p)
-        if err != nil {
-            return nil
-        }
-        return p
-}
-
-/*
-* Reads time data from a file
-*/
-func LoadTime (fname string) (int64, error) {
-        fh, err := os.Open(fname)
-        if err != nil {
-            return -1, err
-        }
-        var t int64
-        dec := gob.NewDecoder(fh)
-        err = dec.Decode(&t)
-        if err != nil {
-            return -1, err
-        }
-        return t, nil
-}
-
-
 /* the Main function of the Multegula application */
 func main() {
 	testFlag := flag.Bool("test", false, "Test Mode Flag")
@@ -596,8 +512,8 @@ func main() {
 
 		//Check to see if state file exists, and if it does, read timestamp from it.
 		//If timestamp is too old, delete and ignore.  If not, read nodes and ignore bootstrap.
-		lastTime,err = LoadTime("lastgametime.mlg")
-		if (err != nil) && (time.Now().Unix() - int64(300) > int64(lastTime)) {
+		lastTime, err = io.LoadTime("lastgametime.mlg")
+		if (err != nil) && (time.Now().Unix()-int64(300) > int64(lastTime)) {
 			// get fellow players
 			peers, err = bootstrapClient.GetNodes(localNode)
 			if err != nil {
@@ -607,7 +523,7 @@ func main() {
 			*peers = append(*peers, localNode)
 		} else { //We have a recent lost game that we can rejoin.
 			fmt.Println("Attempting to rejoin old game!")
-			*peers = append(LoadNodes("lastgamenodes.mlg"), localNode)
+			*peers = append(io.LoadNodes("lastgamenodes.mlg"), localNode)
 			if err != nil {
 				fmt.Println("Couldn't get peers:", err)
 				panic(err)
@@ -618,8 +534,8 @@ func main() {
 		//But first, remove old file.
 		os.Remove("lastgamenodes.mlg")
 		os.Remove("lastgametime.mlg")
-		err = StoreNodes("lastgamenodes.mlg", peers)
-		err = StoreTime("lastgametime.mlg", time.Now().Unix())
+		err = io.StoreNodes("lastgamenodes.mlg", peers)
+		err = io.StoreTime("lastgametime.mlg", time.Now().Unix())
 
 		// set competitor location
 		uiSetCompetitorLocation(localNode.Name, peers)
