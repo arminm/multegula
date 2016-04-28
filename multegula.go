@@ -540,6 +540,7 @@ func main() {
 
 	// Exit gracefully
 	<-exitChannel
+	fmt.Println("Quitting Multegula! Thank you for playing. :)")
 }
 
 /* testing functions */
