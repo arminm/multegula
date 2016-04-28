@@ -452,6 +452,7 @@ def react(canvas, received) :
         # get the dead node, add it to the list, make a timer
 
         if missingNode not in canvas.data['missingNodes'] :
+            print("Multegula can't locate", name, "!")
             canvas.data['missingNodes'].append(missingNode)
             canvas.data[missingNode + 'Timer'] = REJOIN_TIMEOUT
 
@@ -809,7 +810,11 @@ def levelUpdate(status, canvas) :
 
 ### redrawAll - draw the game screen
 def redrawAll(canvas) :
-    receiveAll(canvas)
+
+    if canvas.data['currentState'] != State.STATE_GAME_OVER :
+        receiveAll(canvas)
+
+    # get information
     gameType = canvas.data['gameType']
     myName = canvas.data['myName']
     currentState = canvas.data['currentState']
@@ -933,7 +938,7 @@ def redrawAll(canvas) :
             toSend.content = ConType.CON_GAME_STATE + '|' + getGameState(canvas)
             toSend.multicast = True
             # send message
-            canvas.data['bridge'].sendMessage(toSend)
+            sendMessage(toSend, canvas)
 
     ### SYNC - perform game state consensus to sync everyone up
     elif currentState == State.STATE_SYNC :

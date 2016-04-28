@@ -2,26 +2,26 @@
     "SendRules": [
         {
             "Action": "drop",
-            "Src": "A",
-            "Dest": "B",
-            "Kind": "Ack",
-            "SeqNum": 4
+            "Src": "armin",
+            "Dest": "garrett",
+            "Kind": "MPD",
+            "SeqNum": 
         },
 
         {
             "Action": "delay",
-            "Src": "A",
-            "Dest": "C",
-            "Kind": "Reply",
-            "SeqNum": 4
+            "Src": "lunwen",
+            "Dest": "daniel",
+            "Kind": "MBB",
+            "SeqNum": 
         }
     ],
 
     "ReceiveRules": [
     	{
-            "Action": "delay",
-            "Src": "A",
-            "Dest": "",
+            "Action": "drop",
+            "Src": "lunwen",
+            "Dest": "garrett",
             "Kind": "",
             "SeqNum": 2
 	    },

@@ -141,9 +141,10 @@ def sendKillMessage(content, canvas) :
 ### sendMessage - use dictionary flags in the 'myReceived' entry to avoid sending 
 ##      duplicate messages and avoid synchronization issues. (e.g. breaking the same block twice)
 def sendMessage(message, canvas) :
-    if canvas.data['myReceived'][message.kind] == True and canvas.data['artificialDead'] != True : 
-        canvas.data['bridge'].sendMessage(message)
-        canvas.data['myReceived'][message.kind] = False
+    if canvas.data['currentState'] != State.STATE_GAME_OVER :
+        if canvas.data['myReceived'][message.kind] == True and canvas.data['artificialDead'] != True : 
+            canvas.data['bridge'].sendMessage(message)
+            canvas.data['myReceived'][message.kind] = False
 
 ### getGameState - stringify the game state for sending in consensus requests
 def getGameState(canvas) :    
