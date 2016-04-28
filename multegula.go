@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/arminm/multegula/bootstrapClient"
 	"github.com/arminm/multegula/bridges"
@@ -42,6 +43,7 @@ var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, de
  */
 
 var propChecksMap map[string]*consensus.PropCheck = make(map[string]*consensus.PropCheck)
+var propCheckMutex = &sync.Mutex{}
 
 /*
  * put message into sendChannel
@@ -223,9 +225,11 @@ func PyBridgeReceiver() {
 			consensus.Propose(message.Content, valueType)
 		case defs.MSG_CON_REPLY:
 			valueType := strings.Split(message.Content, "|")[0]
+			propCheckMutex.Lock()
 			propCheck := propChecksMap[valueType]
 			(*propCheck.Callback)(message.Content)
 			delete(propChecksMap, valueType)
+			propCheckMutex.Unlock()
 		case defs.MSG_EXIT:
 			exitChannel <- true
 		default:
@@ -267,7 +271,9 @@ func ConsensusReceiverRoutine() {
 func ConsensusCheckReceiverRoutine() {
 	for {
 		propCheck := consensus.ProposalCheck()
+		propCheckMutex.Lock()
 		propChecksMap[propCheck.Prop.Type] = propCheck
+		propCheckMutex.Unlock()
 		bridges.SendToPyBridge(messagePasser.Message{
 			Source:      messagePasser.LocalNode.Name,
 			Destination: messagePasser.LocalNode.Name,
