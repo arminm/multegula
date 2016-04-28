@@ -71,7 +71,6 @@ var sendChannel chan messagePasser.Message = make(chan messagePasser.Message, de
 func putMessageToSendChannel(message messagePasser.Message) {
 	message.Content = message.Content + defs.DELIMITER + message.Destination
 	message.Destination = defs.MULTICAST_DEST
-	fmt.Printf("Message will be sent: %+v\n", message)
 	sendChannel <- message
 }
 
@@ -116,7 +115,6 @@ func PutMessageToReceiveChannel(message messagePasser.Message) {
 	if destination == localName {
 		message.Content = content
 		message.Destination = destination
-		fmt.Printf("Message received: %+v\n", message)
 		receiveChannel <- message
 	}
 }
