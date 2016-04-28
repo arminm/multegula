@@ -68,9 +68,9 @@ var PeerNodes Nodes
  * <key, value> = <name, connection>
  **/
 var connections map[string]net.Conn = make(map[string]net.Conn)
-var connectionsMutex = &sync.Mutex{}
 var decoders map[string]*gob.Decoder = make(map[string]*gob.Decoder)
 var encoders map[string]*gob.Encoder = make(map[string]*gob.Encoder)
+var mapsMutex = &sync.Mutex{}
 var localEncoder *gob.Encoder
 
 func getConnectionName(connection net.Conn) (string, error) {
@@ -83,16 +83,17 @@ func getConnectionName(connection net.Conn) (string, error) {
 }
 
 func addConnection(nodeName string, conn net.Conn) {
-	connectionsMutex.Lock()
+	mapsMutex.Lock()
 	connections[nodeName] = conn
 	seqNums[nodeName] = 0
 	encoders[nodeName] = gob.NewEncoder(conn)
 	decoders[nodeName] = gob.NewDecoder(conn)
-	connectionsMutex.Unlock()
+	mapsMutex.Unlock()
 }
 
 var seqNums map[string]int = make(map[string]int)
 var vectorTimeStamp []int
+var timestampMutex = &sync.Mutex{}
 var localReceivedSeqNum = 0
 
 /*
@@ -116,8 +117,10 @@ var holdbackQueue []Message = []Message{}
 var holdbackQueueMutex = &sync.Mutex{}
 
 func updateSeqNum(message *Message) {
+	mapsMutex.Lock()
 	seqNum := seqNums[message.Destination] + 1
 	seqNums[message.Destination] = seqNum
+	mapsMutex.Unlock()
 	message.SeqNum = seqNum
 }
 
@@ -156,11 +159,15 @@ func isMessageReady(message Message, sourceIndex int, localTimeStamp *[]int) boo
  */
 func messageHasBeenReceived(message Message) bool {
 	/* check if message has been delivered already */
+	timestampMutex.Lock()
 	if message.Source == LocalNode.Name && message.Timestamp[LocalIndex] <= localReceivedSeqNum {
+		timestampMutex.Unlock()
 		return true
 	} else if message.Source != LocalNode.Name && CompareTimestampsLE(&message.Timestamp, &vectorTimeStamp) {
+		timestampMutex.Unlock()
 		return true
 	}
+	timestampMutex.Unlock()
 
 	/* check if message is in holdbackQueue */
 	holdbackQueueMutex.Lock()
@@ -216,7 +223,9 @@ func Multicast(message *Message) {
 	if message.Source == LocalNode.Name {
 		message.Destination = defs.MULTICAST_DEST
 		updateSeqNum(message)
+		timestampMutex.Lock()
 		message.Timestamp = *GetNewTimestamp(&vectorTimeStamp, LocalIndex)
+		timestampMutex.Unlock()
 	}
 
 	for _, node := range PeerNodes {
@@ -340,7 +349,9 @@ func sendConnection(latterNodes map[string]Node) {
 		}
 
 		/* send an initial ping message to other side of the connection */
+		timestampMutex.Lock()
 		msg := Message{LocalNode.Name, node.Name, "ping", "ping", 0, vectorTimeStamp}
+		timestampMutex.Unlock()
 		encoder := gob.NewEncoder(conn)
 		encoder.Encode(msg)
 	}
@@ -358,7 +369,9 @@ func addMessageToReceiveChannel(message Message) {
 	if message.Source == LocalNode.Name && message.Destination == defs.MULTICAST_DEST {
 		localReceivedSeqNum += 1
 	} else {
+		timestampMutex.Lock()
 		UpdateTimestamp(&vectorTimeStamp, &message.Timestamp)
+		timestampMutex.Unlock()
 	}
 	receiveChannel <- message
 }
@@ -429,10 +442,13 @@ func deliverMessage(message Message) {
 			return
 		}
 		sourceIndex, _, _ := FindNodeByName(PeerNodes, message.Source)
+		timestampMutex.Lock()
 		if isMessageReady(message, sourceIndex, &vectorTimeStamp) {
+			timestampMutex.Unlock()
 			addMessageToReceiveChannel(message)
 			checkHoldbackQueue()
 		} else {
+			timestampMutex.Unlock()
 			// fmt.Printf("HBQ Message:%v\n", message)
 			holdbackQueueMutex.Lock()
 			Push(&holdbackQueue, message)
@@ -468,6 +484,7 @@ func deliverMessage(message Message) {
 func checkHoldbackQueue() {
 	var messageToDeliver *Message
 	holdbackQueueMutex.Lock()
+	timestampMutex.Lock()
 	for i, msg := range holdbackQueue {
 		sourceIndex, _, _ := FindNodeByName(PeerNodes, msg.Source)
 		if isMessageReady(msg, sourceIndex, &vectorTimeStamp) {
@@ -476,6 +493,7 @@ func checkHoldbackQueue() {
 			break
 		}
 	}
+	timestampMutex.Unlock()
 	holdbackQueueMutex.Unlock()
 	if messageToDeliver != nil {
 		addMessageToReceiveChannel(*messageToDeliver)
@@ -599,7 +617,9 @@ func InitMessagePasser(nodes Nodes, localName string) {
 	initRules()
 
 	// keep track of group seqNum for multicasting
+	mapsMutex.Lock()
 	seqNums[localName] = 0
+	mapsMutex.Unlock()
 	// initialize the vectorTimeStamp
 	vectorTimeStamp = make([]int, len(PeerNodes))
 
